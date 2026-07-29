@@ -8,13 +8,42 @@ type CustomBlock = {
   config?: Record<string, string>;
 };
 
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function imageToDataUrl(file: File): Promise<string> {
+  const source = URL.createObjectURL(file);
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const element = new Image();
+      element.onload = () => resolve(element);
+      element.onerror = reject;
+      element.src = source;
+    });
+    const scale = Math.min(1, 1100 / Math.max(image.naturalWidth, image.naturalHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    canvas.getContext("2d")?.drawImage(image, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", .82);
+  } finally {
+    URL.revokeObjectURL(source);
+  }
+}
+
 export function BlockCustomization({ block, onMessage, onConfig }: { block: CustomBlock; onMessage: (value: string) => void; onConfig: (key: string, value: string) => void }) {
   const config = block.config || {};
 
-  function imageUpload(key: string, nameKey: string, files: FileList | null) {
+  async function imageUpload(key: string, nameKey: string, files: FileList | null) {
     const file = files?.[0];
     if (!file) return;
-    onConfig(key, URL.createObjectURL(file));
+    onConfig(key, await imageToDataUrl(file));
     onConfig(nameKey, files && files.length > 1 ? `${files.length} photos selected` : file.name);
   }
 
@@ -98,9 +127,10 @@ function QuizEditor({ config, onConfig }: { config: Record<string,string>; onCon
     } catch { setAiState("error"); }
   }
 
-  function optionImage(questionIndex:number,optionIndex:number,files:FileList|null){
+  async function optionImage(questionIndex:number,optionIndex:number,files:FileList|null){
     const file=files?.[0];if(!file)return;
-    const options=questions[questionIndex].options.map((option,index)=>index===optionIndex?{...option,image:URL.createObjectURL(file)}:option);
+    const image=await imageToDataUrl(file);
+    const options=questions[questionIndex].options.map((option,index)=>index===optionIndex?{...option,image}:option);
     patchQuestion(questionIndex,{options});
   }
 
@@ -134,7 +164,7 @@ function WheelEditor({ config, onConfig }: { config: Record<string,string>; onCo
 
 function MemoryEditor({ config, onConfig }: { config: Record<string,string>; onConfig:(key:string,value:string)=>void }) {
   const items=safeParse<MemoryItem[]>(config.memoryItems,[]);
-  function add(files:FileList|null){if(!files)return;const added=Array.from(files).map((file,index)=>({id:`memory-${Date.now()}-${index}`,image:URL.createObjectURL(file),caption:file.name.replace(/\.[^.]+$/,"")}));onConfig("memoryItems",JSON.stringify([...items,...added].slice(0,20)))}
+  async function add(files:FileList|null){if(!files)return;const added=await Promise.all(Array.from(files).slice(0,12).map(async(file,index)=>({id:`memory-${Date.now()}-${index}`,image:await imageToDataUrl(file),caption:file.name.replace(/\.[^.]+$/,"")})));onConfig("memoryItems",JSON.stringify([...items,...added].slice(0,20)))}
   function caption(index:number,value:string){onConfig("memoryItems",JSON.stringify(items.map((item,i)=>i===index?{...item,caption:value}:item)))}
   return <CustomizationSection title="Memory book" hint="A cover followed by page-turning photo memories">
     <div className="memory-cover-note"><img src="/mypookie-letter-photo.png" alt="Default memory book cover"/><div><strong>Default cover</strong><span>This always opens the memory lane.</span></div></div>
@@ -204,9 +234,9 @@ function VoiceRecorder({ audioName, onConfig }: { audioName?: string; onConfig: 
       const mediaRecorder = new MediaRecorder(stream);
       chunks.current = [];
       mediaRecorder.ondataavailable = event => event.data.size && chunks.current.push(event.data);
-      mediaRecorder.onstop = () => {
+      mediaRecorder.onstop = async () => {
         const blob = new Blob(chunks.current, { type: mediaRecorder.mimeType || "audio/webm" });
-        onConfig("audioUrl", URL.createObjectURL(blob));
+        onConfig("audioUrl", await blobToDataUrl(blob));
         onConfig("audioName", `Recorded voice note · ${seconds || 1}s`);
         stream.getTracks().forEach(track=>track.stop());
         setStatus("ready");
@@ -227,10 +257,10 @@ function VoiceRecorder({ audioName, onConfig }: { audioName?: string; onConfig: 
     timer.current = null;
   }
 
-  function upload(files: FileList | null) {
+  async function upload(files: FileList | null) {
     const file = files?.[0];
     if (!file) return;
-    onConfig("audioUrl", URL.createObjectURL(file));
+    onConfig("audioUrl", await blobToDataUrl(file));
     onConfig("audioName", file.name);
     setStatus("ready");
   }
