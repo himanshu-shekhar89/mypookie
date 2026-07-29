@@ -47,6 +47,13 @@ export default function Home() {
   const [opened, setOpened] = useState(false);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "offline">("idle");
   const [giftId, setGiftId] = useState<string | null>(null);
+  const [wheelRotation, setWheelRotation] = useState(0);
+  const [wheelSpinning, setWheelSpinning] = useState(false);
+  const [wheelPrize, setWheelPrize] = useState("");
+  const [slotSpinning, setSlotSpinning] = useState(false);
+  const [slotSymbols, setSlotSymbols] = useState(["🌸", "♡", "✦"]);
+  const [slotPrize, setSlotPrize] = useState("");
+  const [bloomed, setBloomed] = useState(false);
 
   const subtotal = useMemo(() => selected.reduce((sum, item) => sum + item.price, 0), [selected]);
   const activeBlock = selected[active];
@@ -108,6 +115,20 @@ export default function Home() {
     }
   }
 
+  function playWheel() {
+    if (wheelSpinning) return;
+    setWheelSpinning(true); setWheelPrize("");
+    setWheelRotation(value => value + 1440 + 285);
+    window.setTimeout(() => { setWheelPrize("Breakfast in bed ♡"); setWheelSpinning(false); }, 2600);
+  }
+
+  function playSlots() {
+    if (slotSpinning) return;
+    setSlotSpinning(true); setSlotPrize("");
+    const loop = window.setInterval(() => setSlotSymbols(["🌸","♡","✦"].sort(() => Math.random() - .5)), 95);
+    window.setTimeout(() => { window.clearInterval(loop); setSlotSymbols(["🎁","🎁","🎁"]); setSlotPrize("Mystery date unlocked!"); setSlotSpinning(false); }, 1900);
+  }
+
   if (screen === "welcome") {
     return (
       <main className="welcome-page">
@@ -149,10 +170,10 @@ export default function Home() {
         <section className="magic-showcase">
           <div className="showcase-heading"><div><div className="section-kicker">A GIFT THAT COMES ALIVE</div><h2>Every moment has <em>its own little magic.</em></h2></div><p>They don’t simply read your gift. They spin, play, solve, reveal and wander through everything you made for them.</p></div>
           <div className="magic-grid">
-            <article className="magic-card"><div className="magic-label"><span>01</span><div><small>SPIN &amp; SURPRISE</small><strong>Lucky wheel</strong></div></div><div className="show-wheel"><b>♡</b></div><p>Set the prizes. Let their luck decide.</p></article>
-            <article className="magic-card"><div className="magic-label"><span>02</span><div><small>PLAY &amp; WIN</small><strong>Little jackpot</strong></div></div><div className="show-slots"><i><b>🌸</b><b>♡</b></i><i><b>✦</b><b>🌸</b></i><i><b>♡</b><b>✦</b></i></div><p>Three reels, one very personal prize.</p></article>
-            <article className="magic-card"><div className="magic-label"><span>03</span><div><small>LOOK BACK</small><strong>Memory lane</strong></div></div><div className="photo-stack"><i/><i/><i/></div><p>Your favourite chapters, one swipe at a time.</p></article>
-            <article className="magic-card"><div className="magic-label"><span>04</span><div><small>TAP TO BLOOM</small><strong>Forever flowers</strong></div></div><div className="show-bouquet"><i>🌷</i><i>🌸</i><i>🌷</i><b>for you</b></div><p>A bouquet that blooms wherever they are.</p></article>
+            <article className="magic-card interactive-card"><div className="magic-label"><span>01</span><div><small>SPIN &amp; SURPRISE</small><strong>Lucky wheel</strong></div></div><button className="show-wheel" onClick={playWheel} disabled={wheelSpinning} style={{transform:`rotate(${wheelRotation}deg)`}} aria-label="Spin the prize wheel"><b>♡</b></button><button className="mini-action" onClick={playWheel} disabled={wheelSpinning}>{wheelSpinning ? "Spinning…" : "Spin it"}</button><output>{wheelPrize || "Set the prizes. Let their luck decide."}</output></article>
+            <article className="magic-card interactive-card"><div className="magic-label"><span>02</span><div><small>PLAY &amp; WIN</small><strong>Little jackpot</strong></div></div><button className={`show-slots ${slotSpinning ? "is-spinning" : ""}`} onClick={playSlots} disabled={slotSpinning} aria-label="Pull the slot machine"><i>{slotSymbols[0]}</i><i>{slotSymbols[1]}</i><i>{slotSymbols[2]}</i><b className="slot-lever">●</b></button><button className="mini-action" onClick={playSlots} disabled={slotSpinning}>{slotSpinning ? "Rolling…" : "Pull lever"}</button><output>{slotPrize || "Three reels, one very personal prize."}</output></article>
+            <article className="magic-card"><div className="magic-label"><span>03</span><div><small>LOOK BACK</small><strong>Memory lane</strong></div></div><div className="photo-stack cartoon-photos"><i/><i/><i/></div><p>Your favourite chapters, one swipe at a time.</p></article>
+            <article className="magic-card interactive-card"><div className="magic-label"><span>04</span><div><small>TAP TO BLOOM</small><strong>Forever flowers</strong></div></div><button className={`show-bouquet ${bloomed ? "bloomed" : ""}`} onClick={() => setBloomed(value => !value)}><i>🌷</i><i>🌸</i><i>🌷</i><b>{bloomed ? "bloomed for you" : "tap to bloom"}</b></button><output>{bloomed ? "A bouquet that never fades." : "A little garden is waiting."}</output></article>
             <article className="magic-card"><div className="magic-label"><span>05</span><div><small>HIDDEN FOR YOU</small><strong>Scratch reveal</strong></div></div><div className="show-scratch"><span>A dinner date ♡</span><i /></div><p>A secret surprise waiting underneath.</p></article>
           </div>
         </section>
