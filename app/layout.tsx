@@ -1,10 +1,19 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import "./globals.css";
 
-export const metadata: Metadata = {
-  title: "mypookie. — A gift they experience",
-  description: "Build a beautiful interactive gift from messages, memories, games and surprises.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const requestHeaders=await headers();
+  const host=requestHeaders.get("x-forwarded-host")||requestHeaders.get("host")||"frontend-production-48ed.up.railway.app";
+  const protocol=requestHeaders.get("x-forwarded-proto")||"https";
+  const image=`${protocol}://${host}/og.png`;
+  return {
+    title: "mypookie. — A gift they experience",
+    description: "Build a beautiful interactive gift from messages, memories, tiny games and surprises.",
+    openGraph: { title:"mypookie. — A gift they experience", description:"Build a little world of messages, memories, tiny games and surprises.", images:[{url:image,width:1200,height:630,alt:"mypookie. interactive gift studio"}] },
+    twitter: { card:"summary_large_image", title:"mypookie. — A gift they experience", description:"Build a little world of messages, memories, tiny games and surprises.", images:[image] },
+  };
+}
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (

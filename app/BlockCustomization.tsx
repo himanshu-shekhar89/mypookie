@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { TinyBlockCustomization } from "./TinyBlockCustomization";
 
 type CustomBlock = {
   id: string;
@@ -102,6 +103,8 @@ export function BlockCustomization({ block, onMessage, onConfig }: { block: Cust
   if (block.id === "treasure") return <TreasureEditor config={config} onConfig={onConfig} />;
 
   if (block.id === "calendar") return <CalendarEditor config={config} onConfig={onConfig} />;
+
+  if (["wouldrather","neverhave","truthdare","tapheart","matchpair","countdownus","constellation","growthring","movie","alwaysyou","excuse","roast","fortune","mysterybox","playlist","countdowninvite","groupboard"].includes(block.id)) return <TinyBlockCustomization id={block.id} config={config} onConfig={onConfig} />;
 
   return <GiftCardEditor config={config} onConfig={onConfig} />;
 }

@@ -13,7 +13,7 @@ type Block = {
   price: number;
   color: string;
   message: string;
-  category: "Messages & media" | "Memories" | "Playful games" | "Celebrations & gifts";
+  category: "Messages & media" | "Memories" | "Playful games" | "Sentimental stories" | "Celebrations & gifts" | "Plans & together";
   config?: Record<string, string>;
 };
 
@@ -29,13 +29,30 @@ const activities: Block[] = [
   { id: "thisorthat", icon: "↔", name: "This or that", description: "Fast little choices about your story", price: 39, color: "violet", category: "Playful games", message: "No overthinking—choose your favourite." },
   { id: "emoji", icon: "☺", name: "Emoji decoder", description: "Guess the memory hidden in symbols", price: 39, color: "amber", category: "Playful games", message: "Can you decode this little memory?" },
   { id: "heartcatch", icon: "♡", name: "Catch the hearts", description: "A tiny reflex game with a prize", price: 39, color: "pink", category: "Playful games", message: "Catch every heart before your surprise appears." },
+  { id: "wouldrather", icon: "⇄", name: "Would You Rather", description: "Swipe through sender-written either/or cards", price: 39, color: "violet", category: "Playful games", message: "Choose quickly—your picks tell a story." },
+  { id: "neverhave", icon: "✋", name: "Never Have I Ever", description: "A light, shareable confession deck", price: 39, color: "amber", category: "Playful games", message: "No judgement. Maybe a little teasing." },
+  { id: "truthdare", icon: "◉", name: "Truth or Dare Roulette", description: "Spin into sender-written truths and dares", price: 49, color: "red", category: "Playful games", message: "Let the wheel choose what happens next." },
+  { id: "tapheart", icon: "♥", name: "Tap the Heart", description: "Ten seconds of fast, floating-heart taps", price: 39, color: "pink", category: "Playful games", message: "How many hearts can you catch in ten seconds?" },
+  { id: "matchpair", icon: "▥", name: "Match the Pair", description: "A memory flip game made from your photos", price: 59, color: "mint", category: "Playful games", message: "Find every matching memory." },
   { id: "wheel", icon: "◎", name: "Spin the wheel", description: "Custom prizes and limited spins", price: 49, color: "amber", category: "Playful games", message: "Let chance choose your surprise." },
   { id: "slots", icon: "♛", name: "Slot machine", description: "Pull the lever to reveal a prize", price: 49, color: "red", category: "Playful games", message: "Pull the lever and let the reels decide." },
   { id: "scratch", icon: "◇", name: "Scratch reveal", description: "Hide a gift, photo or promise", price: 39, color: "gold", category: "Playful games", message: "Something lovely is hiding here." },
   { id: "treasure", icon: "⌖", name: "Treasure hunt", description: "Clues that lead to a final surprise", price: 79, color: "green", category: "Playful games", message: "Follow the clues. Your surprise is waiting." },
+  { id: "excuse", icon: "⚑", name: "Excuse Generator", description: "Pull a funny reason to meet right now", price: 29, color: "amber", category: "Playful games", message: "An extremely convincing reason to see me." },
+  { id: "roast", icon: "♨", name: "Roast Me Gently", description: "Flip affectionate, sender-written complaints", price: 29, color: "coral", category: "Playful games", message: "A tiny complaint, delivered with a lot of love." },
+  { id: "fortune", icon: "⌒", name: "Fortune Cookie Break", description: "Crack a cookie and reveal a personal fortune", price: 29, color: "gold", category: "Playful games", message: "Your future contains something lovely." },
+  { id: "mysterybox", icon: "□", name: "Mystery Box", description: "Shake open one configured surprise", price: 39, color: "purple", category: "Playful games", message: "Something inside this box is waiting for you." },
+  { id: "countdownus", icon: "∞", name: "Countdown to Us", description: "A live counter since your special date", price: 29, color: "rose", category: "Sentimental stories", message: "Every second since then has mattered." },
+  { id: "constellation", icon: "✧", name: "Constellation Map", description: "A personal star chart with one named star", price: 49, color: "blue", category: "Sentimental stories", message: "Somewhere in this sky, one star is yours." },
+  { id: "growthring", icon: "◌", name: "Growth Ring", description: "Relationship milestones drawn as tree rings", price: 49, color: "green", category: "Sentimental stories", message: "Every ring holds another chapter of us." },
+  { id: "movie", icon: "▰", name: "If We Were a Movie", description: "A cinematic poster and sender-written tagline", price: 49, color: "red", category: "Sentimental stories", message: "The greatest story ever accidentally made." },
+  { id: "alwaysyou", icon: "✓", name: "The Answer Was Always You", description: "A joke quiz where every answer is right", price: 29, color: "pink", category: "Sentimental stories", message: "A very serious quiz with one obvious conclusion." },
   { id: "flowers", icon: "✦", name: "Celebration scene", description: "Elegant full-screen light, petals and sparkles", price: 29, color: "pink", category: "Celebrations & gifts", message: "A beautiful celebration, just for you." },
   { id: "calendar", icon: "▣", name: "Unlock calendar", description: "7, 14 or 30 days of moments", price: 99, color: "purple", category: "Celebrations & gifts", message: "A little something, one day at a time." },
   { id: "gift", icon: "♢", name: "Gift card", description: "Wrap a real or custom voucher", price: 29, color: "red", category: "Celebrations & gifts", message: "A little treat, chosen just for you." },
+  { id: "playlist", icon: "♫", name: "Playlist Reveal", description: "A typed dedication before opening your playlist", price: 39, color: "violet", category: "Plans & together", message: "A soundtrack for all the versions of us." },
+  { id: "countdowninvite", icon: "◷", name: "Countdown Invite", description: "A live event countdown with a playful RSVP", price: 39, color: "amber", category: "Plans & together", message: "Save this moment. I have a plan for us." },
+  { id: "groupboard", icon: "☷", name: "Group Message Board", description: "Short notes assembled into one shared card", price: 69, color: "blue", category: "Plans & together", message: "A whole group of people wanted to say this." },
 ];
 
 const bundles = [
@@ -55,14 +72,31 @@ const blockDefaults: Record<string, Record<string, string>> = {
   thisorthat: { thisOrThatRounds: JSON.stringify([{prompt:"Our perfect evening",left:"Movie night",right:"Long drive"},{prompt:"Pick a treat",left:"Ice cream",right:"Chocolate"},{prompt:"Choose our trip",left:"Mountains",right:"Beach"}]) },
   emoji: { emojiClue: "☕ + 🌧 + ♡", emojiAnswer: "our rainy cafe date", emojiHint: "Think about where we hid from the rain." },
   heartcatch: { target: "6", prize: "Six kisses, redeemable anytime" },
+  wouldrather: { pairs: JSON.stringify([{left:"Sunrise date",right:"Midnight drive"},{left:"Beach holiday",right:"Mountain cabin"},{left:"Cook together",right:"Order everything"}]) },
+  neverhave: { statements: "Danced in the kitchen\nRe-read our old chats\nPlanned a surprise date\nPretended not to miss you", shareSummary: "true" },
+  truthdare: { truths: "What was your first impression of me?\nWhich memory makes you smile instantly?\nWhat is one thing you want us to try?", dares: "Send me your cutest selfie\nRecreate our first photo\nPlan our next snack date" },
+  tapheart: { duration: "10", scoreTitle: "Official heart-catching score" },
+  matchpair: { pairPhotos: "[]" },
   wheel: { prizes: "Breakfast in bed\nMovie night\nMystery date\nA long hug\nSweet treat", spins: "1", resultMode: "Random", plannedResults: "Breakfast in bed", revealAnimation: "Confetti burst" },
   slots: { prizes: "Movie night\nBreakfast date\nA long hug\nSweet treat", pulls: "3", resultMode: "Random", plannedResults: "", revealAnimation: "Sparkle shower" },
   puzzle: { imageUrl: "/mypookie-puzzle-picnic.png", imageName: "", difficulty: "3 × 3 · Sweet and simple", successMessage: "You put this memory back together." },
   memory: { memoryItems: "[]", coverImage: "/mypookie-letter-photo.png", coverCaption: "Our little book of us" },
   scratch: { revealText: "A candlelit dinner ♡", revealDetail: "Friday · 8:00 PM", coating: "Lilac shimmer" },
   treasure: { treasureClues: JSON.stringify([{ clue: "Start where we first said hello.", hint: "Think about our first conversation.", answer: "cafe", photo: "", caption: "" }, { clue: "Find the place in our favourite photo.", hint: "It was outdoors.", answer: "picnic", photo: "", caption: "" }]), finalSurprise: "A mystery date for us" },
+  excuse: { excuses: "My coffee tastes better when you are here\nThe cat has requested your immediate presence\nI need expert help choosing dessert\nThere is an emergency hug shortage" },
+  roast: { roasts: "You are terrible at saying goodbye quickly\nYou steal the blanket and somehow look innocent\nYour replies are either instant or from another century" },
+  fortune: { fortunes: "A surprise date is closer than you think\nSomeone is about to miss you loudly\nYour next hug will last longer than expected" },
+  mysterybox: { surprises: "Breakfast date\nA long drive\nYour favourite dessert\nOne wish granted", boxMode: "Random" },
+  countdownus: { sinceDate: "2024-02-14T18:30", counterLabel: "Since our story began" },
+  constellation: { starName: "Ananya's Star", starMessage: "Even in a sky full of light, I would find you.", skyStyle: "Midnight rose" },
+  growthring: { milestones: JSON.stringify([{year:"2023",label:"We met"},{year:"2024",label:"Our first adventure"},{year:"2025",label:"A thousand little memories"}]) },
+  movie: { genre: "Romantic comedy", movieTitle: "Us, Somehow", tagline: "Two people. Too many inside jokes. One beautiful story.", starring: "Ananya & Himanshu" },
+  alwaysyou: { question: "Who makes every ordinary day better?", answers: "You\nStill you\nObviously you\nThe person reading this" },
   calendar: { days: "7", unlockRule: "One per day", startDate: "", calendarNotes: JSON.stringify(["A reason I adore you","A favourite memory","A tiny promise","A photo that makes me smile","Your song of the day","A little challenge","Your final surprise"]) },
   gift: { brand: "Custom gift", code: "POOKIE-LOVE-24", value: "₹1,000", giftMessage: "Choose something that makes you smile.", interaction: "Flip to reveal", showCode: "true", showValue: "true", showNote: "true" },
+  playlist: { playlistTitle: "Songs that feel like us", playlistUrl: "https://open.spotify.com/", dedication: "Press play whenever you want to feel a little closer to me." },
+  countdowninvite: { eventTitle: "Our surprise date", eventDate: "2026-12-31T20:00", inviteNote: "Wear something that makes you feel amazing." },
+  groupboard: { boardNotes: JSON.stringify([{from:"Your favourite person",message:"You make every room warmer."},{from:"Your partner in chaos",message:"Never stop being wonderfully you."}]) },
 };
 
 function createBlock(item: Block): Block {
@@ -332,7 +366,7 @@ export default function Home() {
         <aside className="library">
           <div className="library-head"><div><div className="section-kicker">ACTIVITY LIBRARY</div><h2>Add a little magic</h2></div><span>{activities.length}</span></div>
           <p>Choose a block to add it and try it live in the centre.</p>
-          <div className="activity-categories">{(["Messages & media","Memories","Playful games","Celebrations & gifts"] as const).map(category=><section className="activity-category" key={category}>
+          <div className="activity-categories">{(["Messages & media","Memories","Playful games","Sentimental stories","Celebrations & gifts","Plans & together"] as const).map(category=><section className="activity-category" key={category}>
             <header><strong>{category}</strong><span>{activities.filter(item=>item.category===category).length}</span></header>
             <div className="activity-list">{activities.filter(item=>item.category===category).map(item => {const selectedIndex=selected.findIndex(x=>x.id===item.id);const isSelected=selectedIndex>=0;const isActive=isSelected&&active===selectedIndex;return <label className={`activity-choice ${isSelected?"selected":""} ${isActive?"active":""}`} key={item.id}>
               <input type="checkbox" checked={isSelected} onChange={event=>setActivitySelected(item,event.target.checked)} aria-label={`${isSelected?"Remove":"Add"} ${item.name}`} />

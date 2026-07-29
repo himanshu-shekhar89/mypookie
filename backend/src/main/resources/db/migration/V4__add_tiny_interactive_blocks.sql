@@ -1,0 +1,18 @@
+INSERT INTO activity_type(id,name,description,price_paise) VALUES
+('wouldrather','Would You Rather','Swipe through sender-written either-or cards',3900),
+('neverhave','Never Have I Ever','A light shareable confession deck',3900),
+('truthdare','Truth or Dare Roulette','Spin into sender-written truths and dares',4900),
+('tapheart','Tap the Heart','A timed floating-heart rhythm game',3900),
+('matchpair','Match the Pair','A memory flip game using sender photos',5900),
+('countdownus','Countdown to Us','A live counter since a special date',2900),
+('constellation','Constellation Map','A personal star chart with one named star',4900),
+('growthring','Growth Ring','Relationship milestones drawn as tree rings',4900),
+('movie','If We Were a Movie','A cinematic poster and custom tagline',4900),
+('alwaysyou','The Answer Was Always You','A joke quiz where every answer is right',2900),
+('excuse','Excuse Generator','Pull a funny reason to meet right now',2900),
+('roast','Roast Me Gently','Flip affectionate sender-written complaints',2900),
+('fortune','Fortune Cookie Break','Crack a cookie and reveal a personal fortune',2900),
+('mysterybox','Mystery Box','Shake open one configured surprise',3900),
+('playlist','Playlist Reveal','A typed dedication before a playlist opens',3900),
+('countdowninvite','Countdown Invite','A live event countdown with playful RSVP',3900),
+('groupboard','Group Message Board','Short notes assembled into one shared card',6900);

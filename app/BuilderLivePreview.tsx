@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { playSound } from "./soundFx";
+import { TinyBlockPreview } from "./TinyBlockPreview";
 
 type PreviewBlock = {
   id: string;
@@ -70,6 +71,7 @@ export function BuilderLivePreview({ block, name, theme, ambience, onInteract, o
         {block.id === "thisorthat" && <ThisOrThatPlay config={config} onComplete={onComplete} onReward={onReward} />}
         {block.id === "emoji" && <EmojiDecoderPlay config={config} onComplete={onComplete} onReward={onReward} />}
         {block.id === "heartcatch" && <HeartCatchPlay config={config} onComplete={onComplete} onReward={onReward} />}
+        {["wouldrather","neverhave","truthdare","tapheart","matchpair","countdownus","constellation","growthring","movie","alwaysyou","excuse","roast","fortune","mysterybox","playlist","countdowninvite","groupboard"].includes(block.id) && <TinyBlockPreview id={block.id} config={config} onComplete={onComplete} onReward={onReward} />}
         {block.id === "wheel" && <div className="live-wheel-scene"><div className="live-wheel-shell"><i className="live-wheel-pointer"/><div className="live-wheel" style={{transform:`rotate(${wheelRotation}deg)`,background:wheelGradient}}>{wheelOptions.map((prize,index)=><span key={`${prize}-${index}`} style={{transform:`rotate(${index*wheelSlice+wheelSlice/2}deg) translateY(-82px)`}}>{prize}</span>)}<b>♡</b></div></div><button onClick={spinWheel} disabled={spinning||wheelSpinCount>=(Number(config.spins)||1)}>{spinning?"Spinning…":wheelSpinCount>=(Number(config.spins)||1)?"No spins left":"Spin the wheel"}</button><output>{wheelResult} · {Math.max((Number(config.spins)||1)-wheelSpinCount,0)} left</output></div>}
         {block.id === "slots" && <SlotMachinePlay config={config} onComplete={onComplete} onReward={onReward} />}
         {block.id === "puzzle" && <PhotoPuzzlePlay key={`${config.difficulty}-${config.imageUrl}`} config={config} onComplete={onComplete} onReward={onReward} />}
