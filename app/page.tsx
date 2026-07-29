@@ -13,24 +13,29 @@ type Block = {
   price: number;
   color: string;
   message: string;
+  category: "Messages & media" | "Memories" | "Playful games" | "Celebrations & gifts";
   config?: Record<string, string>;
 };
 
 type WonItem = { id: number; source: string; reward: string };
 
 const activities: Block[] = [
-  { id: "letter", icon: "✉", name: "Personal letter", description: "A message they tap to unfold", price: 29, color: "coral", message: "You make ordinary days feel like celebrations." },
-  { id: "voice", icon: "◖", name: "Voice message", description: "Record something only you can say", price: 39, color: "violet", message: "A little message from my heart to yours." },
-  { id: "flowers", icon: "✦", name: "E-gifts", description: "Full-screen flowers, fireworks and celebrations", price: 29, color: "pink", message: "A beautiful celebration, just for you." },
-  { id: "quiz", icon: "?", name: "Playful quiz", description: "Normal or floating wrong answers", price: 49, color: "blue", message: "How well do you know us?" },
-  { id: "wheel", icon: "◎", name: "Spin the wheel", description: "Custom prizes and limited spins", price: 49, color: "amber", message: "Let chance choose your surprise." },
-  { id: "slots", icon: "♛", name: "Slot machine", description: "Pull the lever to reveal a prize", price: 49, color: "red", message: "Pull the lever and let the reels decide." },
-  { id: "puzzle", icon: "▦", name: "Photo puzzle", description: "Turn a memory into a 3×3 or 4×4", price: 59, color: "mint", message: "Put this favourite memory back together." },
-  { id: "memory", icon: "⌁", name: "Memory lane", description: "Photos, dates and little stories", price: 79, color: "rose", message: "Every chapter with you is my favourite." },
-  { id: "scratch", icon: "◇", name: "Scratch reveal", description: "Hide a gift, photo or promise", price: 39, color: "gold", message: "Something lovely is hiding here." },
-  { id: "treasure", icon: "⌖", name: "Treasure hunt", description: "Clues that lead to a final surprise", price: 79, color: "green", message: "Follow the clues. Your surprise is waiting." },
-  { id: "calendar", icon: "▣", name: "Unlock calendar", description: "7, 14 or 30 days of moments", price: 99, color: "purple", message: "A little something, one day at a time." },
-  { id: "gift", icon: "♢", name: "Gift card", description: "Wrap a real or custom voucher", price: 29, color: "red", message: "A little treat, chosen just for you." },
+  { id: "letter", icon: "✉", name: "Personal letter", description: "A message they tap to unfold", price: 29, color: "coral", category: "Messages & media", message: "You make ordinary days feel like celebrations." },
+  { id: "voice", icon: "◖", name: "Voice message", description: "Record something only you can say", price: 39, color: "violet", category: "Messages & media", message: "A little message from my heart to yours." },
+  { id: "video", icon: "▶", name: "Video note", description: "Record or upload a retro-style video", price: 59, color: "rose", category: "Messages & media", message: "A little face-to-face moment, just for you." },
+  { id: "memory", icon: "⌁", name: "Memory lane", description: "Photos, dates and little stories", price: 79, color: "rose", category: "Memories", message: "Every chapter with you is my favourite." },
+  { id: "puzzle", icon: "▦", name: "Photo puzzle", description: "Turn a memory into a 3×3 or 4×4", price: 59, color: "mint", category: "Memories", message: "Put this favourite memory back together." },
+  { id: "quiz", icon: "?", name: "Playful quiz", description: "Normal or floating wrong answers", price: 49, color: "blue", category: "Playful games", message: "How well do you know us?" },
+  { id: "thisorthat", icon: "↔", name: "This or that", description: "Fast little choices about your story", price: 39, color: "violet", category: "Playful games", message: "No overthinking—choose your favourite." },
+  { id: "emoji", icon: "☺", name: "Emoji decoder", description: "Guess the memory hidden in symbols", price: 39, color: "amber", category: "Playful games", message: "Can you decode this little memory?" },
+  { id: "heartcatch", icon: "♡", name: "Catch the hearts", description: "A tiny reflex game with a prize", price: 39, color: "pink", category: "Playful games", message: "Catch every heart before your surprise appears." },
+  { id: "wheel", icon: "◎", name: "Spin the wheel", description: "Custom prizes and limited spins", price: 49, color: "amber", category: "Playful games", message: "Let chance choose your surprise." },
+  { id: "slots", icon: "♛", name: "Slot machine", description: "Pull the lever to reveal a prize", price: 49, color: "red", category: "Playful games", message: "Pull the lever and let the reels decide." },
+  { id: "scratch", icon: "◇", name: "Scratch reveal", description: "Hide a gift, photo or promise", price: 39, color: "gold", category: "Playful games", message: "Something lovely is hiding here." },
+  { id: "treasure", icon: "⌖", name: "Treasure hunt", description: "Clues that lead to a final surprise", price: 79, color: "green", category: "Playful games", message: "Follow the clues. Your surprise is waiting." },
+  { id: "flowers", icon: "✦", name: "Celebration scene", description: "Elegant full-screen light, petals and sparkles", price: 29, color: "pink", category: "Celebrations & gifts", message: "A beautiful celebration, just for you." },
+  { id: "calendar", icon: "▣", name: "Unlock calendar", description: "7, 14 or 30 days of moments", price: 99, color: "purple", category: "Celebrations & gifts", message: "A little something, one day at a time." },
+  { id: "gift", icon: "♢", name: "Gift card", description: "Wrap a real or custom voucher", price: 29, color: "red", category: "Celebrations & gifts", message: "A little treat, chosen just for you." },
 ];
 
 const bundles = [
@@ -44,8 +49,12 @@ const recipients = ["Lover", "Friend", "Parents", "Sibling", "Other"];
 const blockDefaults: Record<string, Record<string, string>> = {
   letter: { signoff: "— sent with love", animation: "Lift and unfold" },
   voice: { audioName: "", playbackStyle: "Classic waveform" },
-  flowers: { effect: "Flower shower", timing: "Entire show", intensity: "Lush", effectNote: "A beautiful celebration, just for you." },
+  video: { videoName: "", videoUrl: "", videoEffect: "Retro cam", videoCaption: "I wanted to tell you this face to face." },
+  flowers: { effect: "Rose garden", timing: "Entire show", intensity: "Lush", effectNote: "This whole moment is blooming for you." },
   quiz: { quizQuestions: JSON.stringify([{ id: "q1", question: "Where did we first meet?", options: [{ text: "At our favourite café", image: "" }, { text: "At a party", image: "" }, { text: "Online", image: "" }, { text: "I forgot", image: "" }], correctIndex: 0, interaction: "floating" }]) },
+  thisorthat: { thisOrThatRounds: JSON.stringify([{prompt:"Our perfect evening",left:"Movie night",right:"Long drive"},{prompt:"Pick a treat",left:"Ice cream",right:"Chocolate"},{prompt:"Choose our trip",left:"Mountains",right:"Beach"}]) },
+  emoji: { emojiClue: "☕ + 🌧 + ♡", emojiAnswer: "our rainy cafe date", emojiHint: "Think about where we hid from the rain." },
+  heartcatch: { target: "6", prize: "Six kisses, redeemable anytime" },
   wheel: { prizes: "Breakfast in bed\nMovie night\nMystery date\nA long hug\nSweet treat", spins: "1", resultMode: "Random", plannedResults: "Breakfast in bed", revealAnimation: "Confetti burst" },
   slots: { prizes: "Movie night\nBreakfast date\nA long hug\nSweet treat", pulls: "3", resultMode: "Random", plannedResults: "", revealAnimation: "Sparkle shower" },
   puzzle: { imageUrl: "/mypookie-puzzle-picnic.png", imageName: "", difficulty: "3 × 3 · Sweet and simple", successMessage: "You put this memory back together." },
@@ -76,7 +85,7 @@ export default function Home() {
   const [heroStage, setHeroStage] = useState<"closed" | "open" | "flipped">("closed");
   const [currentTime, setCurrentTime] = useState("");
   const [occasionFx, setOccasionFx] = useState<string | null>(null);
-  const [soundtrack, setSoundtrack] = useState({ enabled: false, audioUrl: "", name: "", startMode: "From the beginning", startBlockId: "", startSeconds: "0" });
+  const [soundtrack, setSoundtrack] = useState({ enabled: false, templateId: "warm-sunset", audioUrl: "/music/warm-sunset.mp3", name: "Warm Sunset", startMode: "From the beginning", startBlockId: "", startSeconds: "0" });
   const [completedSteps,setCompletedSteps]=useState<number[]>([]);
   const [wonItems,setWonItems]=useState<WonItem[]>([]);
   const [winsOpen,setWinsOpen]=useState(false);
@@ -292,7 +301,7 @@ export default function Home() {
     const item = selected[previewStep];
     const effectBlock = selected.find(block => block.id === "flowers");
     const effectConfig = effectBlock?.config || {};
-    const effectSymbols: Record<string,string[]> = {"Flower shower":["🌸","🌷","🌼"],"Fireworks":["🎆","✨","🎇"],"Birthday party":["🎈","🎂","🎉"],"Christmas magic":["🎄","❄️","🎁"],"Hearts":["💗","💕","💖"],"Snowfall":["❄️","❅","✦"]};
+    const effectSymbols: Record<string,string[]> = {"Rose garden":["❀","✦","·"],"Golden fireworks":["✦","✧","•"],"Birthday glow":["○","✦","⌁"],"Winter lights":["❅","✦","·"],"Floating hearts":["♡","♥","·"],"Starlight":["✦","✧","⋆"]};
     const showEffect = Boolean(effectBlock) && (effectConfig.timing === "Entire show" || (effectConfig.timing === "Only on this block" && item?.id === "flowers") || (effectConfig.timing === "After winning or interacting" && opened) || (effectConfig.timing === "At the end" && previewStep === selected.length-1));
     const currentComplete=completedSteps.includes(previewStep);
     function completeMoment(){setCompletedSteps(current=>current.includes(previewStep)?current:[...current,previewStep])}
@@ -303,7 +312,7 @@ export default function Home() {
     }
     return (
       <main className={`recipient-preview theme-${theme.toLowerCase().replaceAll(" ","-")}`}>
-        {showEffect && <div className={`recipient-effect-overlay effect-${(effectConfig.intensity||"Lush").toLowerCase()}`} aria-hidden="true">{Array.from({length:28},(_,index)=><i key={index} style={{left:`${(index*37)%100}%`,animationDelay:`${(index%9)*-.32}s`}}>{(effectSymbols[effectConfig.effect]||effectSymbols["Flower shower"])[index%3]}</i>)}</div>}
+        {showEffect && <div className={`recipient-effect-overlay effect-${(effectConfig.intensity||"Lush").toLowerCase()}`} aria-hidden="true">{Array.from({length:28},(_,index)=><i key={index} style={{left:`${(index*37)%100}%`,animationDelay:`${(index%9)*-.32}s`}}>{(effectSymbols[effectConfig.effect]||effectSymbols["Rose garden"])[index%3]}</i>)}</div>}
         <button className="exit-preview" onClick={() => setScreen("builder")}>← Back to builder</button>
         <GiftSoundtrack settings={soundtrack} blocks={selected} step={previewStep} />
         <WinningTray items={wonItems} open={winsOpen} onToggle={()=>setWinsOpen(value=>!value)} />
@@ -323,13 +332,16 @@ export default function Home() {
         <aside className="library">
           <div className="library-head"><div><div className="section-kicker">ACTIVITY LIBRARY</div><h2>Add a little magic</h2></div><span>{activities.length}</span></div>
           <p>Choose a block to add it and try it live in the centre.</p>
-          <div className="activity-list">{activities.map(item => {const selectedIndex=selected.findIndex(x=>x.id===item.id);const isSelected=selectedIndex>=0;const isActive=isSelected&&active===selectedIndex;return <label className={`activity-choice ${isSelected?"selected":""} ${isActive?"active":""}`} key={item.id}>
-            <input type="checkbox" checked={isSelected} onChange={event=>setActivitySelected(item,event.target.checked)} aria-label={`${isSelected?"Remove":"Add"} ${item.name}`} />
-            <span className="activity-check" aria-hidden="true">{isSelected?"✓":""}</span>
-            <i className={item.color}>{item.icon}</i>
-            <span className="activity-copy"><strong>{item.name}</strong><small>{item.description}</small></span>
-            <b>{isActive?"LIVE":isSelected?"SELECTED":`₹${item.price}`}</b>
-          </label>})}</div>
+          <div className="activity-categories">{(["Messages & media","Memories","Playful games","Celebrations & gifts"] as const).map(category=><section className="activity-category" key={category}>
+            <header><strong>{category}</strong><span>{activities.filter(item=>item.category===category).length}</span></header>
+            <div className="activity-list">{activities.filter(item=>item.category===category).map(item => {const selectedIndex=selected.findIndex(x=>x.id===item.id);const isSelected=selectedIndex>=0;const isActive=isSelected&&active===selectedIndex;return <label className={`activity-choice ${isSelected?"selected":""} ${isActive?"active":""}`} key={item.id}>
+              <input type="checkbox" checked={isSelected} onChange={event=>setActivitySelected(item,event.target.checked)} aria-label={`${isSelected?"Remove":"Add"} ${item.name}`} />
+              <span className="activity-check" aria-hidden="true">{isSelected?"✓":""}</span>
+              <i className={item.color}>{item.icon}</i>
+              <span className="activity-copy"><strong>{item.name}</strong><small>{item.description}</small></span>
+              <b>{isActive?"LIVE":isSelected?"SELECTED":`₹${item.price}`}</b>
+            </label>})}</div>
+          </section>)}</div>
         </aside>
         <section className="live-editor">
           <div className="live-editor-head"><div><div className="section-kicker">LIVE RECIPIENT PREVIEW</div><h2>{activeBlock ? activeBlock.name : "Choose a block to begin"}</h2><p>{activeBlock ? "Play with it here. Changes from the right appear instantly." : "Select any activity from the library and its real interaction will appear here."}</p></div>{activeBlock && <span className="live-badge"><i /> Interactive</span>}</div>
@@ -356,6 +368,7 @@ export default function Home() {
 
 type SoundtrackSettings = {
   enabled: boolean;
+  templateId: string;
   audioUrl: string;
   name: string;
   startMode: string;
@@ -363,24 +376,21 @@ type SoundtrackSettings = {
   startSeconds: string;
 };
 
+const soundtrackTemplates = [
+  { id:"warm-sunset", name:"Warm Sunset", mood:"Golden pads · slow and cosy", url:"/music/warm-sunset.mp3", mark:"☼" },
+  { id:"moonlit-keys", name:"Moonlit Keys", mood:"Dreamy notes · quiet romance", url:"/music/moonlit-keys.mp3", mark:"☾" },
+  { id:"soft-rain", name:"Soft Rain", mood:"Gentle rain · calm and intimate", url:"/music/soft-rain.mp3", mark:"⌇" },
+];
+
 function SoundtrackEditor({settings,blocks,onChange}:{settings:SoundtrackSettings;blocks:Block[];onChange:(patch:Partial<SoundtrackSettings>)=>void}){
-  const [uploadError,setUploadError]=useState("");
-  function upload(files:FileList|null){
-    const file=files?.[0];
-    if(!file)return;
-    if(file.size>15*1024*1024){setUploadError("Please choose a song under 15 MB.");return}
-    const reader=new FileReader();
-    reader.onload=()=>{onChange({audioUrl:String(reader.result),name:file.name,enabled:true});setUploadError("")};
-    reader.readAsDataURL(file);
-  }
   const startBlock=settings.startBlockId&&blocks.some(block=>block.id===settings.startBlockId)?settings.startBlockId:(blocks[0]?.id||"");
   return <details className="soundtrack-editor">
-    <summary><span>♫</span><div><strong>Gift soundtrack</strong><small>{settings.enabled&&settings.audioUrl?settings.name:"Optional background music"}</small></div><b>{settings.enabled?"ON":"OFF"}</b></summary>
+    <summary><span>♫</span><div><strong>Soothing soundtrack</strong><small>{settings.enabled?settings.name:"Choose a built-in music template"}</small></div><b>{settings.enabled?"ON":"OFF"}</b></summary>
     <div className="soundtrack-body">
       <label className="soundtrack-toggle"><input type="checkbox" checked={settings.enabled} onChange={event=>onChange({enabled:event.target.checked})}/><span/><div><strong>Play background music</strong><small>The recipient can always pause or mute it.</small></div></label>
-      <label className="audio-template-upload">♪<strong>{settings.name||"Upload a song template"}</strong><span>MP3, M4A, WAV or OGG · up to 15 MB</span><input type="file" accept="audio/*" onChange={event=>upload(event.target.files)}/></label>
-      {uploadError&&<p className="soundtrack-error">{uploadError}</p>}
-      <p className="template-note">Your curated song templates will appear here when you provide them.</p>
+      <div className="soundtrack-template-grid">{soundtrackTemplates.map(template=><button type="button" className={`soundtrack-template-card ${settings.templateId===template.id?"selected":""}`} key={template.id} onClick={()=>onChange({templateId:template.id,audioUrl:template.url,name:template.name,enabled:true})}><span>{template.mark}</span><div><strong>{template.name}</strong><small>{template.mood}</small></div><b>{settings.templateId===template.id?"✓":"Choose"}</b></button>)}</div>
+      <audio className="soundtrack-template-preview" controls preload="metadata" src={settings.audioUrl} aria-label={`Preview ${settings.name}`} />
+      <p className="template-note">Music stays soft beneath the experience. Interaction and win sounds always play louder.</p>
       <label className="field">When should it begin?<select value={settings.startMode} onChange={event=>onChange({startMode:event.target.value})}><option>From the beginning</option><option>From a specific block</option></select></label>
       {settings.startMode==="From a specific block"&&<label className="field">Start at block<select value={startBlock} onChange={event=>onChange({startBlockId:event.target.value})}>{blocks.map((block,index)=><option value={block.id} key={block.id}>{index+1}. {block.name}</option>)}</select></label>}
       <label className="field">Start song at<input type="number" min="0" max="600" value={settings.startSeconds} onChange={event=>onChange({startSeconds:event.target.value})}/><small>seconds</small></label>
@@ -399,6 +409,7 @@ function GiftSoundtrack({settings,blocks,step}:{settings:SoundtrackSettings;bloc
     const audio=audioRef.current;
     if(!audio)return;
     if(!settings.enabled||!playing||!ready){audio.pause();return}
+    audio.volume=.14;
     if(!initialized.current){
       const seek=Math.max(0,Number(settings.startSeconds)||0);
       if(Number.isFinite(audio.duration))audio.currentTime=Math.min(seek,Math.max(audio.duration-.25,0));
@@ -414,7 +425,7 @@ function GiftSoundtrack({settings,blocks,step}:{settings:SoundtrackSettings;bloc
   const target=blocks[startIndex]?.name||"the first block";
   return <div className={`recipient-soundtrack ${playing?"playing":""}`}>
     <button disabled={!settings.audioUrl} onClick={()=>setPlaying(value=>!value)} aria-label={playing?"Pause soundtrack":"Play soundtrack"}>{playing?"Ⅱ":"♫"}</button>
-    <div><strong>{settings.audioUrl?(settings.name||"Your soundtrack"):"Add a song in the builder"}</strong><small>{!settings.audioUrl?"No audio selected":playing&&!ready?`Queued for ${target}`:playing?"Playing through your gift":settings.startMode==="From a specific block"?`Starts at ${target}`:"Tap to play"}</small></div>
+    <div><strong>{settings.name||"Soothing soundtrack"}</strong><small>{playing&&!ready?`Queued for ${target}`:playing?"Soft background · SFX stay louder":settings.startMode==="From a specific block"?`Starts at ${target}`:"Tap to play softly"}</small></div>
     {settings.audioUrl&&<audio ref={audioRef} src={settings.audioUrl} loop preload="metadata"/>}
   </div>;
 }

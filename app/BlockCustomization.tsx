@@ -58,9 +58,28 @@ export function BlockCustomization({ block, onMessage, onConfig }: { block: Cust
     <label className="field">Player style<select value={config.playbackStyle} onChange={event=>onConfig("playbackStyle",event.target.value)}><option>Classic waveform</option><option>Floating heart</option><option>Minimal player</option></select></label>
   </CustomizationSection>;
 
+  if (block.id === "video") return <CustomizationSection title="Video note" hint="Record or upload a personal face-to-face message">
+    <VideoRecorder videoName={config.videoName} videoUrl={config.videoUrl} onConfig={onConfig} />
+    <label className="field">Camera effect<select value={config.videoEffect} onChange={event=>onConfig("videoEffect",event.target.value)}><option>Retro cam</option><option>Warm film</option><option>Black & white</option><option>Clean</option></select></label>
+    <label className="field">Caption<input maxLength={70} value={config.videoCaption||""} onChange={event=>onConfig("videoCaption",event.target.value)} /></label>
+  </CustomizationSection>;
+
   if (block.id === "flowers") return <EGiftEditor config={config} onConfig={onConfig} />;
 
   if (block.id === "quiz") return <QuizEditor config={config} onConfig={onConfig} />;
+
+  if (block.id === "thisorthat") return <ThisOrThatEditor config={config} onConfig={onConfig} />;
+
+  if (block.id === "emoji") return <CustomizationSection title="Emoji decoder" hint="Turn an inside joke or memory into a tiny riddle">
+    <label className="field">Emoji clue<input maxLength={50} value={config.emojiClue||""} onChange={event=>onConfig("emojiClue",event.target.value)} /></label>
+    <label className="field">Accepted answer<input maxLength={55} value={config.emojiAnswer||""} onChange={event=>onConfig("emojiAnswer",event.target.value)} /></label>
+    <label className="field">Optional hint<input maxLength={70} value={config.emojiHint||""} onChange={event=>onConfig("emojiHint",event.target.value)} /></label>
+  </CustomizationSection>;
+
+  if (block.id === "heartcatch") return <CustomizationSection title="Catch the hearts" hint="A small reflex game that unlocks your prize">
+    <label className="field">Hearts to catch<select value={config.target||"6"} onChange={event=>onConfig("target",event.target.value)}>{[3,4,5,6,7,8,9,10].map(value=><option key={value}>{value}</option>)}</select></label>
+    <label className="field">Prize they unlock<input maxLength={70} value={config.prize||""} onChange={event=>onConfig("prize",event.target.value)} /></label>
+  </CustomizationSection>;
 
   if (block.id === "wheel") return <WheelEditor config={config} onConfig={onConfig} />;
 
@@ -96,9 +115,9 @@ function safeParse<T>(value: string | undefined, fallback: T): T {
 }
 
 function EGiftEditor({ config, onConfig }: { config: Record<string,string>; onConfig: (key:string,value:string)=>void }) {
-  const effects = [["Flower shower","🌸"],["Fireworks","🎆"],["Birthday party","🎂"],["Christmas magic","🎄"],["Hearts","💗"],["Snowfall","❄️"]];
-  return <CustomizationSection title="E-gift spectacle" hint="Fill their screen with a celebration">
-    <div className="effect-picker">{effects.map(([label,icon])=><button key={label} className={config.effect===label?"active":""} onClick={()=>onConfig("effect",label)}><i>{icon}</i><span>{label}</span></button>)}</div>
+  const effects = ["Rose garden","Golden fireworks","Birthday glow","Winter lights","Floating hearts","Starlight"];
+  return <CustomizationSection title="Celebration scene" hint="Choose an elegant full-screen atmosphere">
+    <div className="effect-picker">{effects.map((label,index)=><button key={label} className={config.effect===label?"active":""} onClick={()=>onConfig("effect",label)}><i className={`effect-swatch swatch-${index}`}><b/><b/><b/></i><span>{label}</span></button>)}</div>
     <label className="field">When it appears<select value={config.timing} onChange={event=>onConfig("timing",event.target.value)}><option>Entire show</option><option>After winning or interacting</option><option>At the end</option><option>Only on this block</option></select></label>
     <label className="field">Animation intensity<select value={config.intensity} onChange={event=>onConfig("intensity",event.target.value)}><option>Gentle</option><option>Lush</option><option>Spectacular</option></select></label>
     <label className="field">Celebration note<input maxLength={70} value={config.effectNote||""} onChange={event=>onConfig("effectNote",event.target.value)} /></label>
@@ -160,6 +179,18 @@ function QuizEditor({ config, onConfig }: { config: Record<string,string>; onCon
       <label className="field">This question’s interaction<select value={question.interaction} onChange={event=>patchQuestion(qIndex,{interaction:event.target.value as "floating"|"normal"})}><option value="floating">Wrong answers run away</option><option value="normal">Normal answers + score</option></select></label>
     </article>)}</div>
     <button className="add-collection-item" disabled={questions.length>=7} onClick={()=>update([...questions,{id:`q-${Date.now()}`,question:"",options:Array.from({length:4},()=>({text:"",image:""})),correctIndex:0,interaction:"normal"}])}>＋ Add another question</button>
+  </CustomizationSection>;
+}
+
+type ThisOrThatRound = { prompt:string; left:string; right:string };
+
+function ThisOrThatEditor({config,onConfig}:{config:Record<string,string>;onConfig:(key:string,value:string)=>void}){
+  const rounds=safeParse<ThisOrThatRound[]>(config.thisOrThatRounds,[{prompt:"Our perfect evening",left:"Movie night",right:"Long drive"}]).slice(0,7);
+  const update=(next:ThisOrThatRound[])=>onConfig("thisOrThatRounds",JSON.stringify(next.slice(0,7)));
+  const patch=(index:number,key:keyof ThisOrThatRound,value:string)=>update(rounds.map((round,roundIndex)=>roundIndex===index?{...round,[key]:value}:round));
+  return <CustomizationSection title="This or that" hint="Up to 7 quick, playful choices">
+    <div className="choice-round-editor">{rounds.map((round,index)=><article key={index}><header><strong>Choice {index+1}</strong><button disabled={rounds.length===1} onClick={()=>update(rounds.filter((_,roundIndex)=>roundIndex!==index))}>Remove</button></header><label className="field">Prompt<input maxLength={65} value={round.prompt} onChange={event=>patch(index,"prompt",event.target.value)}/></label><div><label className="field">Left choice<input maxLength={35} value={round.left} onChange={event=>patch(index,"left",event.target.value)}/></label><label className="field">Right choice<input maxLength={35} value={round.right} onChange={event=>patch(index,"right",event.target.value)}/></label></div></article>)}</div>
+    <button className="add-collection-item" disabled={rounds.length>=7} onClick={()=>update([...rounds,{prompt:"",left:"",right:""}])}>＋ Add another choice</button>
   </CustomizationSection>;
 }
 
@@ -335,5 +366,57 @@ function VoiceRecorder({ audioName, onConfig }: { audioName?: string; onConfig: 
     {status==="recording"?<button className="record recording" onClick={stop}>■ Stop recording <span>{seconds}s recorded</span></button>:<button className="record" onClick={start}>● Record voice note <span>{audioName || "Tap to allow microphone access"}</span></button>}
     <label className="audio-upload">or upload audio<input type="file" accept="audio/*" onChange={event=>upload(event.target.files)} /></label>
     {status==="error"&&<p>Microphone permission was not available. Upload an audio file instead.</p>}
+  </div>;
+}
+
+function VideoRecorder({videoName,videoUrl,onConfig}:{videoName?:string;videoUrl?:string;onConfig:(key:string,value:string)=>void}){
+  const [status,setStatus]=useState<"idle"|"recording"|"ready"|"error">("idle");
+  const [seconds,setSeconds]=useState(0);
+  const recorder=useRef<MediaRecorder|null>(null);
+  const chunks=useRef<Blob[]>([]);
+  const timer=useRef<number|null>(null);
+
+  useEffect(()=>()=>{if(timer.current)window.clearInterval(timer.current);recorder.current?.stream.getTracks().forEach(track=>track.stop())},[]);
+
+  function stop(){
+    if(recorder.current?.state==="recording")recorder.current.stop();
+    if(timer.current)window.clearInterval(timer.current);
+    timer.current=null;
+  }
+
+  async function start(){
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user"},audio:true});
+      const mediaRecorder=new MediaRecorder(stream);
+      chunks.current=[];
+      mediaRecorder.ondataavailable=event=>event.data.size&&chunks.current.push(event.data);
+      mediaRecorder.onstop=async()=>{
+        const blob=new Blob(chunks.current,{type:mediaRecorder.mimeType||"video/webm"});
+        onConfig("videoUrl",await blobToDataUrl(blob));
+        onConfig("videoName",`Recorded video note · ${seconds||1}s`);
+        stream.getTracks().forEach(track=>track.stop());
+        setStatus("ready");
+      };
+      recorder.current=mediaRecorder;
+      mediaRecorder.start();
+      setSeconds(0);
+      setStatus("recording");
+      timer.current=window.setInterval(()=>setSeconds(value=>{if(value>=29)window.setTimeout(stop,0);return value+1}),1000);
+    }catch{setStatus("error")}
+  }
+
+  async function upload(files:FileList|null){
+    const file=files?.[0];if(!file)return;
+    if(file.size>30*1024*1024){setStatus("error");return}
+    onConfig("videoUrl",await blobToDataUrl(file));
+    onConfig("videoName",file.name);
+    setStatus("ready");
+  }
+
+  return <div className="video-recorder">
+    {videoUrl&&<video className="video-preview-mini" src={videoUrl} controls playsInline/>}
+    {status==="recording"?<button className="record recording" onClick={stop}>■ Stop video <span>{seconds}s · maximum 30 seconds</span></button>:<button className="record" onClick={start}>● Record video note <span>{videoName||"Camera + microphone · up to 30 seconds"}</span></button>}
+    <label className="audio-upload">or upload a video<input type="file" accept="video/*" onChange={event=>upload(event.target.files)}/></label>
+    {status==="error"&&<p>Camera access failed or the video is over 30 MB. Try a smaller upload.</p>}
   </div>;
 }

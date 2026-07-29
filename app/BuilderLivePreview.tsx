@@ -60,12 +60,16 @@ export function BuilderLivePreview({ block, name, theme, ambience, onInteract, o
       <div className="live-recipient-label">A LITTLE SOMETHING FOR {name.toUpperCase()}</div>
       <div className={`live-block-icon ${block.color}`}>{block.icon}</div>
       <h3>{block.name}</h3>
-      {block.id !== "letter" && block.id !== "voice" && <p>{block.message}</p>}
+      {block.id !== "letter" && block.id !== "voice" && block.id !== "video" && <p>{block.message}</p>}
       <div className="live-interaction" onClickCapture={onInteract} onPointerDownCapture={onInteract}>
         {block.id === "letter" && <button className={`live-letter ${opened ? "opened" : ""}`} onClick={() => {if(!opened){playSound("envelope");onComplete?.()}setOpened(value => !value)}}><span>{block.message.slice(0, 100)}<small>{config.signoff || "— sent with love"}</small></span><i/><b>♥</b></button>}
         {block.id === "voice" && <VoicePreview audioUrl={config.audioUrl} onComplete={onComplete} />}
+        {block.id === "video" && <VideoNotePlay config={config} onComplete={onComplete} />}
         {block.id === "flowers" && <EGiftPreview config={config} onComplete={onComplete} />}
         {block.id === "quiz" && <QuizPlay config={config} onComplete={onComplete} onReward={onReward} />}
+        {block.id === "thisorthat" && <ThisOrThatPlay config={config} onComplete={onComplete} onReward={onReward} />}
+        {block.id === "emoji" && <EmojiDecoderPlay config={config} onComplete={onComplete} onReward={onReward} />}
+        {block.id === "heartcatch" && <HeartCatchPlay config={config} onComplete={onComplete} onReward={onReward} />}
         {block.id === "wheel" && <div className="live-wheel-scene"><div className="live-wheel-shell"><i className="live-wheel-pointer"/><div className="live-wheel" style={{transform:`rotate(${wheelRotation}deg)`,background:wheelGradient}}>{wheelOptions.map((prize,index)=><span key={`${prize}-${index}`} style={{transform:`rotate(${index*wheelSlice+wheelSlice/2}deg) translateY(-82px)`}}>{prize}</span>)}<b>♡</b></div></div><button onClick={spinWheel} disabled={spinning||wheelSpinCount>=(Number(config.spins)||1)}>{spinning?"Spinning…":wheelSpinCount>=(Number(config.spins)||1)?"No spins left":"Spin the wheel"}</button><output>{wheelResult} · {Math.max((Number(config.spins)||1)-wheelSpinCount,0)} left</output></div>}
         {block.id === "slots" && <SlotMachinePlay config={config} onComplete={onComplete} onReward={onReward} />}
         {block.id === "puzzle" && <PhotoPuzzlePlay key={`${config.difficulty}-${config.imageUrl}`} config={config} onComplete={onComplete} onReward={onReward} />}
@@ -83,21 +87,52 @@ export function BuilderLivePreview({ block, name, theme, ambience, onInteract, o
 type QuizQuestion = { id:string; question:string; options:{text:string;image:string}[]; correctIndex:number; interaction:"floating"|"normal" };
 type MemoryItem = { id:string; image:string; caption:string };
 type TreasureClue = { clue:string; hint:string; answer:string; photo?:string; caption?:string };
+type ThisOrThatRound = { prompt:string; left:string; right:string };
 
 function parseJson<T>(value:string|undefined,fallback:T):T{try{return value?JSON.parse(value) as T:fallback}catch{return fallback}}
 
 function EGiftPreview({config,onComplete}:{config:Record<string,string>;onComplete?:()=>void}){
   const [playing,setPlaying]=useState(false);
   const symbols:Record<string,string[]>={
-    "Flower shower":["🌸","🌷","🌼","🌺","🌹"],
-    "Fireworks":["✨","🎆","🎇","✨","⭐"],
-    "Birthday party":["🎈","🎂","🎉","🎁","🥳"],
-    "Christmas magic":["🎄","❄️","🎁","⭐","🔔"],
-    "Hearts":["💗","💕","💖","💘","♡"],
-    "Snowfall":["❄️","✦","❅","❄️","✧"],
+    "Rose garden":["❀","✦","·","❁","♡"],
+    "Golden fireworks":["✦","✧","⋆","•","✦"],
+    "Birthday glow":["○","✦","⌁","•","✧"],
+    "Winter lights":["❅","✦","·","❆","✧"],
+    "Floating hearts":["♡","♥","·","♡","✦"],
+    "Starlight":["✦","✧","⋆","·","✦"],
   };
-  const items=symbols[config.effect]||symbols["Flower shower"];
-  return <button className={`egift-stage ${playing?"playing":""} intensity-${(config.intensity||"Lush").toLowerCase()}`} onClick={()=>{if(!playing){playSound("celebration");onComplete?.()}setPlaying(value=>!value)}}><div className="egift-burst">{Array.from({length:22},(_,index)=><i key={index} style={{"--x":`${(index*37)%100}%`,"--delay":`${(index%7)*-.35}s`,"--drift":`${(index%2?1:-1)*(18+index%5*7)}px`} as React.CSSProperties}>{items[index%items.length]}</i>)}</div><span>{items[1]}</span><strong>{config.effect||"Flower shower"}</strong><p>{config.effectNote||"A beautiful celebration, just for you."}</p><small>{playing?"Tap to pause":"Tap to fill the screen"}</small></button>;
+  const scene=config.effect||"Rose garden";
+  const items=symbols[scene]||symbols["Rose garden"];
+  return <button className={`egift-stage celebration-scene scene-${scene.toLowerCase().replaceAll(" ","-")} ${playing?"playing":""} intensity-${(config.intensity||"Lush").toLowerCase()}`} onClick={()=>{if(!playing){playSound("celebration");onComplete?.()}setPlaying(value=>!value)}}><div className="egift-burst">{Array.from({length:24},(_,index)=><i key={index} style={{"--x":`${(index*37)%100}%`,"--delay":`${(index%7)*-.35}s`,"--drift":`${(index%2?1:-1)*(18+index%5*7)}px`} as React.CSSProperties}>{items[index%items.length]}</i>)}</div><div className="celebration-halo"><i/><i/><i/><span>✦</span></div><strong>{scene}</strong><p>{config.effectNote||"A beautiful celebration, just for you."}</p><small>{playing?"Tap to pause":"Tap to light up the moment"}</small></button>;
+}
+
+function VideoNotePlay({config,onComplete}:{config:Record<string,string>;onComplete?:()=>void}){
+  const [started,setStarted]=useState(false);
+  const effect=(config.videoEffect||"Retro cam").toLowerCase().replaceAll(" ","-").replace("&","and");
+  return <div className={`video-note-player video-effect-${effect}`}>{config.videoUrl?<><div className="video-screen"><video src={config.videoUrl} controls playsInline onPlay={()=>{if(!started){setStarted(true);playSound("reveal")}}} onEnded={onComplete}/>{config.videoEffect==="Retro cam"&&<><span className="retro-rec">● REC</span><span className="retro-date">MYPOOKIE · 1998</span><i className="retro-scan"/></>}</div><strong>{config.videoCaption||"A little face-to-face moment, just for you."}</strong><small>Watch to the end to continue</small></>:<div className="video-note-empty"><span>▶</span><strong>Your video note will appear here</strong><small>Record or upload it in the customizer.</small></div>}</div>;
+}
+
+function ThisOrThatPlay({config,onComplete,onReward}:{config:Record<string,string>;onComplete?:()=>void;onReward?:(reward:string)=>void}){
+  const rounds=parseJson<ThisOrThatRound[]>(config.thisOrThatRounds,[{prompt:"Our perfect evening",left:"Movie night",right:"Long drive"}]);
+  const [index,setIndex]=useState(0);
+  const [choices,setChoices]=useState<string[]>([]);
+  if(index>=rounds.length)return <div className="this-or-that-finish"><span>♡</span><strong>Your little favourites</strong>{choices.map((choice,choiceIndex)=><small key={choiceIndex}>{rounds[choiceIndex]?.prompt}: <b>{choice}</b></small>)}</div>;
+  const round=rounds[index];
+  function choose(value:string){playSound("tile");const next=[...choices,value];setChoices(next);if(index===rounds.length-1){playSound("win");onReward?.(`This or that: ${value}`);onComplete?.()}setIndex(current=>current+1)}
+  return <div className="this-or-that-play"><div className="quiz-dots">{rounds.map((_,dot)=><i key={dot} className={dot<index?"done":dot===index?"current":""}/>)}</div><small>QUICK CHOICE {index+1}</small><strong>{round.prompt}</strong><div><button onClick={()=>choose(round.left)}>{round.left}</button><span>OR</span><button onClick={()=>choose(round.right)}>{round.right}</button></div></div>;
+}
+
+function EmojiDecoderPlay({config,onComplete,onReward}:{config:Record<string,string>;onComplete?:()=>void;onReward?:(reward:string)=>void}){
+  const [answer,setAnswer]=useState("");const [hint,setHint]=useState(false);const [message,setMessage]=useState("");
+  function check(){const normalize=(value:string)=>value.toLowerCase().replace(/[^a-z0-9]/g,"");if(normalize(answer)===normalize(config.emojiAnswer||"our rainy cafe date")){setMessage("Decoded perfectly! ♡");playSound("win");onReward?.("Decoded the secret memory");onComplete?.()}else{setMessage("Not quite—try the hint.");playSound("incorrect")}}
+  return <div className="emoji-decoder-play"><small>DECODE THE MEMORY</small><strong>{config.emojiClue||"☕ + 🌧 + ♡"}</strong>{hint&&<p>{config.emojiHint||"Think about where we hid from the rain."}</p>}<input value={answer} onChange={event=>setAnswer(event.target.value)} onKeyDown={event=>event.key==="Enter"&&check()} placeholder="Type your guess"/><div><button onClick={()=>setHint(true)}>Hint</button><button onClick={check}>Decode →</button></div><output>{message}</output></div>;
+}
+
+function HeartCatchPlay({config,onComplete,onReward}:{config:Record<string,string>;onComplete?:()=>void;onReward?:(reward:string)=>void}){
+  const target=Math.min(Math.max(Number(config.target)||6,3),10);const [caught,setCaught]=useState(0);
+  const left=8+(caught*37)%78;const top=12+(caught*53)%64;
+  function catchHeart(){const next=caught+1;setCaught(next);playSound("tile");if(next>=target){playSound("win");onReward?.(config.prize||"A pocketful of kisses");onComplete?.()}}
+  return <div className={`heart-catch-play ${caught>=target?"finished":""}`}><header><span>{caught}/{target}</span><strong>{caught>=target?"Prize unlocked!":"Catch every heart"}</strong></header>{caught<target?<div className="heart-catch-stage"><button style={{left:`${left}%`,top:`${top}%`}} onClick={catchHeart} aria-label="Catch this heart">♥</button><i/><i/><i/></div>:<div className="heart-catch-prize"><span>♡</span><strong>{config.prize||"A pocketful of kisses"}</strong></div>}</div>;
 }
 
 function QuizPlay({config,onComplete,onReward}:{config:Record<string,string>;onComplete?:()=>void;onReward?:(reward:string)=>void}){
