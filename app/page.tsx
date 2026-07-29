@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { LandingShowcase } from "./LandingShowcase";
 import { BuilderLivePreview } from "./BuilderLivePreview";
+import { BlockCustomization } from "./BlockCustomization";
 
 type Block = {
   id: string;
@@ -12,6 +13,7 @@ type Block = {
   price: number;
   color: string;
   message: string;
+  config?: Record<string, string>;
 };
 
 const activities: Block[] = [
@@ -35,6 +37,24 @@ const bundles = [
 ];
 
 const recipients = ["Lover", "Friend", "Parents", "Sibling", "Other"];
+
+const blockDefaults: Record<string, Record<string, string>> = {
+  letter: { signoff: "— sent with love", animation: "Lift and unfold" },
+  voice: { audioName: "", playbackStyle: "Classic waveform" },
+  flowers: { flowerStyle: "Blush tulips", flowerNote: "These flowers will never fade.", fallAnimation: "Soft petals" },
+  quiz: { question: "Where did we first meet?", answer1: "At our favourite café", answer2: "I forgot", interaction: "Wrong answer floats away" },
+  wheel: { prizes: "Breakfast in bed\nMovie night\nMystery date\nA long hug\nYour choice\nSweet treat", spins: "1", revealAnimation: "Confetti burst" },
+  puzzle: { imageUrl: "/mypookie-puzzle-picnic.png", imageName: "", difficulty: "3 × 3 · Sweet and simple", successMessage: "You put this memory back together." },
+  memory: { imageUrl: "/mypookie-letter-photo.png", imageName: "", caption: "The fair lights & us", date: "Our favourite evening" },
+  scratch: { revealText: "A candlelit dinner ♡", revealDetail: "Friday · 8:00 PM", coating: "Lilac shimmer" },
+  treasure: { clues: "Start where we first said hello.\nLook beside your favourite photo.\nYour surprise is waiting at our café.", finalSurprise: "A mystery date for us" },
+  calendar: { days: "7", unlockRule: "One per day", firstNote: "Day one: a reason I adore you" },
+  gift: { brand: "Custom gift", code: "POOKIE-LOVE-24", value: "₹1,000", giftMessage: "Choose something that makes you smile." },
+};
+
+function createBlock(item: Block): Block {
+  return { ...item, config: { ...(blockDefaults[item.id] || {}) } };
+}
 
 export default function Home() {
   const [screen, setScreen] = useState<"welcome" | "catalog" | "builder" | "preview">("welcome");
@@ -64,7 +84,7 @@ export default function Home() {
   }, []);
 
   function useBundle(ids: string[]) {
-    setSelected(ids.map(id => activities.find(a => a.id === id)!).filter(Boolean));
+    setSelected(ids.map(id => activities.find(a => a.id === id)).filter(Boolean).map(item => createBlock(item!)));
     setActive(0);
     setScreen("builder");
   }
@@ -75,7 +95,7 @@ export default function Home() {
       setActive(existingIndex);
       return;
     }
-    setSelected(current => [...current, { ...item }]);
+    setSelected(current => [...current, createBlock(item)]);
     setActive(selected.length);
   }
 
@@ -96,6 +116,10 @@ export default function Home() {
 
   function updateMessage(value: string) {
     setSelected(current => current.map((b, index) => index === active ? { ...b, message: value } : b));
+  }
+
+  function updateBlockConfig(key: string, value: string) {
+    setSelected(current => current.map((block, index) => index === active ? { ...block, config: { ...(block.config || {}), [key]: value } } : block));
   }
 
   function launchPreview() {
@@ -274,12 +298,7 @@ export default function Home() {
           <div className="customizer-head"><div className="section-kicker">CUSTOMIZE</div><span>{selected.length ? `${active+1} / ${selected.length}` : "0 / 0"}</span></div>
           {!activeBlock ? <div className="custom-empty"><span>✎</span><h3>Select an activity</h3><p>Choose a moment to personalize its words, behaviour and style.</p></div> : <>
             <div className="current-block"><i className={activeBlock.color}>{activeBlock.icon}</i><div><small>MOMENT {active+1}</small><h2>{activeBlock.name}</h2></div></div>
-            <label className="field">Welcome message<textarea rows={4} value={activeBlock.message} onChange={e=>updateMessage(e.target.value)} /><small>{activeBlock.message.length}/180</small></label>
-            {activeBlock.id === "quiz" && <><label className="field">Question<input defaultValue="Where did we first meet?" /></label><label className="field">Interaction<select defaultValue="floating"><option value="floating">Wrong answer floats away</option><option value="normal">Normal answers + score</option></select></label></>}
-            {activeBlock.id === "puzzle" && <><label className="upload">▧<strong>Choose a photo</strong><span>Upload from your gallery</span><input type="file" accept="image/*" /></label><label className="field">Difficulty<select><option>3 × 3 · Sweet and simple</option><option>4 × 4 · A little challenge</option><option>5 × 5 · Puzzle lover</option></select></label></>}
-            {activeBlock.id === "voice" && <button className="record">● Start recording <span>or upload audio</span></button>}
-            {activeBlock.id === "wheel" && <label className="field">Prize list<textarea rows={4} defaultValue={"Breakfast in bed\nMovie night\nMystery date"} /></label>}
-            {activeBlock.id === "flowers" && <label className="field">Flower style<select><option>Blush tulips</option><option>Wildflower garden</option><option>Classic red roses</option></select></label>}
+            <BlockCustomization key={activeBlock.id} block={activeBlock} onMessage={updateMessage} onConfig={updateBlockConfig} />
             <div className="style-row"><label className="field">Theme<select value={theme} onChange={e=>setTheme(e.target.value)}><option>Blush romance</option><option>Golden celebration</option><option>Midnight magic</option></select></label><label className="field">Ambience<select value={ambience} onChange={e=>setAmbience(e.target.value)}><option>Petals</option><option>Soft sparkles</option><option>None</option></select></label></div>
             <div className="customizer-live-note"><i /> You’re editing the live preview</div>
             <div className="next-row"><button disabled={active===0} onClick={()=>setActive(active-1)}>←</button><button onClick={()=>setActive(Math.min(active+1,selected.length-1))}>{active===selected.length-1?"Finish customization":"Save & customize next"} <span>→</span></button></div>
