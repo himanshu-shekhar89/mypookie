@@ -18,6 +18,12 @@ public class ExperienceResponseController {
  private final ExperienceResponseRepository responses;
  private final ObjectMapper json;
 
+ @GetMapping("/context")
+ public Map<String,String> context(@PathVariable String giftId){
+  var gift=gifts.findById(giftId).orElseThrow();
+  return Map.of("recipientName",gift.getRecipientName(),"occasion",gift.getOccasion(),"title",gift.getTitle());
+ }
+
  @GetMapping
  public List<ExperienceResponse> list(@PathVariable String giftId,@RequestParam String blockId){
   gifts.findById(giftId).orElseThrow();

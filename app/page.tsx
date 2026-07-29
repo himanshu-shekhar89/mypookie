@@ -5,6 +5,8 @@ import { LandingShowcase } from "./LandingShowcase";
 import { BuilderLivePreview } from "./BuilderLivePreview";
 import { BlockCustomization } from "./BlockCustomization";
 import { GroupContributionPage } from "./GroupContributionPage";
+import { CheckoutPage } from "./CheckoutPage";
+import { PublicGiftExperience } from "./PublicGiftExperience";
 
 type Block = {
   id: string;
@@ -104,8 +106,10 @@ function createBlock(item: Block): Block {
 
 export default function Home() {
   const browserReady=useSyncExternalStore(()=>()=>{},()=>true,()=>false);
-  const contributionGiftId=browserReady?new URLSearchParams(window.location.search).get("contribute"):null;
-  const [screen, setScreen] = useState<"welcome" | "catalog" | "builder" | "preview">("welcome");
+  const urlParams=browserReady?new URLSearchParams(window.location.search):null;
+  const contributionGiftId=urlParams?.get("contribute")||null;
+  const publicGiftToken=urlParams?.get("gift")||null;
+  const [screen, setScreen] = useState<"welcome" | "catalog" | "builder" | "preview" | "checkout">("welcome");
   const [recipient, setRecipient] = useState("Lover");
   const [name, setName] = useState("Ananya");
   const [occasion, setOccasion] = useState("Just because");
@@ -121,6 +125,10 @@ export default function Home() {
   const [currentTime, setCurrentTime] = useState("");
   const [occasionFx, setOccasionFx] = useState<string | null>(null);
   const [soundtrack, setSoundtrack] = useState({ enabled: false, templateId: "warm-sunset", audioUrl: "/music/warm-sunset.mp3", name: "Warm Sunset", startMode: "From the beginning", startBlockId: "", startSeconds: "0" });
+  const [revealAt,setRevealAt]=useState("");
+  const [signedIn,setSignedIn]=useState(false);
+  const [authOpen,setAuthOpen]=useState(false);
+  const [afterAuth,setAfterAuth]=useState<"save"|"checkout"|null>(null);
   const [completedSteps,setCompletedSteps]=useState<number[]>([]);
   const [wonItems,setWonItems]=useState<WonItem[]>([]);
   const [winsOpen,setWinsOpen]=useState(false);
@@ -204,7 +212,7 @@ export default function Home() {
     setScreen("preview");
   }
 
-  async function saveDraft() {
+  async function saveDraft():Promise<string|null> {
     setSaveState("saving");
     try {
       const api = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
@@ -216,7 +224,7 @@ export default function Home() {
         theme,
         ambience,
         blocksJson: JSON.stringify({ version: 2, blocks: selected, soundtrack }),
-        scheduledAt: null,
+        scheduledAt: revealAt ? new Date(revealAt).toISOString() : null,
       };
       const response = await fetch(`${api}/api/gifts${giftId ? `/${giftId}` : ""}`, {
         method: giftId ? "PUT" : "POST",
@@ -227,8 +235,40 @@ export default function Home() {
       const gift = await response.json();
       setGiftId(gift.id);
       setSaveState("saved");
+      return gift.id as string;
     } catch {
       setSaveState("offline");
+      return null;
+    }
+  }
+
+  function requestSignIn(action:"save"|"checkout"|null){
+    setAfterAuth(action);
+    setAuthOpen(true);
+  }
+
+  function finishSignIn(){
+    setSignedIn(true);
+    setAuthOpen(false);
+    if(afterAuth==="save")window.setTimeout(()=>void saveDraft(),0);
+    if(afterAuth==="checkout")window.setTimeout(()=>setScreen("checkout"),0);
+    setAfterAuth(null);
+  }
+
+  async function placeOrder(coupon:string){
+    const id=await saveDraft();
+    if(!id)return null;
+    try{
+      const api=process.env.NEXT_PUBLIC_API_URL||"http://localhost:8080";
+      const order=await fetch(`${api}/api/orders`,{method:"POST",headers:{"Content-Type":"application/json","X-Demo-User":"local-creator"},body:JSON.stringify({giftId:id,couponCode:coupon})});
+      if(!order.ok)throw new Error();
+      const publish=await fetch(`${api}/api/gifts/${id}/publish`,{method:"POST",headers:{"X-Demo-User":"local-creator"}});
+      if(!publish.ok)throw new Error();
+      const published=await publish.json();
+      return `${window.location.origin}/?gift=${published.shareToken}`;
+    }catch{
+      setSaveState("offline");
+      return null;
     }
   }
 
@@ -241,16 +281,20 @@ export default function Home() {
 
   if(!browserReady)return <main className="contribution-loading">♡</main>;
   if(contributionGiftId)return <GroupContributionPage giftId={contributionGiftId}/>;
+  if(publicGiftToken)return <PublicGiftExperience token={publicGiftToken}/>;
+
+  const signInPopup=authOpen?<SignInPopup onClose={()=>setAuthOpen(false)} onSignIn={finishSignIn}/>:null;
 
   if (screen === "welcome") {
     return (
       <main className="welcome-page">
+        {signInPopup}
         <div className="landing-motion" aria-hidden="true"><i/><i/><i/><span>♡</span><span>✦</span><span>✿</span></div>
         {occasionFx && <div className={`occasion-fx fx-${occasionFx}`} aria-live="polite"><div className="fx-icons">{occasionFx === "birthday" ? <><i>🎈</i><i>🎂</i><i>🎉</i><i>🎈</i><i>✨</i></> : occasionFx === "anniversary" ? <><i>♡</i><i>💐</i><i>💍</i><i>♡</i><i>✨</i></> : occasionFx === "friendship" ? <><i>🎊</i><i>📸</i><i>🥳</i><i>🎊</i><i>⭐</i></> : <><i>🌸</i><i>💌</i><i>✨</i><i>🌷</i><i>♡</i></>}</div><strong>{occasionFx === "birthday" ? "Make their birthday pop!" : occasionFx === "anniversary" ? "Celebrate every chapter." : occasionFx === "friendship" ? "For your favourite chaos." : "Because ordinary days deserve magic."}</strong></div>}
         <nav className="nav">
           <button className="brand" onClick={() => setScreen("welcome")}><span className="brand-heart">♥</span> mypookie.</button>
           <div className="nav-links"><a href="#how">How it works</a><a href="#ideas">Gift ideas</a><a href="#pricing">Pricing</a></div>
-          <button className="signin">Continue with Google <span>→</span></button>
+          <button className="signin" onClick={() => requestSignIn(null)}>{signedIn ? "Signed in ✓" : "Continue with Google"} <span>→</span></button>
         </nav>
         <section className="hero">
           <div className="hero-copy">
@@ -318,7 +362,8 @@ export default function Home() {
   if (screen === "catalog") {
     return (
       <main className="product-page">
-        <header className="app-header"><button className="brand" onClick={() => setScreen("welcome")}><span className="brand-heart">♥</span> mypookie.</button><div className="progress"><i className="done"/><i/><i/><span>Start</span></div><button className="avatar">H</button></header>
+        {signInPopup}
+        <header className="app-header"><button className="brand" onClick={() => setScreen("welcome")}><span className="brand-heart">♥</span> mypookie.</button><div className="progress"><i className="done"/><i/><i/><span>Start</span></div><button className="avatar" onClick={() => !signedIn && requestSignIn(null)}>{signedIn ? "H" : "♡"}</button></header>
         <section className="catalog-intro">
           <button className="back" onClick={() => setScreen("welcome")}>← Back</button>
           <div className="section-kicker">LET’S MAKE SOMETHING BEAUTIFUL</div>
@@ -333,6 +378,10 @@ export default function Home() {
         </section>
       </main>
     );
+  }
+
+  if (screen === "checkout") {
+    return <>{signInPopup}<CheckoutPage blocks={selected} name={name} occasion={occasion} subtotal={subtotal} revealAt={revealAt} onRevealAt={setRevealAt} onBack={() => setScreen("builder")} onPlaceOrder={placeOrder}/></>;
   }
 
   if (screen === "preview") {
@@ -365,7 +414,8 @@ export default function Home() {
 
   return (
     <main className="builder-page">
-      <header className="app-header builder-header"><div className="builder-brand-row"><button className="editor-back" onClick={() => setScreen("catalog")} aria-label="Go back to gift choices">← <span>Back</span></button><button className="brand" onClick={() => setScreen("welcome")}><span className="brand-heart">♥</span> mypookie.</button></div><div className="gift-title"><small>CREATING FOR</small><strong>{name || "Someone special"} <i>♡</i></strong></div><div className="header-actions"><button className="quiet" onClick={saveDraft}>{saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved ✓" : saveState === "offline" ? "Backend offline · Retry" : "Save draft"}</button><button className="preview-button" onClick={launchPreview}>Preview gift <span>▶</span></button></div></header>
+      {signInPopup}
+      <header className="app-header builder-header"><div className="builder-brand-row"><button className="editor-back" onClick={() => setScreen("catalog")} aria-label="Go back to gift choices">← <span>Back</span></button><button className="brand" onClick={() => setScreen("welcome")}><span className="brand-heart">♥</span> mypookie.</button></div><div className="gift-title"><small>CREATING FOR</small><strong>{name || "Someone special"} <i>♡</i></strong></div><div className="header-actions"><button className="quiet" onClick={() => signedIn ? void saveDraft() : requestSignIn("save")}>{saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved ✓" : saveState === "offline" ? "Backend offline · Retry" : "Save draft"}</button><button className="preview-button" onClick={launchPreview}>Preview gift <span>▶</span></button></div></header>
       <div className="builder-shell">
         <aside className="library">
           <div className="library-head"><div><div className="section-kicker">ACTIVITY LIBRARY</div><h2>Add a little magic</h2></div><span>{activities.length}</span></div>
@@ -399,9 +449,26 @@ export default function Home() {
           </>}
         </aside>
       </div>
-      <footer className="checkout-bar"><div><small>YOUR GIFT</small><strong>{selected.length} moments for {name}</strong></div><div className="price"><span>Live total</span><strong>₹{subtotal}</strong></div><button disabled={!selected.length} onClick={launchPreview}>Review & continue <span>→</span></button></footer>
+      <footer className="checkout-bar"><div><small>YOUR GIFT</small><strong>{selected.length} moments for {name}</strong></div><div className="price"><span>Live total</span><strong>₹{subtotal}</strong></div><button disabled={!selected.length} onClick={() => signedIn ? setScreen("checkout") : requestSignIn("checkout")}>Checkout & schedule <span>→</span></button></footer>
     </main>
   );
+}
+
+function SignInPopup({onClose,onSignIn}:{onClose:()=>void;onSignIn:()=>void}){
+  return <div className="signin-modal-backdrop" role="presentation" onMouseDown={event=>event.target===event.currentTarget&&onClose()}>
+    <section className="signin-modal" role="dialog" aria-modal="true" aria-labelledby="signin-title">
+      <button className="signin-modal-close" onClick={onClose} aria-label="Close sign in">×</button>
+      <div className="signin-modal-brand"><span>♥</span> mypookie.</div>
+      <span className="signin-modal-heart">♡</span>
+      <small>KEEP EVERY LITTLE DETAIL SAFE</small>
+      <h2 id="signin-title">Sign in to keep creating.</h2>
+      <p>Save drafts, return from any device, track recipient answers and see every group contribution in one place.</p>
+      <div className="signin-benefits"><span>✓ Drafts stay saved</span><span>✓ Responses are tracked</span><span>✓ Private links stay manageable</span></div>
+      <button className="provider-button google" onClick={onSignIn}><b>G</b> Continue with Google</button>
+      <button className="provider-button apple" onClick={onSignIn}><b>●</b> Continue with Apple</button>
+      <em>Demo sign-in is enabled while account providers are being connected.</em>
+    </section>
+  </div>;
 }
 
 type SoundtrackSettings = {
