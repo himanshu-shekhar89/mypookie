@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Gift Story Studio</title>
+  <style>
+    :root{--ink:#34252d;--muted:#826f78;--paper:#fffaf8;--rose:#ff6f91;--plum:#7f4b77;--line:#eadfe3;--shadow:0 18px 60px #70485c1c}
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;color:var(--ink);background:radial-gradient(circle at 10% 0,#ffe6ed,transparent 34%),linear-gradient(135deg,#fffaf7,#f9f1ff);min-height:100vh}
+    button,input,select{font:inherit}.app{display:grid;grid-template-columns:390px 1fr;min-height:100vh}.studio{padding:28px 24px;border-right:1px solid #ffffffaa;background:#fffaf8dd;backdrop-filter:blur(18px);overflow:auto}.eyebrow{font-size:11px;letter-spacing:.17em;text-transform:uppercase;color:var(--plum);font-weight:800}.studio h1{font-family:Georgia,serif;font-size:32px;line-height:1;margin:9px 0}.sub{color:var(--muted);line-height:1.5;font-size:14px}.section{margin-top:24px}.section-head{display:flex;align-items:end;justify-content:space-between;margin-bottom:10px}.section h2{font-size:14px;margin:0}.tiny{font-size:11px;color:var(--muted)}.block-list{display:grid;gap:8px}.block{display:grid;grid-template-columns:32px 1fr auto;align-items:center;gap:10px;padding:11px;border:1px solid var(--line);border-radius:14px;background:white;box-shadow:0 5px 16px #7f4b770d}.handle{cursor:grab;color:#b39da7;font-weight:900;letter-spacing:-2px}.block strong{font-size:13px;display:block}.block span{font-size:11px;color:var(--muted)}.moves{display:flex;gap:4px}.icon-btn{border:0;background:#f8f0f3;border-radius:8px;width:28px;height:28px;cursor:pointer;color:var(--plum)}.icon-btn:hover{background:#f1dfe6}.controls{display:grid;gap:12px}.control label{display:block;font-size:12px;font-weight:700;margin-bottom:6px}.control select,.control input[type=text]{width:100%;border:1px solid var(--line);background:white;border-radius:11px;padding:10px 11px;color:var(--ink)}.chips{display:flex;gap:7px;flex-wrap:wrap}.chip{border:1px solid var(--line);background:white;border-radius:99px;padding:8px 10px;font-size:12px;cursor:pointer}.chip.active{border-color:var(--rose);background:#fff0f4;color:#b63358}.animal-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.animal{border:1px solid var(--line);background:white;border-radius:13px;padding:9px 4px;text-align:center;cursor:pointer}.animal.active{outline:2px solid var(--rose);background:#fff1f5}.animal b{font-size:22px;display:block}.animal span{font-size:10px;color:var(--muted)}.total{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);margin-top:18px;padding-top:16px}.publish{width:100%;margin-top:12px;border:0;border-radius:13px;background:linear-gradient(135deg,var(--plum),var(--rose));color:white;padding:13px;font-weight:800;cursor:pointer;box-shadow:0 10px 24px #c84e7770}
+    .preview-wrap{padding:24px;display:grid;place-items:center}.device{width:min(100%,850px);height:calc(100vh - 48px);min-height:620px;background:var(--paper);border:9px solid #fff;outline:1px solid #eadce2;border-radius:32px;box-shadow:var(--shadow);overflow:auto;position:relative;scroll-behavior:smooth}.preview-top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:#fffaf8dd;backdrop-filter:blur(12px);border-bottom:1px solid #fff}.preview-top span{font-size:11px;font-weight:800;color:var(--plum);letter-spacing:.12em;text-transform:uppercase}.preview-top button{border:1px solid var(--line);border-radius:99px;padding:7px 10px;background:white;cursor:pointer;font-size:11px}.hero{min-height:560px;display:grid;place-items:center;text-align:center;padding:60px 24px;background:radial-gradient(circle,#fff 0,#fff4f7 45%,#f7efff 100%);position:relative}.hero .kicker{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--plum)}.hero h2{font:italic 54px/1 Georgia,serif;margin:18px 0 12px}.hero p{max-width:480px;color:var(--muted);line-height:1.7}.scroll-note{position:absolute;bottom:25px;font-size:11px;color:var(--muted)}.story-block{min-height:520px;padding:72px 8%;display:grid;align-items:center;position:relative;overflow:hidden;border-top:1px solid #f4e9ed}.story-block:nth-child(even){background:#fff}.story-block h3{font:38px/1.08 Georgia,serif;margin:0 0 12px}.story-block p{color:var(--muted);max-width:570px;line-height:1.65}.panel{padding:28px;background:#fff;border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);max-width:620px;width:100%;margin:auto;text-align:center}.wheel{width:220px;aspect-ratio:1;border-radius:50%;margin:24px auto;background:conic-gradient(#ff89a5 0 60deg,#ffd979 0 120deg,#a58ee7 0 180deg,#7fd9c4 0 240deg,#ffac76 0 300deg,#ff89a5 0);border:10px solid white;box-shadow:0 8px 34px #7f4b7733;display:grid;place-items:center;transition:transform 2.6s cubic-bezier(.12,.76,.17,1)}.wheel:after{content:"SPIN";display:grid;place-items:center;width:64px;aspect-ratio:1;border-radius:50%;background:#fff;color:var(--plum);font-size:12px;font-weight:900}.action{border:0;border-radius:99px;background:var(--ink);color:white;padding:11px 18px;font-weight:800;cursor:pointer}.scratch{height:150px;border-radius:18px;margin:20px 0;display:grid;place-items:center;background:repeating-linear-gradient(135deg,#c8bcc4 0 8px,#ded5da 8px 16px);color:white;font-weight:900;cursor:pointer;position:relative;overflow:hidden}.scratch.revealed{background:#fff0c7;color:#7d5330}.slots{display:flex;justify-content:center;gap:10px;margin:24px}.slot{width:72px;height:82px;border:2px solid var(--line);background:#fff;border-radius:14px;display:grid;place-items:center;font-size:40px}.answers{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-top:20px}.answer{border:1px solid var(--line);border-radius:13px;background:white;padding:12px;cursor:pointer}.answer.selected{background:#fff0f4;border-color:var(--rose)}.result{margin-top:17px;padding:14px;border-radius:14px;background:#f7f0fa;font-weight:800}.guide{position:fixed;z-index:30;bottom:28px;left:calc(390px + 30px);display:flex;align-items:flex-end;gap:9px;transition:transform .8s ease}.guide-bubble{background:white;border:1px solid var(--line);box-shadow:0 8px 28px #51354122;padding:10px 13px;border-radius:14px 14px 14px 3px;font-size:12px;max-width:210px}.guide-animal{font-size:50px;filter:drop-shadow(0 8px 8px #6d445333);animation:walk .7s ease-in-out infinite alternate}.petal{position:fixed;z-index:50;top:-40px;pointer-events:none;animation:fall linear forwards}@keyframes fall{to{transform:translate(var(--drift),110vh) rotate(620deg)}}@keyframes walk{to{transform:translateY(-6px) rotate(3deg)}}@keyframes pop{50%{transform:scale(1.13)}}.celebrate{animation:pop .6s ease 2}
+    @media(max-width:900px){.app{grid-template-columns:1fr}.studio{border-right:0}.preview-wrap{padding:12px}.device{height:760px}.guide{left:20px}.hero h2{font-size:42px}}
+  </style>
+  <style>
+    #guideAnimal.guide-animal{width:128px;height:150px;font-size:0;animation:none;filter:drop-shadow(0 12px 10px #6d445333);cursor:grab;touch-action:none}
+    #guideAnimal.guide-animal:active{cursor:grabbing}
+  </style>
+</head>
+<body>
+<main class="app">
+  <aside class="studio">
+    <div class="eyebrow">Gift experience builder</div>
+    <h1>Make it feel like them.</h1>
+    <p class="sub">Shape every moment, choose its order, then let your recipient experience the whole story in one continuous page.</p>
+
+    <section class="section">
+      <div class="section-head"><h2>Story sequence</h2><span class="tiny">Use arrows to reorder</span></div>
+      <div class="block-list" id="blockList"></div>
+    </section>
+
+    <section class="section controls">
+      <div class="section-head"><h2>Atmosphere</h2><span class="tiny">applies across the story</span></div>
+      <div class="control"><label>Flowers fall on</label><div class="chips" id="flowerScreens"><button class="chip active" data-screen="all">Every screen</button><button class="chip" data-screen="hero">Opening</button><button class="chip" data-screen="prizes">Prizes</button><button class="chip" data-screen="none">Off</button></div></div>
+      <div class="control"><label>Prize reveal animation</label><select id="animation"><option value="confetti">Confetti burst</option><option value="flowers">Flower shower</option><option value="hearts">Floating hearts</option><option value="sparkle">Golden sparkle</option></select></div>
+      <div class="control"><label>Compatibility interaction</label><select id="compatMode"><option value="normal">Normal answers</option><option value="floating">Playful floating choices</option></select></div>
+    </section>
+
+    <section class="section guide-config" hidden>
+      <div class="section-head"><h2>Your guide</h2><span class="tiny">Choose one</span></div>
+      <p class="sub">A little messenger from you who walks through the full experience.</p>
+      <div class="animal-grid" id="animals">
+        <button class="animal active" data-animal="🐱" data-name="Miso the cat" data-price="2"><b>🐱</b><span>Cat · $2</span></button>
+        <button class="animal" data-animal="🐶" data-name="Biscuit the dog" data-price="2"><b>🐶</b><span>Dog · $2</span></button>
+        <button class="animal" data-animal="🐻" data-name="Mochi the bear" data-price="3"><b>🐻</b><span>Bear · $3</span></button>
+        <button class="animal" data-animal="🐼" data-name="Bao the panda" data-price="4"><b>🐼</b><span>Panda · $4</span></button>
+      </div>
+      <div class="total"><span class="sub">Guide add-on</span><strong id="price">$2.00</strong></div>
+      <button class="publish" id="previewStory">Preview recipient experience →</button>
+    </section>
+  </aside>
+
+  <section class="preview-wrap">
+    <div class="device" id="device">
+      <div class="preview-top"><span>Recipient preview · live</span><button id="restart">↻ Restart story</button></div>
+      <section class="hero" data-id="hero"><div><div class="kicker">A little story from Alex</div><h2>For my favourite person</h2><p>I made this tiny corner of the internet just for you. Scroll slowly—there are a few surprises waiting.</p></div><div class="scroll-note">Scroll to begin ↓</div></section>
+      <div id="story"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+const blocks=[
+ {id:'message',title:'Love note',desc:'A message from the heart'},
+ {id:'wheel',title:'Spin wheel',desc:'A surprise picked by chance'},
+ {id:'scratch',title:'Scratch card',desc:'A hidden gift reveal'},
+ {id:'slots',title:'Lucky slots',desc:'Three-of-a-kind surprise'},
+ {id:'compat',title:'Compatibility',desc:'Answers compared together'}
+];
+let flowerScreen='all', reveal='confetti', compatMode='normal';
+const list=document.querySelector('#blockList'),story=document.querySelector('#story'),device=document.querySelector('#device');
+function renderList(){
+ list.innerHTML=blocks.map((b,i)=>`<div class="block"><div class="handle">⠿</div><div><strong>${b.title}</strong><span>${b.desc}</span></div><div class="moves"><button class="icon-btn" title="Customize" onclick="editBlock(${i})">✎</button><button class="icon-btn" onclick="move(${i},-1)" ${i===0?'disabled':''}>↑</button><button class="icon-btn" onclick="move(${i},1)" ${i===blocks.length-1?'disabled':''}>↓</button></div></div>`).join('');
+}
+window.move=(i,d)=>{const j=i+d;if(j<0||j>=blocks.length)return;[blocks[i],blocks[j]]=[blocks[j],blocks[i]];renderList();renderStory()}
+window.editBlock=i=>{const b=blocks[i],title=prompt('Name this moment',b.title);if(title===null)return;const desc=prompt('Add the recipient-facing line',b.desc);if(desc===null)return;b.title=title.trim()||b.title;b.desc=desc.trim()||b.desc;renderList();renderStory()}
+const templates={
+ message:b=>`<section class="story-block" data-id="message"><div><div class="eyebrow">${b.title}</div><h3>${b.desc}</h3><p>Thank you for the laughter, the voice notes, the spontaneous plans, and the quiet moments that somehow become my favourites.</p></div></section>`,
+ wheel:b=>`<section class="story-block" data-id="wheel"><div class="panel"><div class="eyebrow">${b.title}</div><h3>${b.desc}</h3><div class="wheel" id="wheel"></div><button class="action" onclick="spin()">Spin the wheel</button></div></section>`,
+ scratch:b=>`<section class="story-block" data-id="scratch"><div class="panel"><div class="eyebrow">${b.title}</div><h3>${b.desc}</h3><div class="scratch" id="scratch" onclick="scratch()">Scratch to reveal</div><span class="tiny">One tap simulates scratching in this preview</span></div></section>`,
+ slots:b=>`<section class="story-block" data-id="slots"><div class="panel"><div class="eyebrow">${b.title}</div><h3>${b.desc}</h3><div class="slots"><div class="slot">🍒</div><div class="slot">⭐</div><div class="slot">🎁</div></div><button class="action" onclick="slots()">Play slots</button></div></section>`,
+ compat:b=>`<section class="story-block" data-id="compat"><div class="panel"><div class="eyebrow">${b.title}</div><h3>${b.desc}</h3><p>The sender already chose “A cosy movie night.” Pick yours to compare.</p><div class="answers" id="answers"><button class="answer" onclick="answer(this,100)">A cosy movie night</button><button class="answer" onclick="answer(this,72)">Dinner somewhere new</button><button class="answer" onclick="answer(this,84)">A spontaneous road trip</button><button class="answer" onclick="answer(this,65)">Dancing until late</button></div><div class="result" id="compatResult">Choose an answer to reveal your score</div></div></section>`
+};
+function renderStory(){story.innerHTML=blocks.map(b=>templates[b.id](b)).join('');applyFloating()}
+function burst(kind=reveal){
+ const icons={confetti:['●','■','▲'],flowers:['🌸','🌼','🌺'],hearts:['♥','♡','💗'],sparkle:['✦','✧','✨']}[kind];
+ for(let i=0;i<32;i++){const p=document.createElement('div');p.className='petal';p.textContent=icons[i%icons.length];p.style.left=Math.random()*100+'vw';p.style.setProperty('--drift',(Math.random()*240-120)+'px');p.style.animationDuration=(2.2+Math.random()*2.2)+'s';p.style.color=['#ff6f91','#7f4b77','#f2b84b'][i%3];document.body.appendChild(p);setTimeout(()=>p.remove(),4500)}
+}
+window.spin=()=>{const w=document.querySelector('#wheel');w.style.transform=`rotate(${1440+Math.random()*320}deg)`;setTimeout(()=>{burst();guideSay('You won: breakfast in bed!')},2600)}
+window.scratch=()=>{const s=document.querySelector('#scratch');s.classList.add('revealed','celebrate');s.textContent='A surprise picnic for two 🧺';burst()}
+window.slots=()=>{const els=[...document.querySelectorAll('.slot')],seq=['🎁','⭐','💗','🍒'];let n=0;const timer=setInterval(()=>{els.forEach((e,i)=>e.textContent=seq[(n+i)%seq.length]);if(++n>12){clearInterval(timer);els.forEach(e=>e.textContent='🎁');burst();guideSay('Jackpot! A mystery date is yours.')}},90)}
+window.answer=(el,score)=>{document.querySelectorAll('.answer').forEach(x=>x.classList.remove('selected'));el.classList.add('selected');document.querySelector('#compatResult').textContent=`${score}% match · ${score===100?'You chose exactly the same!':'Different pick, still a brilliant pair.'}`;burst(score===100?'hearts':'sparkle')}
+function applyFloating(){const a=document.querySelector('#answers');if(!a)return;a.querySelectorAll('.answer').forEach((b,i)=>{b.style.transform=compatMode==='floating'?`translate(${i%2?10:-8}px,${i%3?6:-5}px) rotate(${i%2?1:-1}deg)`:'';b.style.animation=compatMode==='floating'?`walk ${1+i*.12}s ease-in-out infinite alternate`:''})}
+document.querySelector('#flowerScreens').onclick=e=>{if(!e.target.dataset.screen)return;flowerScreen=e.target.dataset.screen;document.querySelectorAll('#flowerScreens .chip').forEach(x=>x.classList.toggle('active',x===e.target));if(flowerScreen!=='none')burst('flowers')}
+document.querySelector('#animation').onchange=e=>reveal=e.target.value;
+document.querySelector('#compatMode').onchange=e=>{compatMode=e.target.value;applyFloating()}
+document.querySelector('#animals').onclick=e=>{const a=e.target.closest('.animal');if(!a)return;document.querySelectorAll('.animal').forEach(x=>x.classList.remove('active'));a.classList.add('active');window.setGuideSpecies?.({ '🐱':'cat','🐶':'dog','🐻':'bear','🐼':'panda' }[a.dataset.animal]);document.querySelector('#price').textContent=`$${Number(a.dataset.price).toFixed(2)}`;guideSay(`I’m ${a.dataset.name}. I’ll be your guide!`)}
+function guideSay(t){const bubble=document.querySelector('#guideBubble');if(bubble)bubble.textContent=t}
+let lastSection='';
+device.addEventListener('scroll',()=>{const sections=[...device.querySelectorAll('[data-id]')];const current=sections.reduce((best,s)=>Math.abs(s.getBoundingClientRect().top-device.getBoundingClientRect().top)<Math.abs(best.getBoundingClientRect().top-device.getBoundingClientRect().top)?s:best,sections[0]);if(current&&current.dataset.id!==lastSection){lastSection=current.dataset.id;const messages={hero:'There’s more below—come with me!',message:'This part came straight from the heart.',wheel:'Give it a spin. I have a good feeling!',scratch:'A secret is waiting underneath.',slots:'Three gifts means maximum luck.',compat:'Let’s see how in-sync you are.'};guideSay(messages[lastSection]);if(flowerScreen==='all'||flowerScreen===lastSection||(flowerScreen==='prizes'&&['wheel','scratch','slots'].includes(lastSection)))burst('flowers')}})
+document.querySelector('#restart').onclick=()=>{device.scrollTo({top:0,behavior:'smooth'});renderStory();guideSay('Ready? Let’s experience it again!')}
+document.querySelector('#previewStory').onclick=()=>{device.scrollTo({top:0,behavior:'smooth'});burst('flowers');guideSay('Your story is ready. Scroll with me!')}
+renderList();renderStory();setInterval(()=>{if(flowerScreen==='all'&&Math.random()>.45)burst('flowers')},8000);
+</script>
+<script type="text/plain" data-disabled-feature="animal-guide">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
+const canvas=document.querySelector('#guideAnimal');
+const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setSize(128,150,false);
+const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(30,128/150,.1,100);
+camera.position.set(0,.7,6.8);
+scene.add(new THREE.HemisphereLight(0xfff6ee,0x8a6e92,3.1));
+const key=new THREE.DirectionalLight(0xffffff,4); key.position.set(3,5,4); scene.add(key);
+let animal,head,eyes=[],legs=[],tail,targetX=0,targetY=0,dragging=false,lastX=0;
+const mat=c=>new THREE.MeshStandardMaterial({color:c,roughness:.78});
+const ball=(x,y,z,sx,sy,sz,m,parent=animal)=>{const o=new THREE.Mesh(new THREE.SphereGeometry(1,24,18),m);o.position.set(x,y,z);o.scale.set(sx,sy,sz);parent.add(o);return o};
+const ear=(x,y,m)=>{const o=new THREE.Mesh(new THREE.ConeGeometry(1,1.5,4),m);o.position.set(x,y,0);o.scale.set(.28,.42,.2);o.rotation.z=Math.PI/4;animal.add(o)};
+function build(species='cat'){
+ if(animal)scene.remove(animal); eyes=[];legs=[];animal=new THREE.Group();scene.add(animal);
+ const palette={cat:[0xf2a766,0xffe0b7],dog:[0xc9844e,0x8b5538],bear:[0x9a6548,0xdab08e],panda:[0xf5f2ed,0x202126]}[species];
+ const fur=mat(palette[0]),accent=mat(palette[1]),dark=mat(0x252126),pink=mat(0xf28ca6);
+ ball(0,-.15,0,.9,1.05,.72,fur); head=ball(0,1.05,.04,.83,.76,.72,fur);
+ if(species==='cat'){ear(-.5,1.66,fur);ear(.5,1.66,fur)}
+ else{ball(-.55,1.55,0,.3,.31,.2,species==='panda'?dark:fur);ball(.55,1.55,0,.3,.31,.2,species==='panda'?dark:fur)}
+ if(species==='dog'){ball(-.68,1.28,0,.24,.55,.19,accent);ball(.68,1.28,0,.24,.55,.19,accent)}
+ if(species==='panda'){ball(-.31,1.18,.62,.25,.29,.08,dark,head);ball(.31,1.18,.62,.25,.29,.08,dark,head)}
+ [-.29,.29].forEach(x=>{eyes.push(ball(x,1.23,.68,.105,.13,.07,dark));ball(x+.025,1.27,.735,.025,.035,.02,mat(0xffffff))});
+ ball(0,.94,.73,.12,.09,.08,dark);ball(0,.77,.72,.1,.07,.05,pink);
+ [-.48,.48].forEach(x=>legs.push(ball(x,-1.08,.08,.28,.68,.28,species==='panda'?dark:fur)));
+ tail=ball(.78,-.36,-.32,species==='bear'||species==='panda'?.28:.16,species==='bear'||species==='panda'?.28:.7,.18,fur);
+ if(!['bear','panda'].includes(species))tail.rotation.z=-.65;
+ animal.scale.setScalar(.86); animal.position.y=-.15;
+}
+build(); window.setGuideSpecies=build;
+canvas.addEventListener('pointerdown',e=>{dragging=true;lastX=e.clientX;canvas.setPointerCapture(e.pointerId)});
+canvas.addEventListener('pointermove',e=>{const r=canvas.getBoundingClientRect();targetX=((e.clientX-r.left)/r.width-.5)*1.2;targetY=((e.clientY-r.top)/r.height-.5)*-.6;if(dragging){animal.rotation.y+= (e.clientX-lastX)*.025;lastX=e.clientX}});
+canvas.addEventListener('pointerup',()=>dragging=false);
+window.addEventListener('pointermove',e=>{if(!dragging){targetX=(e.clientX/innerWidth-.5)*.65;targetY=(e.clientY/innerHeight-.5)*-.25}});
+const start=performance.now();
+function animate(now){
+ const t=(now-start)/1000;
+ if(!dragging)animal.rotation.y+=(targetX-animal.rotation.y)*.07;
+ head.rotation.x+=(targetY-head.rotation.x)*.08;
+ animal.position.y=-.15+Math.sin(t*3.8)*.045;
+ legs.forEach((l,i)=>l.rotation.x=Math.sin(t*7+i*Math.PI)*.16);
+ tail.rotation.z+=((Math.sin(t*4)*.42)-tail.rotation.z)*.08;
+ const blink=Math.sin(t*.72)>.995?.08:1; eyes.forEach(e=>e.scale.y=blink);
+ renderer.render(scene,camera);requestAnimationFrame(animate);
+}
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
