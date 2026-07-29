@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { LandingShowcase } from "./LandingShowcase";
+import { BuilderLivePreview } from "./BuilderLivePreview";
 
 type Block = {
   id: string;
@@ -68,8 +69,20 @@ export default function Home() {
     setScreen("builder");
   }
 
-  function toggleActivity(item: Block) {
-    setSelected(current => current.some(x => x.id === item.id) ? current.filter(x => x.id !== item.id) : [...current, { ...item }]);
+  function selectActivity(item: Block) {
+    const existingIndex = selected.findIndex(x => x.id === item.id);
+    if (existingIndex >= 0) {
+      setActive(existingIndex);
+      return;
+    }
+    setSelected(current => [...current, { ...item }]);
+    setActive(selected.length);
+  }
+
+  function removeActiveBlock() {
+    if (!activeBlock) return;
+    setSelected(current => current.filter((_, index) => index !== active));
+    setActive(current => Math.max(0, Math.min(current, selected.length - 2)));
   }
 
   function move(index: number, direction: number) {
@@ -245,19 +258,17 @@ export default function Home() {
 
   return (
     <main className="builder-page">
-      <header className="app-header builder-header"><button className="brand" onClick={() => setScreen("welcome")}><span className="brand-heart">♥</span> mypookie.</button><div className="gift-title"><small>CREATING FOR</small><strong>{name || "Someone special"} <i>♡</i></strong></div><div className="header-actions"><button className="quiet" onClick={saveDraft}>{saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved ✓" : saveState === "offline" ? "Backend offline · Retry" : "Save draft"}</button><button className="preview-button" onClick={launchPreview}>Preview gift <span>▶</span></button></div></header>
+      <header className="app-header builder-header"><div className="builder-brand-row"><button className="editor-back" onClick={() => setScreen("catalog")} aria-label="Go back to gift choices">← <span>Back</span></button><button className="brand" onClick={() => setScreen("welcome")}><span className="brand-heart">♥</span> mypookie.</button></div><div className="gift-title"><small>CREATING FOR</small><strong>{name || "Someone special"} <i>♡</i></strong></div><div className="header-actions"><button className="quiet" onClick={saveDraft}>{saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved ✓" : saveState === "offline" ? "Backend offline · Retry" : "Save draft"}</button><button className="preview-button" onClick={launchPreview}>Preview gift <span>▶</span></button></div></header>
       <div className="builder-shell">
         <aside className="library">
           <div className="library-head"><div><div className="section-kicker">ACTIVITY LIBRARY</div><h2>Add a little magic</h2></div><span>{activities.length}</span></div>
-          <p>Tap an activity to add it. Every detail can be changed.</p>
-          <div className="activity-list">{activities.map(item => {const isSelected=selected.some(x=>x.id===item.id);return <button className={isSelected?"selected":""} key={item.id} onClick={()=>toggleActivity(item)}><i className={item.color}>{item.icon}</i><span><strong>{item.name}</strong><small>{item.description}</small></span><b>{isSelected?"✓":`₹${item.price}`}</b></button>})}</div>
+          <p>Choose a block to add it and try it live in the centre.</p>
+          <div className="activity-list">{activities.map(item => {const selectedIndex=selected.findIndex(x=>x.id===item.id);const isSelected=selectedIndex>=0;const isActive=isSelected&&active===selectedIndex;return <button className={`${isSelected?"selected":""} ${isActive?"active":""}`} key={item.id} onClick={()=>selectActivity(item)} aria-pressed={isActive}><i className={item.color}>{item.icon}</i><span><strong>{item.name}</strong><small>{item.description}</small></span><b>{isActive?"LIVE":isSelected?"✓":`₹${item.price}`}</b></button>})}</div>
         </aside>
-        <section className="sequence">
-          <div className="sequence-head"><div><div className="section-kicker">YOUR EXPERIENCE</div><h2>Arrange their journey</h2></div><span>{selected.length} moments</span></div>
-          <p>Use the handles or arrows to set the order they’ll experience everything.</p>
-          {selected.length === 0 ? <div className="empty-sequence"><span>✦</span><h3>Your story starts here</h3><p>Choose activities from the library, or return to pick a ready-made bundle.</p><button onClick={()=>setScreen("catalog")}>Explore bundles</button></div> :
-          <div className="sequence-list">{selected.map((item,index)=><article key={item.id} className={active===index?"active":""} onClick={()=>setActive(index)}><button className="drag" aria-label="Drag activity">⠿</button><i className={item.color}>{item.icon}</i><div><small>MOMENT {index+1}</small><strong>{item.name}</strong><span>{item.message}</span></div><div className="order-buttons"><button onClick={e=>{e.stopPropagation();move(index,-1)}} disabled={index===0}>↑</button><button onClick={e=>{e.stopPropagation();move(index,1)}} disabled={index===selected.length-1}>↓</button></div></article>)}</div>}
-          <button className="add-moment" onClick={()=>document.querySelector(".library")?.scrollIntoView({behavior:"smooth"})}>＋ Add another moment</button>
+        <section className="live-editor">
+          <div className="live-editor-head"><div><div className="section-kicker">LIVE RECIPIENT PREVIEW</div><h2>{activeBlock ? activeBlock.name : "Choose a block to begin"}</h2><p>{activeBlock ? "Play with it here. Changes from the right appear instantly." : "Select any activity from the library and its real interaction will appear here."}</p></div>{activeBlock && <span className="live-badge"><i /> Interactive</span>}</div>
+          {activeBlock ? <BuilderLivePreview key={activeBlock.id} block={activeBlock} name={name} theme={theme} ambience={ambience} /> : <div className="empty-live-preview"><div className="empty-live-orbit"><span>✦</span><i>♡</i><b>✿</b></div><h3>Your live preview will appear here</h3><p>Try the letter, wheel, puzzle, quiz and every other block before sending it.</p><button onClick={() => selectActivity(activities[0])}>Start with a personal letter →</button></div>}
+          {selected.length > 0 && <div className="journey-rail"><div className="journey-rail-head"><div><small>GIFT SEQUENCE</small><strong>{selected.length} moments for {name}</strong></div><span>Tap a block to edit it</span></div><div className="journey-chips">{selected.map((item,index)=><div className={`journey-chip ${active===index?"active":""}`} key={item.id}><button className="journey-select" onClick={()=>setActive(index)}><i className={item.color}>{item.icon}</i><span><small>{index+1}</small>{item.name}</span></button><div><button onClick={()=>move(index,-1)} disabled={index===0} aria-label={`Move ${item.name} earlier`}>←</button><button onClick={()=>move(index,1)} disabled={index===selected.length-1} aria-label={`Move ${item.name} later`}>→</button></div></div>)}</div></div>}
         </section>
         <aside className="customizer">
           <div className="customizer-head"><div className="section-kicker">CUSTOMIZE</div><span>{selected.length ? `${active+1} / ${selected.length}` : "0 / 0"}</span></div>
@@ -270,8 +281,9 @@ export default function Home() {
             {activeBlock.id === "wheel" && <label className="field">Prize list<textarea rows={4} defaultValue={"Breakfast in bed\nMovie night\nMystery date"} /></label>}
             {activeBlock.id === "flowers" && <label className="field">Flower style<select><option>Blush tulips</option><option>Wildflower garden</option><option>Classic red roses</option></select></label>}
             <div className="style-row"><label className="field">Theme<select value={theme} onChange={e=>setTheme(e.target.value)}><option>Blush romance</option><option>Golden celebration</option><option>Midnight magic</option></select></label><label className="field">Ambience<select value={ambience} onChange={e=>setAmbience(e.target.value)}><option>Petals</option><option>Soft sparkles</option><option>None</option></select></label></div>
-            <button className="block-preview" onClick={launchPreview}>▶ Preview this moment</button>
+            <div className="customizer-live-note"><i /> You’re editing the live preview</div>
             <div className="next-row"><button disabled={active===0} onClick={()=>setActive(active-1)}>←</button><button onClick={()=>setActive(Math.min(active+1,selected.length-1))}>{active===selected.length-1?"Finish customization":"Save & customize next"} <span>→</span></button></div>
+            <button className="remove-block" onClick={removeActiveBlock}>Remove this block</button>
           </>}
         </aside>
       </div>
