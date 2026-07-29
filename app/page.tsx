@@ -45,9 +45,9 @@ const blockDefaults: Record<string, Record<string, string>> = {
   quiz: { quizQuestions: JSON.stringify([{ id: "q1", question: "Where did we first meet?", options: [{ text: "At our favourite café", image: "" }, { text: "At a party", image: "" }, { text: "Online", image: "" }, { text: "I forgot", image: "" }], correctIndex: 0, interaction: "floating" }]) },
   wheel: { prizes: "Breakfast in bed\nMovie night\nMystery date\nA long hug\nSweet treat", spins: "1", resultMode: "Random", plannedResults: "Breakfast in bed", revealAnimation: "Confetti burst" },
   puzzle: { imageUrl: "/mypookie-puzzle-picnic.png", imageName: "", difficulty: "3 × 3 · Sweet and simple", successMessage: "You put this memory back together." },
-  memory: { memoryItems: "[]" },
+  memory: { memoryItems: "[]", coverImage: "/mypookie-letter-photo.png", coverCaption: "Our little book of us" },
   scratch: { revealText: "A candlelit dinner ♡", revealDetail: "Friday · 8:00 PM", coating: "Lilac shimmer" },
-  treasure: { treasureClues: JSON.stringify([{ clue: "Start where we first said hello.", hint: "Think about our first conversation.", answer: "cafe" }, { clue: "Find the place in our favourite photo.", hint: "It was outdoors.", answer: "picnic" }]), finalSurprise: "A mystery date for us" },
+  treasure: { treasureClues: JSON.stringify([{ clue: "Start where we first said hello.", hint: "Think about our first conversation.", answer: "cafe", photo: "", caption: "" }, { clue: "Find the place in our favourite photo.", hint: "It was outdoors.", answer: "picnic", photo: "", caption: "" }]), finalSurprise: "A mystery date for us" },
   calendar: { days: "7", unlockRule: "One per day", firstNote: "Day one: a reason I adore you" },
   gift: { brand: "Custom gift", code: "POOKIE-LOVE-24", value: "₹1,000", giftMessage: "Choose something that makes you smile.", interaction: "Flip to reveal", showCode: "true", showValue: "true", showNote: "true" },
 };
@@ -97,6 +97,26 @@ export default function Home() {
     }
     setSelected(current => [...current, createBlock(item)]);
     setActive(selected.length);
+  }
+
+  function setActivitySelected(item: Block, checked: boolean) {
+    const existingIndex = selected.findIndex(block => block.id === item.id);
+    if (checked) {
+      if (existingIndex >= 0) {
+        setActive(existingIndex);
+        return;
+      }
+      setSelected(current => [...current, createBlock(item)]);
+      setActive(selected.length);
+      return;
+    }
+    if (existingIndex < 0) return;
+    setSelected(current => current.filter(block => block.id !== item.id));
+    setActive(current => {
+      if (existingIndex < current) return current - 1;
+      if (existingIndex === current) return Math.max(0, Math.min(current, selected.length - 2));
+      return current;
+    });
   }
 
   function removeActiveBlock() {
@@ -282,7 +302,13 @@ export default function Home() {
         <aside className="library">
           <div className="library-head"><div><div className="section-kicker">ACTIVITY LIBRARY</div><h2>Add a little magic</h2></div><span>{activities.length}</span></div>
           <p>Choose a block to add it and try it live in the centre.</p>
-          <div className="activity-list">{activities.map(item => {const selectedIndex=selected.findIndex(x=>x.id===item.id);const isSelected=selectedIndex>=0;const isActive=isSelected&&active===selectedIndex;return <button className={`${isSelected?"selected":""} ${isActive?"active":""}`} key={item.id} onClick={()=>selectActivity(item)} aria-pressed={isActive}><i className={item.color}>{item.icon}</i><span><strong>{item.name}</strong><small>{item.description}</small></span><b>{isActive?"LIVE":isSelected?"✓":`₹${item.price}`}</b></button>})}</div>
+          <div className="activity-list">{activities.map(item => {const selectedIndex=selected.findIndex(x=>x.id===item.id);const isSelected=selectedIndex>=0;const isActive=isSelected&&active===selectedIndex;return <label className={`activity-choice ${isSelected?"selected":""} ${isActive?"active":""}`} key={item.id}>
+            <input type="checkbox" checked={isSelected} onChange={event=>setActivitySelected(item,event.target.checked)} aria-label={`${isSelected?"Remove":"Add"} ${item.name}`} />
+            <span className="activity-check" aria-hidden="true">{isSelected?"✓":""}</span>
+            <i className={item.color}>{item.icon}</i>
+            <span className="activity-copy"><strong>{item.name}</strong><small>{item.description}</small></span>
+            <b>{isActive?"LIVE":isSelected?"SELECTED":`₹${item.price}`}</b>
+          </label>})}</div>
         </aside>
         <section className="live-editor">
           <div className="live-editor-head"><div><div className="section-kicker">LIVE RECIPIENT PREVIEW</div><h2>{activeBlock ? activeBlock.name : "Choose a block to begin"}</h2><p>{activeBlock ? "Play with it here. Changes from the right appear instantly." : "Select any activity from the library and its real interaction will appear here."}</p></div>{activeBlock && <span className="live-badge"><i /> Interactive</span>}</div>

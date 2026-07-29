@@ -91,7 +91,7 @@ export function BlockCustomization({ block, onMessage, onConfig }: { block: Cust
 
 type QuizQuestion = { id: string; question: string; options: { text: string; image: string }[]; correctIndex: number; interaction: "floating" | "normal" };
 type MemoryItem = { id: string; image: string; caption: string };
-type TreasureClue = { clue: string; hint: string; answer: string };
+type TreasureClue = { clue: string; hint: string; answer: string; photo?: string; caption?: string };
 
 function safeParse<T>(value: string | undefined, fallback: T): T {
   try { return value ? JSON.parse(value) as T : fallback; } catch { return fallback; }
@@ -121,7 +121,11 @@ function QuizEditor({ config, onConfig }: { config: Record<string,string>; onCon
       const response=await fetch(`${api}/api/ai/quiz-suggestions`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({relationship:"two people who care deeply about each other",tone:"playful, romantic and sweet"})});
       if(!response.ok) throw new Error();
       const data=await response.json();
-      const generated:QuizQuestion[]=(data.questions||[]).map((item:{question?:string;options?:string[];correctIndex?:number;interaction?:string},index:number)=>({id:`ai-${Date.now()}-${index}`,question:item.question||"A lovely question",options:(item.options||[]).slice(0,4).map(text=>({text,image:""})),correctIndex:Math.min(Math.max(item.correctIndex||0,0),3),interaction:item.interaction==="normal"?"normal":"floating"}));
+      const generated:QuizQuestion[]=(data.questions||[]).map((item:{question?:string;options?:string[];correctIndex?:number;interaction?:string},index:number)=>{
+        const options=(item.options||[]).slice(0,4).map(text=>({text,image:""}));
+        while(options.length<2)options.push({text:"Another lovely answer",image:""});
+        return {id:`ai-${Date.now()}-${index}`,question:item.question||"A lovely question",options,correctIndex:Math.min(Math.max(item.correctIndex||0,0),options.length-1),interaction:item.interaction==="normal"?"normal":"floating"};
+      });
       update([...questions,...generated].slice(0,7));
       setAiState("idle");
     } catch { setAiState("error"); }
@@ -134,7 +138,15 @@ function QuizEditor({ config, onConfig }: { config: Record<string,string>; onCon
     patchQuestion(questionIndex,{options});
   }
 
-  return <CustomizationSection title="Playful quiz" hint="Up to 7 questions · 4 options each">
+  function removeOption(questionIndex:number,optionIndex:number){
+    const question=questions[questionIndex];
+    if(question.options.length<=2)return;
+    const options=question.options.filter((_,index)=>index!==optionIndex);
+    const correctIndex=question.correctIndex===optionIndex?0:question.correctIndex>optionIndex?question.correctIndex-1:question.correctIndex;
+    patchQuestion(questionIndex,{options,correctIndex});
+  }
+
+  return <CustomizationSection title="Playful quiz" hint="Up to 7 questions · 2 to 4 options each">
     <div className="quiz-editor-toolbar"><span>{questions.length}/7 questions</span><button onClick={askAi} disabled={aiState==="loading" || questions.length>=7}>{aiState==="loading"?"Dreaming up questions…":"✦ Ask AI"}</button></div>
     {aiState==="error"&&<div className="ai-error">AI is taking a little break. Try again in a moment.</div>}
     <div className="question-editor-list">{questions.map((question,qIndex)=><article key={question.id}>
@@ -144,7 +156,9 @@ function QuizEditor({ config, onConfig }: { config: Record<string,string>; onCon
         <button className={question.correctIndex===oIndex?"correct":""} onClick={()=>patchQuestion(qIndex,{correctIndex:oIndex})} title="Mark as desired answer">{question.correctIndex===oIndex?"✓":"○"}</button>
         {option.image?<img src={option.image} alt="Option"/>:<label title="Add image">＋<input type="file" accept="image/*" onChange={event=>optionImage(qIndex,oIndex,event.target.files)}/></label>}
         <input maxLength={55} value={option.text} onChange={event=>{const options=question.options.map((item,index)=>index===oIndex?{...item,text:event.target.value}:item);patchQuestion(qIndex,{options})}} placeholder={`Option ${oIndex+1}`}/>
+        <button className="remove-option" onClick={()=>removeOption(qIndex,oIndex)} disabled={question.options.length<=2} title="Remove this option">×</button>
       </div>)}</div>
+      <button className="add-option" disabled={question.options.length>=4} onClick={()=>patchQuestion(qIndex,{options:[...question.options,{text:"",image:""}]})}>＋ Add option <span>{question.options.length}/4</span></button>
       <label className="field">This question’s interaction<select value={question.interaction} onChange={event=>patchQuestion(qIndex,{interaction:event.target.value as "floating"|"normal"})}><option value="floating">Wrong answers run away</option><option value="normal">Normal answers + score</option></select></label>
     </article>)}</div>
     <button className="add-collection-item" disabled={questions.length>=7} onClick={()=>update([...questions,{id:`q-${Date.now()}`,question:"",options:Array.from({length:4},()=>({text:"",image:""})),correctIndex:0,interaction:"normal"}])}>＋ Add another question</button>
@@ -152,12 +166,20 @@ function QuizEditor({ config, onConfig }: { config: Record<string,string>; onCon
 }
 
 function WheelEditor({ config, onConfig }: { config: Record<string,string>; onConfig:(key:string,value:string)=>void }) {
-  const prizeCount=(config.prizes||"").split("\n").filter(Boolean).length;
+  const prizes=(config.prizes||"").split("\n").map(item=>item.trim()).filter(Boolean).slice(0,5);
+  const prizeCount=prizes.length;
+  const spinCount=Math.min(Number(config.spins)||1,6);
+  const planned=(config.plannedResults||"").split("\n");
+  function setPlannedResult(index:number,value:string){
+    const next=Array.from({length:spinCount},(_,spinIndex)=>planned[spinIndex]||prizes[0]||"");
+    next[index]=value;
+    onConfig("plannedResults",next.join("\n"));
+  }
   return <CustomizationSection title="Spin wheel rules" hint="Up to 5 options and 6 planned spins">
     <label className="field">Wheel options<textarea rows={5} value={config.prizes||""} onChange={event=>onConfig("prizes",event.target.value.split("\n").slice(0,5).join("\n"))}/><small>{prizeCount}/5</small></label>
     <label className="field">Number of spins<select value={config.spins} onChange={event=>onConfig("spins",event.target.value)}>{[1,2,3,4,5,6].map(value=><option key={value}>{value}</option>)}</select></label>
     <label className="field">Results<select value={config.resultMode} onChange={event=>onConfig("resultMode",event.target.value)}><option>Random</option><option>Plan every spin</option></select></label>
-    {config.resultMode==="Plan every spin"&&<label className="field">Result of each spin<textarea rows={5} value={config.plannedResults||""} onChange={event=>onConfig("plannedResults",event.target.value.split("\n").slice(0,Number(config.spins)||1).join("\n"))} placeholder="One exact wheel option per spin"/><small>{(config.plannedResults||"").split("\n").filter(Boolean).length}/{config.spins}</small></label>}
+    {config.resultMode==="Plan every spin"&&<div className="planned-spin-results"><strong>Select each outcome</strong>{Array.from({length:spinCount},(_,index)=><label key={index}>Spin {index+1}<select value={prizes.includes(planned[index])?planned[index]:""} onChange={event=>setPlannedResult(index,event.target.value)} disabled={!prizes.length}><option value="" disabled>Choose a wheel option</option>{prizes.map(prize=><option key={prize}>{prize}</option>)}</select></label>)}</div>}
     <label className="field">Reveal animation<select value={config.revealAnimation} onChange={event=>onConfig("revealAnimation",event.target.value)}><option>Confetti burst</option><option>Petal shower</option><option>Golden glow</option></select></label>
   </CustomizationSection>;
 }
@@ -165,9 +187,12 @@ function WheelEditor({ config, onConfig }: { config: Record<string,string>; onCo
 function MemoryEditor({ config, onConfig }: { config: Record<string,string>; onConfig:(key:string,value:string)=>void }) {
   const items=safeParse<MemoryItem[]>(config.memoryItems,[]);
   async function add(files:FileList|null){if(!files)return;const added=await Promise.all(Array.from(files).slice(0,12).map(async(file,index)=>({id:`memory-${Date.now()}-${index}`,image:await imageToDataUrl(file),caption:file.name.replace(/\.[^.]+$/,"")})));onConfig("memoryItems",JSON.stringify([...items,...added].slice(0,20)))}
+  async function cover(files:FileList|null){const file=files?.[0];if(file)onConfig("coverImage",await imageToDataUrl(file))}
   function caption(index:number,value:string){onConfig("memoryItems",JSON.stringify(items.map((item,i)=>i===index?{...item,caption:value}:item)))}
   return <CustomizationSection title="Memory book" hint="A cover followed by page-turning photo memories">
-    <div className="memory-cover-note"><img src="/mypookie-letter-photo.png" alt="Default memory book cover"/><div><strong>Default cover</strong><span>This always opens the memory lane.</span></div></div>
+    <div className="memory-cover-note"><img src={config.coverImage||"/mypookie-letter-photo.png"} alt="Memory book cover"/><div><strong>Your cover</strong><span>Shown first when the memory lane opens.</span></div></div>
+    <UploadBox label="Customize cover photo" note="The complete photo will stay visible" accept="image/*" onFiles={cover}/>
+    <label className="field">Cover caption<input maxLength={65} value={config.coverCaption||"Our little book of us"} onChange={event=>onConfig("coverCaption",event.target.value)}/></label>
     <UploadBox label="Add memory photos" note="Select several photos at once" accept="image/*" multiple onFiles={add}/>
     <div className="memory-item-editor">{items.map((item,index)=><article key={item.id}><img src={item.image} alt="Uploaded memory"/><label>Caption {index+1}<input maxLength={65} value={item.caption} onChange={event=>caption(index,event.target.value)}/></label><button onClick={()=>onConfig("memoryItems",JSON.stringify(items.filter((_,i)=>i!==index)))}>×</button></article>)}</div>
     {items.length===0&&<div className="collection-empty">Your uploaded pages will appear here.</div>}
@@ -175,11 +200,15 @@ function MemoryEditor({ config, onConfig }: { config: Record<string,string>; onC
 }
 
 function TreasureEditor({ config, onConfig }: { config: Record<string,string>; onConfig:(key:string,value:string)=>void }) {
-  const clues=safeParse<TreasureClue[]>(config.treasureClues,[{clue:"",hint:"",answer:""}]);
+  const clues=safeParse<TreasureClue[]>(config.treasureClues,[{clue:"",hint:"",answer:"",photo:"",caption:""}]);
   const patch=(index:number,key:keyof TreasureClue,value:string)=>onConfig("treasureClues",JSON.stringify(clues.map((item,i)=>i===index?{...item,[key]:value}:item)));
+  async function cluePhoto(index:number,files:FileList|null){const file=files?.[0];if(file)patch(index,"photo",await imageToDataUrl(file))}
   return <CustomizationSection title="Treasure hunt" hint="Each clue has an answer and optional hint">
-    <div className="treasure-editor-list">{clues.map((item,index)=><article key={index}><header><strong>Clue {index+1}</strong><button disabled={clues.length===1} onClick={()=>onConfig("treasureClues",JSON.stringify(clues.filter((_,i)=>i!==index)))}>Remove</button></header><label className="field">Clue<input maxLength={100} value={item.clue} onChange={event=>patch(index,"clue",event.target.value)}/></label><label className="field">Hint<input maxLength={80} value={item.hint} onChange={event=>patch(index,"hint",event.target.value)}/></label><label className="field">Accepted answer<input maxLength={45} value={item.answer} onChange={event=>patch(index,"answer",event.target.value)}/></label></article>)}</div>
-    <button className="add-collection-item" disabled={clues.length>=7} onClick={()=>onConfig("treasureClues",JSON.stringify([...clues,{clue:"",hint:"",answer:""}]))}>＋ Add clue</button>
+    <div className="treasure-editor-list">{clues.map((item,index)=><article key={index}><header><strong>Clue {index+1}</strong><button disabled={clues.length===1} onClick={()=>onConfig("treasureClues",JSON.stringify(clues.filter((_,i)=>i!==index)))}>Remove</button></header>
+      <label className="clue-photo-upload">{item.photo?<img src={item.photo} alt={`Clue ${index+1}`}/>:<span>＋</span>}<strong>{item.photo?"Change clue photo":"Add clue photo"}</strong><input type="file" accept="image/*" onChange={event=>cluePhoto(index,event.target.files)}/></label>
+      <label className="field">Photo caption<input maxLength={65} value={item.caption||""} onChange={event=>patch(index,"caption",event.target.value)}/></label>
+      <label className="field">Clue<input maxLength={100} value={item.clue} onChange={event=>patch(index,"clue",event.target.value)}/></label><label className="field">Hint<input maxLength={80} value={item.hint} onChange={event=>patch(index,"hint",event.target.value)}/></label><label className="field">Accepted answer<input maxLength={45} value={item.answer} onChange={event=>patch(index,"answer",event.target.value)}/></label></article>)}</div>
+    <button className="add-collection-item" disabled={clues.length>=7} onClick={()=>onConfig("treasureClues",JSON.stringify([...clues,{clue:"",hint:"",answer:"",photo:"",caption:""}]))}>＋ Add clue</button>
     <label className="field">Final reward<input maxLength={70} value={config.finalSurprise||""} onChange={event=>onConfig("finalSurprise",event.target.value)}/></label>
   </CustomizationSection>;
 }

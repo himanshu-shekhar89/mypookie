@@ -19,8 +19,6 @@ export function BuilderLivePreview({ block, name, theme, ambience, onInteract }:
   const [wheelResult, setWheelResult] = useState("Tap spin to test it");
   const [spinning, setSpinning] = useState(false);
   const [wheelSpinCount, setWheelSpinCount] = useState(0);
-  const [puzzle, setPuzzle] = useState([1, 0, 2, 3, 4, 5, 6, 7, 8]);
-  const [picked, setPicked] = useState<number | null>(null);
   const [calendar, setCalendar] = useState<number[]>([]);
   const config = block.config || {};
   const customWheelPrizes = (config.prizes || wheelPrizes.slice(0,5).join("\n")).split("\n").map(item => item.trim()).filter(Boolean).slice(0, 5);
@@ -50,26 +48,6 @@ export function BuilderLivePreview({ block, name, theme, ambience, onInteract }:
     }, 2600);
   }
 
-  function moveTile(index: number) {
-    if (picked === null) {
-      setPicked(index);
-      return;
-    }
-    const distance = Math.abs(Math.floor(picked / 3) - Math.floor(index / 3)) + Math.abs((picked % 3) - (index % 3));
-    if (distance !== 1) {
-      setPicked(null);
-      return;
-    }
-    setPuzzle(current => {
-      const next = [...current];
-      [next[picked], next[index]] = [next[index], next[picked]];
-      return next;
-    });
-    setPicked(null);
-  }
-
-  const solved = puzzle.every((tile, index) => tile === index);
-
   return (
     <div className={`builder-live-card live-theme-${theme.toLowerCase().replaceAll(" ", "-")}`}>
       {ambience === "Petals" && <div className="live-ambience petals" aria-hidden="true"><i>✿</i><i>·</i><i>✿</i><i>·</i><i>✿</i></div>}
@@ -84,9 +62,9 @@ export function BuilderLivePreview({ block, name, theme, ambience, onInteract }:
         {block.id === "flowers" && <EGiftPreview config={config} />}
         {block.id === "quiz" && <QuizPlay config={config} />}
         {block.id === "wheel" && <div className="live-wheel-scene"><div className="live-wheel-shell"><i className="live-wheel-pointer"/><div className="live-wheel" style={{transform:`rotate(${wheelRotation}deg)`,background:wheelGradient}}>{wheelOptions.map((prize,index)=><span key={`${prize}-${index}`} style={{transform:`rotate(${index*wheelSlice+wheelSlice/2}deg) translateY(-82px)`}}>{prize}</span>)}<b>♡</b></div></div><button onClick={spinWheel} disabled={spinning||wheelSpinCount>=(Number(config.spins)||1)}>{spinning?"Spinning…":wheelSpinCount>=(Number(config.spins)||1)?"No spins left":"Spin the wheel"}</button><output>{wheelResult} · {Math.max((Number(config.spins)||1)-wheelSpinCount,0)} left</output></div>}
-        {block.id === "puzzle" && <div className="live-puzzle"><div className="live-puzzle-reference"><img src={config.imageUrl || "/mypookie-puzzle-picnic.png"} alt="Completed puzzle reference"/><small>reference</small></div><div className={`live-puzzle-grid ${solved?"solved":""}`}>{puzzle.map((tile,index)=><button key={`${tile}-${index}`} className={picked===index?"picked":""} onClick={()=>moveTile(index)} style={{backgroundImage:`url('${config.imageUrl || "/mypookie-puzzle-picnic.png"}')`,backgroundPosition:`${(tile%3)*50}% ${Math.floor(tile/3)*50}%`}} aria-label={`Puzzle piece ${index+1}`}/>)}{solved&&<div className="live-puzzle-success">Perfect! ✦<small>{config.successMessage || "Memory restored"}</small></div>}</div></div>}
+        {block.id === "puzzle" && <PhotoPuzzlePlay key={`${config.difficulty}-${config.imageUrl}`} config={config} />}
         {block.id === "memory" && <MemoryBook config={config} />}
-        {block.id === "scratch" && <ScratchPreview revealText={config.revealText} revealDetail={config.revealDetail} />}
+        {block.id === "scratch" && <ScratchPreview revealText={config.revealText} revealDetail={config.revealDetail} coating={config.coating} />}
         {block.id === "treasure" && <TreasurePlay config={config} />}
         {block.id === "calendar" && <div className="live-calendar">{Array.from({length:Math.min(Number(config.days) || 7, 14)},(_,index)=><button key={index} className={calendar.includes(index)?"opened":""} onClick={()=>setCalendar(current=>current.includes(index)?current:[...current,index])}><span>{index+1}</span><b>{["♡","✦","🌸","💌","🎟️","🍫","🎁"][index%7]}</b></button>)}</div>}
         {block.id === "gift" && <GiftCardPlay config={config} />}
@@ -98,7 +76,7 @@ export function BuilderLivePreview({ block, name, theme, ambience, onInteract }:
 
 type QuizQuestion = { id:string; question:string; options:{text:string;image:string}[]; correctIndex:number; interaction:"floating"|"normal" };
 type MemoryItem = { id:string; image:string; caption:string };
-type TreasureClue = { clue:string; hint:string; answer:string };
+type TreasureClue = { clue:string; hint:string; answer:string; photo?:string; caption?:string };
 
 function parseJson<T>(value:string|undefined,fallback:T):T{try{return value?JSON.parse(value) as T:fallback}catch{return fallback}}
 
@@ -122,36 +100,82 @@ function QuizPlay({config}:{config:Record<string,string>}){
   const [index,setIndex]=useState(0);
   const [score,setScore]=useState(0);
   const [feedback,setFeedback]=useState("");
-  const [positions,setPositions]=useState([{x:2,y:5},{x:52,y:5},{x:2,y:55},{x:52,y:55}]);
-  if(index>=questions.length)return <div className="quiz-finished"><b>{score}/{questions.length}</b><strong>You know this story beautifully ♡</strong><button onClick={()=>{setIndex(0);setScore(0)}}>Play again</button></div>;
+  const [order,setOrder]=useState(()=>questions[0]?.options.map((_,optionIndex)=>optionIndex) || []);
+  const [escapedOption,setEscapedOption]=useState<number|null>(null);
+  if(index>=questions.length)return <div className="quiz-finished"><b>{score}/{questions.length}</b><strong>You know this story beautifully ♡</strong><button onClick={()=>{setIndex(0);setScore(0);setFeedback("");setOrder(questions[0]?.options.map((_,optionIndex)=>optionIndex)||[])}}>Play again</button></div>;
   const question=questions[index];
   if(!question)return <div className="quiz-finished">Add a question on the right.</div>;
-  function moveWrongAnswers(event:React.PointerEvent<HTMLDivElement>){
-    if(question.interaction!=="floating")return;
-    const rect=event.currentTarget.getBoundingClientRect();
-    const px=event.clientX-rect.left,py=event.clientY-rect.top;
-    setPositions(current=>current.map((position,optionIndex)=>{
-      if(optionIndex===question.correctIndex)return position;
-      const cx=rect.width*(position.x/100)+70,cy=rect.height*(position.y/100)+28;
-      if(Math.hypot(px-cx,py-cy)>125)return position;
-      const nx=px<rect.width/2?58:2;
-      const ny=py<rect.height/2?62:4;
-      return{x:Math.max(2,Math.min(65,nx+((optionIndex*13)%17))),y:Math.max(3,Math.min(70,ny+((optionIndex*9)%13)))};
-    }));
-  }
   function answer(optionIndex:number){
-    if(question.interaction==="floating"&&optionIndex!==question.correctIndex)return;
+    if(question.interaction==="floating"&&optionIndex!==question.correctIndex){
+      setFeedback("Almost! That answer slipped away ✦");
+      setEscapedOption(optionIndex);
+      setOrder(current=>{
+        const position=current.indexOf(optionIndex);
+        if(position<0||current.length<2)return current;
+        const next=[...current];
+        const destination=(position+1)%next.length;
+        [next[position],next[destination]]=[next[destination],next[position]];
+        return next;
+      });
+      window.setTimeout(()=>setEscapedOption(null),320);
+      return;
+    }
     const correct=optionIndex===question.correctIndex;
     setFeedback(correct?"Perfect — you got it! ♡":"Not quite, but that was cute.");
     if(correct)setScore(value=>value+1);
-    window.setTimeout(()=>{if(index<questions.length-1){setIndex(value=>value+1);setFeedback("");setPositions([{x:2,y:5},{x:52,y:5},{x:2,y:55},{x:52,y:55}])}else setIndex(questions.length)},700);
+    window.setTimeout(()=>{if(index<questions.length-1){const nextIndex=index+1;setIndex(nextIndex);setFeedback("");setOrder(questions[nextIndex].options.map((_,optionPosition)=>optionPosition))}else setIndex(questions.length)},700);
   }
-  return <div className="advanced-quiz"><div className="quiz-dots">{questions.map((_,dot)=><i key={dot} className={dot<index?"done":dot===index?"current":""}/>)}</div><strong>{question.question}</strong><div className="runaway-stage" onPointerMove={moveWrongAnswers}>{question.options.slice(0,4).map((option,optionIndex)=><button key={optionIndex} className={optionIndex===question.correctIndex?"desired":""} style={{left:`${positions[optionIndex]?.x||2}%`,top:`${positions[optionIndex]?.y||5}%`}} onClick={()=>answer(optionIndex)}>{option.image&&<img src={option.image} alt=""/>}<span>{option.text||`Option ${optionIndex+1}`}</span></button>)}</div><output>{feedback||`${index+1} of ${questions.length} · ${question.interaction==="floating"?"wrong answers run away":"normal scoring"}`}</output></div>;
+  const visibleOrder=[...order.filter(optionIndex=>optionIndex<question.options.length),...question.options.map((_,optionIndex)=>optionIndex).filter(optionIndex=>!order.includes(optionIndex))];
+  return <div className="advanced-quiz"><div className="quiz-dots">{questions.map((_,dot)=><i key={dot} className={dot<index?"done":dot===index?"current":""}/>)}</div><strong>{question.question}</strong><div className="runaway-stage">{visibleOrder.map(optionIndex=>{const option=question.options[optionIndex];return <button key={optionIndex} className={`${optionIndex===question.correctIndex?"desired":""} ${escapedOption===optionIndex?"escaped":""}`} onClick={()=>answer(optionIndex)}>{option.image&&<img src={option.image} alt=""/>}<span>{option.text||`Option ${optionIndex+1}`}</span></button>})}</div><output>{feedback||`${index+1} of ${questions.length} · ${question.interaction==="floating"?"wrong answers move only after a tap":"normal scoring"}`}</output></div>;
+}
+
+function shuffleTiles(size:number){
+  const values=Array.from({length:size*size},(_,index)=>index);
+  const random=new Uint32Array(values.length);
+  globalThis.crypto.getRandomValues(random);
+  for(let index=values.length-1;index>0;index--){
+    const swapIndex=random[index]%(index+1);
+    [values[index],values[swapIndex]]=[values[swapIndex],values[index]];
+  }
+  if(values.every((tile,index)=>tile===index))[values[0],values[1]]=[values[1],values[0]];
+  return values;
+}
+
+function PhotoPuzzlePlay({config}:{config:Record<string,string>}){
+  const size=Math.min(Math.max(Number(config.difficulty?.match(/\d+/)?.[0])||3,3),5);
+  const image=config.imageUrl||"/mypookie-puzzle-picnic.png";
+  const [tiles,setTiles]=useState<number[]>(()=>shuffleTiles(size));
+  const [picked,setPicked]=useState<number|null>(null);
+  const [phase,setPhase]=useState<"playing"|"perfect"|"photo">("playing");
+
+  const solved=tiles.length===size*size&&tiles.every((tile,index)=>tile===index);
+
+  function moveTile(index:number){
+    if(phase!=="playing")return;
+    if(picked===null){setPicked(index);return}
+    const distance=Math.abs(Math.floor(picked/size)-Math.floor(index/size))+Math.abs((picked%size)-(index%size));
+    if(distance===1){
+      const next=[...tiles];
+      [next[picked],next[index]]=[next[index],next[picked]];
+      setTiles(next);
+      if(next.every((tile,tileIndex)=>tile===tileIndex)){
+        setPhase("perfect");
+        window.setTimeout(()=>setPhase("photo"),900);
+      }
+    }
+    setPicked(null);
+  }
+
+  function reshuffle(){setTiles(shuffleTiles(size));setPicked(null);setPhase("playing")}
+
+  if(phase==="photo")return <div className="puzzle-complete-photo"><img src={image} alt="Completed puzzle"/><strong>Perfect! ✦</strong><span>{config.successMessage||"You put this memory back together."}</span><button onClick={reshuffle}>Play again</button></div>;
+
+  return <div className="live-puzzle"><div className="live-puzzle-reference"><img src={image} alt="Completed puzzle reference"/><small>reference · {size}×{size}</small></div><div><div className={`live-puzzle-grid ${solved?"solved":""}`} style={{gridTemplateColumns:`repeat(${size},1fr)`}}>{tiles.map((tile,index)=><button key={`${tile}-${index}`} className={picked===index?"picked":""} onClick={()=>moveTile(index)} style={{backgroundImage:`url("${image}")`,backgroundSize:`${size*100}% ${size*100}%`,backgroundPosition:`${(tile%size)*100/(size-1)}% ${Math.floor(tile/size)*100/(size-1)}%`}} aria-label={`Puzzle piece ${index+1}`}/>)}{phase==="perfect"&&<div className="live-puzzle-success">Perfect! ✦<small>{config.successMessage||"Memory restored"}</small></div>}</div><button className="puzzle-shuffle" onClick={reshuffle}>↻ Shuffle again</button></div></div>;
 }
 
 function MemoryBook({config}:{config:Record<string,string>}){
   const items=parseJson<MemoryItem[]>(config.memoryItems,[]);
-  const pages=[{id:"cover",image:"/mypookie-letter-photo.png",caption:"Our little book of us"},...items];
+  const pages=[{id:"cover",image:config.coverImage||"/mypookie-letter-photo.png",caption:config.coverCaption||"Our little book of us"},...items];
   const [page,setPage]=useState(0);
   const [turning,setTurning]=useState(false);
   function turn(direction:number){if(turning)return;setTurning(true);window.setTimeout(()=>{setPage(value=>(value+direction+pages.length)%pages.length);setTurning(false)},360)}
@@ -160,12 +184,12 @@ function MemoryBook({config}:{config:Record<string,string>}){
 }
 
 function TreasurePlay({config}:{config:Record<string,string>}){
-  const clues=parseJson<TreasureClue[]>(config.treasureClues,[{clue:"Start where we first said hello.",hint:"Think of our favourite café.",answer:"cafe"}]);
-  const [index,setIndex]=useState(0);const [answer,setAnswer]=useState("");const [message,setMessage]=useState("");const [showHint,setShowHint]=useState(false);
+  const clues=parseJson<TreasureClue[]>(config.treasureClues,[{clue:"Start where we first said hello.",hint:"Think of our favourite café.",answer:"cafe",photo:"",caption:""}]);
+  const [index,setIndex]=useState(0);const [answer,setAnswer]=useState("");const [message,setMessage]=useState("");const [showHint,setShowHint]=useState(false);const [stage,setStage]=useState<"clue"|"answer">("clue");
   const current=clues[index];
-  if(index>=clues.length)return <div className="treasure-winner"><span>🏆</span><strong>You found it!</strong><p>{config.finalSurprise||"A mystery date for us"}</p><button onClick={()=>{setIndex(0);setAnswer("");setMessage("")}}>Play again</button></div>;
-  function check(){const normalize=(value:string)=>value.trim().toLowerCase().replace(/[^a-z0-9]/g,"");if(normalize(answer)===normalize(current.answer)){setMessage("Correct! Next clue unlocked ✦");window.setTimeout(()=>{setIndex(value=>value+1);setAnswer("");setMessage("");setShowHint(false)},650)}else setMessage("Not yet — look again or use the hint.")}
-  return <div className="advanced-treasure"><div className="treasure-progress">{clues.map((_,dot)=><i key={dot} className={dot<index?"done":dot===index?"current":""}/>)}</div><small>CLUE {index+1}</small><strong>{current.clue}</strong>{showHint&&<p>Hint: {current.hint||"No hint for this one — you’ve got this!"}</p>}<input value={answer} onChange={event=>setAnswer(event.target.value)} onKeyDown={event=>event.key==="Enter"&&check()} placeholder="Type your answer"/><div><button onClick={()=>setShowHint(true)}>Show hint</button><button onClick={check}>Check answer →</button></div><output>{message}</output></div>;
+  if(index>=clues.length)return <div className="treasure-winner"><span>🏆</span><strong>You found it!</strong><p>{config.finalSurprise||"A mystery date for us"}</p><button onClick={()=>{setIndex(0);setAnswer("");setMessage("");setStage("clue")}}>Play again</button></div>;
+  function check(){const normalize=(value:string)=>value.trim().toLowerCase().replace(/[^a-z0-9]/g,"");if(normalize(answer)===normalize(current.answer)){setMessage("Correct! Next clue unlocked ✦");window.setTimeout(()=>{setIndex(value=>value+1);setAnswer("");setMessage("");setShowHint(false);setStage("clue")},650)}else setMessage("Not yet — look again or use the hint.")}
+  return <div className="advanced-treasure"><div className="treasure-progress">{clues.map((_,dot)=><i key={dot} className={dot<index?"done":dot===index?"current":""}/>)}</div><small>CLUE {index+1}</small>{stage==="clue"?<div className="treasure-clue-stage">{current.photo&&<figure><img src={current.photo} alt="A visual clue"/>{current.caption&&<figcaption>{current.caption}</figcaption>}</figure>}<strong>{current.clue}</strong><button onClick={()=>setStage("answer")}>Next · answer this clue →</button></div>:<div className="treasure-answer-stage"><strong>{current.clue}</strong>{showHint&&<p>Hint: {current.hint||"No hint for this one — you’ve got this!"}</p>}<input autoFocus value={answer} onChange={event=>setAnswer(event.target.value)} onKeyDown={event=>event.key==="Enter"&&check()} placeholder="Type your answer"/><div><button onClick={()=>setStage("clue")}>← Back to clue</button><button onClick={()=>setShowHint(true)}>Show hint</button><button onClick={check}>Check →</button></div><output>{message}</output></div>}</div>;
 }
 
 function GiftCardPlay({config}:{config:Record<string,string>}){
@@ -176,10 +200,7 @@ function GiftCardPlay({config}:{config:Record<string,string>}){
 }
 
 function GiftScratchCard({config}:{config:Record<string,string>}){
-  const canvasRef=useRef<HTMLCanvasElement>(null);const down=useRef(false);
-  useEffect(()=>{const canvas=canvasRef.current;if(!canvas)return;const rect=canvas.getBoundingClientRect();const ratio=Math.min(window.devicePixelRatio||1,2);canvas.width=rect.width*ratio;canvas.height=rect.height*ratio;const ctx=canvas.getContext("2d");if(!ctx)return;ctx.scale(ratio,ratio);const gradient=ctx.createLinearGradient(0,0,rect.width,rect.height);gradient.addColorStop(0,"#9b8cff");gradient.addColorStop(1,"#ff6f91");ctx.fillStyle=gradient;ctx.fillRect(0,0,rect.width,rect.height);ctx.fillStyle="#fff";ctx.font="800 11px Nunito";ctx.textAlign="center";ctx.fillText("SCRATCH TO OPEN YOUR GIFT",rect.width/2,rect.height/2)},[]);
-  function scratch(event:React.PointerEvent<HTMLCanvasElement>){if(!down.current&&event.type==="pointermove")return;const canvas=canvasRef.current;if(!canvas)return;const rect=canvas.getBoundingClientRect();const ctx=canvas.getContext("2d");if(!ctx)return;ctx.save();ctx.globalCompositeOperation="destination-out";ctx.beginPath();ctx.arc(event.clientX-rect.left,event.clientY-rect.top,25,0,Math.PI*2);ctx.fill();ctx.restore()}
-  return <div className="gift-scratch-card"><div><small>{config.showValue!=="false"?config.value:"MYPOOKIE. GIFT"}</small>{config.showCode!=="false"&&<strong>{config.code}</strong>}{config.showNote!=="false"&&<span>{config.giftMessage}</span>}</div><canvas ref={canvasRef} onPointerDown={event=>{down.current=true;event.currentTarget.setPointerCapture(event.pointerId);scratch(event)}} onPointerMove={scratch} onPointerUp={()=>down.current=false}/></div>;
+  return <div className="gift-scratch-card"><div><small>{config.showValue!=="false"?config.value:"MYPOOKIE. GIFT"}</small>{config.showCode!=="false"&&<strong>{config.code}</strong>}{config.showNote!=="false"&&<span>{config.giftMessage}</span>}</div><ScratchSurface label="SCRATCH TO OPEN YOUR GIFT" colors={["#9b8cff","#ff6f91"]}/></div>;
 }
 
 function VoicePreview({ audioUrl }: { audioUrl?: string }) {
@@ -195,9 +216,11 @@ function VoicePreview({ audioUrl }: { audioUrl?: string }) {
   return <div className={`live-voice ${playing?"playing":""}`}><button onClick={toggle}>{playing?"Ⅱ":"▶"}</button><div>{Array.from({length:22},(_,index)=><i key={index} style={{height:`${10+(index*7)%28}px`,animationDelay:`${index*.04}s`}}/>)}</div><span>{audioUrl ? playing?"Playing":"Ready" : "Record on the right"}</span>{audioUrl&&<audio ref={audioRef} src={audioUrl} onEnded={()=>setPlaying(false)}/>}</div>;
 }
 
-function ScratchPreview({ revealText, revealDetail }: { revealText?: string; revealDetail?: string }) {
+function ScratchSurface({label,colors}:{label:string;colors:string[]}){
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scratching = useRef(false);
+  const lastPoint = useRef<{x:number;y:number}|null>(null);
+  const [revealed,setRevealed]=useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -210,16 +233,16 @@ function ScratchPreview({ revealText, revealDetail }: { revealText?: string; rev
     if (!context) return;
     context.scale(ratio, ratio);
     const gradient = context.createLinearGradient(0, 0, rect.width, rect.height);
-    gradient.addColorStop(0, "#9b8cff");
-    gradient.addColorStop(.5, "#c9bfff");
-    gradient.addColorStop(1, "#ff6f91");
+    colors.forEach((color,index)=>gradient.addColorStop(index/Math.max(colors.length-1,1),color));
     context.fillStyle = gradient;
     context.fillRect(0, 0, rect.width, rect.height);
+    context.fillStyle = "rgba(255,255,255,.22)";
+    for(let x=-rect.height;x<rect.width;x+=22)context.fillRect(x,0,6,rect.height);
     context.fillStyle = "white";
     context.font = "800 12px Nunito";
     context.textAlign = "center";
-    context.fillText("SCRATCH HERE", rect.width / 2, rect.height / 2 + 4);
-  }, []);
+    context.fillText(label, rect.width / 2, rect.height / 2 + 4);
+  }, [colors,label]);
 
   function scratch(event: React.PointerEvent<HTMLCanvasElement>) {
     if (!scratching.current && event.type === "pointermove") return;
@@ -228,13 +251,40 @@ function ScratchPreview({ revealText, revealDetail }: { revealText?: string; rev
     const rect = canvas.getBoundingClientRect();
     const context = canvas.getContext("2d");
     if (!context) return;
+    const point={x:event.clientX-rect.left,y:event.clientY-rect.top};
     context.save();
     context.globalCompositeOperation = "destination-out";
+    context.lineWidth=48;
+    context.lineCap="round";
+    context.lineJoin="round";
     context.beginPath();
-    context.arc(event.clientX - rect.left, event.clientY - rect.top, 24, 0, Math.PI * 2);
-    context.fill();
+    if(lastPoint.current){context.moveTo(lastPoint.current.x,lastPoint.current.y);context.lineTo(point.x,point.y);context.stroke()}
+    else{context.arc(point.x,point.y,24,0,Math.PI*2);context.fill()}
     context.restore();
+    lastPoint.current=point;
   }
 
-  return <div className="live-scratch"><div><small>YOU UNLOCKED</small><strong>{revealText || "A candlelit dinner ♡"}</strong><span>{revealDetail || "Friday · 8:00 PM"}</span></div><canvas ref={canvasRef} onPointerDown={event=>{scratching.current=true;event.currentTarget.setPointerCapture(event.pointerId);scratch(event)}} onPointerMove={scratch} onPointerUp={()=>scratching.current=false} onPointerCancel={()=>scratching.current=false}/></div>;
+  function finish(event:React.PointerEvent<HTMLCanvasElement>){
+    scratching.current=false;
+    lastPoint.current=null;
+    if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId);
+    const canvas=canvasRef.current;
+    const context=canvas?.getContext("2d");
+    if(!canvas||!context)return;
+    const pixels=context.getImageData(0,0,canvas.width,canvas.height).data;
+    let clear=0,total=0;
+    for(let index=3;index<pixels.length;index+=80){total++;if(pixels[index]===0)clear++}
+    if(clear/Math.max(total,1)>.28)setRevealed(true);
+  }
+
+  return <canvas className={revealed?"scratch-revealed":""} ref={canvasRef} onPointerDown={event=>{scratching.current=true;lastPoint.current=null;event.currentTarget.setPointerCapture(event.pointerId);scratch(event)}} onPointerMove={scratch} onPointerUp={finish} onPointerCancel={finish}/>;
+}
+
+function ScratchPreview({ revealText, revealDetail, coating }: { revealText?: string; revealDetail?: string; coating?:string }) {
+  const palettes:Record<string,string[]>={
+    "Rose gold":["#b76e79","#efb8a8","#d98b99"],
+    "Silver sparkle":["#7d8492","#d8dce5","#9ea6b5"],
+    "Lilac shimmer":["#9b8cff","#c9bfff","#ff6f91"],
+  };
+  return <div className="live-scratch"><div><small>YOU UNLOCKED</small><strong>{revealText || "A candlelit dinner ♡"}</strong><span>{revealDetail || "Friday · 8:00 PM"}</span></div><ScratchSurface label="SCRATCH HERE" colors={palettes[coating||"Lilac shimmer"]||palettes["Lilac shimmer"]}/></div>;
 }
