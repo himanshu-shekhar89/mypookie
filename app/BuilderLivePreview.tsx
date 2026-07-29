@@ -19,7 +19,6 @@ export function BuilderLivePreview({ block, name, theme, ambience, onInteract }:
   const [wheelResult, setWheelResult] = useState("Tap spin to test it");
   const [spinning, setSpinning] = useState(false);
   const [wheelSpinCount, setWheelSpinCount] = useState(0);
-  const [calendar, setCalendar] = useState<number[]>([]);
   const config = block.config || {};
   const customWheelPrizes = (config.prizes || wheelPrizes.slice(0,5).join("\n")).split("\n").map(item => item.trim()).filter(Boolean).slice(0, 5);
   const wheelOptions = customWheelPrizes.length >= 2 ? customWheelPrizes : wheelPrizes.slice(0,5);
@@ -62,11 +61,12 @@ export function BuilderLivePreview({ block, name, theme, ambience, onInteract }:
         {block.id === "flowers" && <EGiftPreview config={config} />}
         {block.id === "quiz" && <QuizPlay config={config} />}
         {block.id === "wheel" && <div className="live-wheel-scene"><div className="live-wheel-shell"><i className="live-wheel-pointer"/><div className="live-wheel" style={{transform:`rotate(${wheelRotation}deg)`,background:wheelGradient}}>{wheelOptions.map((prize,index)=><span key={`${prize}-${index}`} style={{transform:`rotate(${index*wheelSlice+wheelSlice/2}deg) translateY(-82px)`}}>{prize}</span>)}<b>♡</b></div></div><button onClick={spinWheel} disabled={spinning||wheelSpinCount>=(Number(config.spins)||1)}>{spinning?"Spinning…":wheelSpinCount>=(Number(config.spins)||1)?"No spins left":"Spin the wheel"}</button><output>{wheelResult} · {Math.max((Number(config.spins)||1)-wheelSpinCount,0)} left</output></div>}
+        {block.id === "slots" && <SlotMachinePlay config={config} />}
         {block.id === "puzzle" && <PhotoPuzzlePlay key={`${config.difficulty}-${config.imageUrl}`} config={config} />}
         {block.id === "memory" && <MemoryBook config={config} />}
         {block.id === "scratch" && <ScratchPreview revealText={config.revealText} revealDetail={config.revealDetail} coating={config.coating} />}
         {block.id === "treasure" && <TreasurePlay config={config} />}
-        {block.id === "calendar" && <div className="live-calendar">{Array.from({length:Math.min(Number(config.days) || 7, 14)},(_,index)=><button key={index} className={calendar.includes(index)?"opened":""} onClick={()=>setCalendar(current=>current.includes(index)?current:[...current,index])}><span>{index+1}</span><b>{["♡","✦","🌸","💌","🎟️","🍫","🎁"][index%7]}</b></button>)}</div>}
+        {block.id === "calendar" && <CalendarPlay config={config} />}
         {block.id === "gift" && <GiftCardPlay config={config} />}
       </div>
       <div className="live-device-hint">This is what {name || "your recipient"} will interact with</div>
@@ -101,32 +101,62 @@ function QuizPlay({config}:{config:Record<string,string>}){
   const [score,setScore]=useState(0);
   const [feedback,setFeedback]=useState("");
   const [order,setOrder]=useState(()=>questions[0]?.options.map((_,optionIndex)=>optionIndex) || []);
-  const [escapedOption,setEscapedOption]=useState<number|null>(null);
+  const [offsets,setOffsets]=useState<Record<number,{x:number;y:number}>>({});
   if(index>=questions.length)return <div className="quiz-finished"><b>{score}/{questions.length}</b><strong>You know this story beautifully ♡</strong><button onClick={()=>{setIndex(0);setScore(0);setFeedback("");setOrder(questions[0]?.options.map((_,optionIndex)=>optionIndex)||[])}}>Play again</button></div>;
   const question=questions[index];
   if(!question)return <div className="quiz-finished">Add a question on the right.</div>;
+  function floatFromCursor(event:React.PointerEvent<HTMLDivElement>){
+    if(question.interaction!=="floating")return;
+    const pointer={x:event.clientX,y:event.clientY};
+    const next:Record<number,{x:number;y:number}>={};
+    event.currentTarget.querySelectorAll<HTMLButtonElement>("button[data-option]").forEach(button=>{
+      const optionIndex=Number(button.dataset.option);
+      if(optionIndex===question.correctIndex){next[optionIndex]={x:0,y:0};return}
+      const rect=button.getBoundingClientRect();
+      const dx=rect.left+rect.width/2-pointer.x;
+      const dy=rect.top+rect.height/2-pointer.y;
+      const distance=Math.max(Math.hypot(dx,dy),1);
+      if(distance<125){
+        const drift=Math.min(11,3+(125-distance)*.1);
+        next[optionIndex]={x:dx/distance*drift,y:dy/distance*drift};
+      }else next[optionIndex]={x:0,y:0};
+    });
+    setOffsets(next);
+  }
   function answer(optionIndex:number){
     if(question.interaction==="floating"&&optionIndex!==question.correctIndex){
-      setFeedback("Almost! That answer slipped away ✦");
-      setEscapedOption(optionIndex);
-      setOrder(current=>{
-        const position=current.indexOf(optionIndex);
-        if(position<0||current.length<2)return current;
-        const next=[...current];
-        const destination=(position+1)%next.length;
-        [next[position],next[destination]]=[next[destination],next[position]];
-        return next;
-      });
-      window.setTimeout(()=>setEscapedOption(null),320);
+      setFeedback("That answer is playing hard to catch ✦");
       return;
     }
     const correct=optionIndex===question.correctIndex;
     setFeedback(correct?"Perfect — you got it! ♡":"Not quite, but that was cute.");
     if(correct)setScore(value=>value+1);
-    window.setTimeout(()=>{if(index<questions.length-1){const nextIndex=index+1;setIndex(nextIndex);setFeedback("");setOrder(questions[nextIndex].options.map((_,optionPosition)=>optionPosition))}else setIndex(questions.length)},700);
+    window.setTimeout(()=>{if(index<questions.length-1){const nextIndex=index+1;setIndex(nextIndex);setFeedback("");setOffsets({});setOrder(questions[nextIndex].options.map((_,optionPosition)=>optionPosition))}else setIndex(questions.length)},700);
   }
   const visibleOrder=[...order.filter(optionIndex=>optionIndex<question.options.length),...question.options.map((_,optionIndex)=>optionIndex).filter(optionIndex=>!order.includes(optionIndex))];
-  return <div className="advanced-quiz"><div className="quiz-dots">{questions.map((_,dot)=><i key={dot} className={dot<index?"done":dot===index?"current":""}/>)}</div><strong>{question.question}</strong><div className="runaway-stage">{visibleOrder.map(optionIndex=>{const option=question.options[optionIndex];return <button key={optionIndex} className={`${optionIndex===question.correctIndex?"desired":""} ${escapedOption===optionIndex?"escaped":""}`} onClick={()=>answer(optionIndex)}>{option.image&&<img src={option.image} alt=""/>}<span>{option.text||`Option ${optionIndex+1}`}</span></button>})}</div><output>{feedback||`${index+1} of ${questions.length} · ${question.interaction==="floating"?"wrong answers move only after a tap":"normal scoring"}`}</output></div>;
+  return <div className="advanced-quiz"><div className="quiz-dots">{questions.map((_,dot)=><i key={dot} className={dot<index?"done":dot===index?"current":""}/>)}</div><strong>{question.question}</strong><div className="runaway-stage" onPointerMove={floatFromCursor} onPointerLeave={()=>setOffsets({})}>{visibleOrder.map(optionIndex=>{const option=question.options[optionIndex];const offset=offsets[optionIndex]||{x:0,y:0};return <button data-option={optionIndex} key={optionIndex} className={optionIndex===question.correctIndex?"desired":""} style={{transform:`translate(${offset.x}px,${offset.y}px)`}} onClick={()=>answer(optionIndex)}>{option.image&&<img src={option.image} alt=""/>}<span>{option.text||`Option ${optionIndex+1}`}</span></button>})}</div><output>{feedback||`${index+1} of ${questions.length} · ${question.interaction==="floating"?"wrong answers float away from the cursor":"normal scoring"}`}</output></div>;
+}
+
+function SlotMachinePlay({config}:{config:Record<string,string>}){
+  const prizes=(config.prizes||"Movie night\nBreakfast date\nA long hug\nSweet treat").split("\n").map(item=>item.trim()).filter(Boolean).slice(0,5);
+  const options=prizes.length?prizes:["A lovely surprise"];
+  const symbols=["♡","✦","🍓","🎁","🌙"];
+  const [reels,setReels]=useState([0,1,2]);
+  const [rolling,setRolling]=useState(false);
+  const [pulls,setPulls]=useState(0);
+  const [result,setResult]=useState("Pull the lever");
+  const maxPulls=Math.min(Number(config.pulls)||1,6);
+  function pull(){
+    if(rolling||pulls>=maxPulls)return;
+    const planned=(config.plannedResults||"").split("\n");
+    const plannedIndex=config.resultMode==="Plan every pull"?options.indexOf(planned[pulls]||""):-1;
+    const random=globalThis.crypto.getRandomValues(new Uint32Array(1))[0];
+    const winner=plannedIndex>=0?plannedIndex:random%options.length;
+    setRolling(true);setResult("The reels are spinning…");
+    const timer=window.setInterval(()=>setReels(Array.from({length:3},()=>globalThis.crypto.getRandomValues(new Uint32Array(1))[0]%options.length)),110);
+    window.setTimeout(()=>{window.clearInterval(timer);setReels([winner,winner,winner]);setPulls(value=>value+1);setResult(`Jackpot: ${options[winner]} ♡`);setRolling(false)},1350);
+  }
+  return <div className="live-slot-machine"><div className="slot-machine-rig"><div className={`slot-machine-reels ${rolling?"rolling":""}`}>{reels.map((reel,index)=><i key={index}>{symbols[reel%symbols.length]}</i>)}</div><button className={`slot-machine-lever ${rolling?"pulled":""}`} onClick={pull} disabled={rolling||pulls>=maxPulls} aria-label="Pull slot-machine lever"><b/><span/></button></div><output>{pulls>=maxPulls&&!rolling?`${result} · no pulls left`:`${result} · ${maxPulls-pulls} left`}</output></div>;
 }
 
 function shuffleTiles(size:number){
@@ -180,7 +210,7 @@ function MemoryBook({config}:{config:Record<string,string>}){
   const [turning,setTurning]=useState(false);
   function turn(direction:number){if(turning)return;setTurning(true);window.setTimeout(()=>{setPage(value=>(value+direction+pages.length)%pages.length);setTurning(false)},360)}
   const current=pages[page];
-  return <div className="memory-book"><div className={`memory-page ${turning?"turning":""}`}><div className="book-spine"/><img src={current.image} alt={page===0?"Memory book cover":"Uploaded memory"}/><div><small>{page===0?"MEMORY LANE":`PAGE ${page} OF ${items.length}`}</small><strong>{current.caption}</strong></div></div><div className="book-controls"><button onClick={()=>turn(-1)}>←</button><span>{page+1}/{pages.length} · turn the page</span><button onClick={()=>turn(1)}>→</button></div></div>;
+  return <div className="memory-book"><div className={`memory-page ${turning?"turning":""}`}><div className="spiral-binding" aria-hidden="true">{Array.from({length:10},(_,index)=><i key={index}/>)}</div><div className="book-spine"/><img src={current.image} alt={page===0?"Memory book cover":"Uploaded memory"}/><div><small>{page===0?"MEMORY LANE":`PAGE ${page} OF ${items.length}`}</small><strong>{current.caption}</strong></div></div><div className="book-controls"><button onClick={()=>turn(-1)}>←</button><span>{page+1}/{pages.length} · turn the page</span><button onClick={()=>turn(1)}>→</button></div></div>;
 }
 
 function TreasurePlay({config}:{config:Record<string,string>}){
@@ -190,6 +220,23 @@ function TreasurePlay({config}:{config:Record<string,string>}){
   if(index>=clues.length)return <div className="treasure-winner"><span>🏆</span><strong>You found it!</strong><p>{config.finalSurprise||"A mystery date for us"}</p><button onClick={()=>{setIndex(0);setAnswer("");setMessage("");setStage("clue")}}>Play again</button></div>;
   function check(){const normalize=(value:string)=>value.trim().toLowerCase().replace(/[^a-z0-9]/g,"");if(normalize(answer)===normalize(current.answer)){setMessage("Correct! Next clue unlocked ✦");window.setTimeout(()=>{setIndex(value=>value+1);setAnswer("");setMessage("");setShowHint(false);setStage("clue")},650)}else setMessage("Not yet — look again or use the hint.")}
   return <div className="advanced-treasure"><div className="treasure-progress">{clues.map((_,dot)=><i key={dot} className={dot<index?"done":dot===index?"current":""}/>)}</div><small>CLUE {index+1}</small>{stage==="clue"?<div className="treasure-clue-stage">{current.photo&&<figure><img src={current.photo} alt="A visual clue"/>{current.caption&&<figcaption>{current.caption}</figcaption>}</figure>}<strong>{current.clue}</strong><button onClick={()=>setStage("answer")}>Next · answer this clue →</button></div>:<div className="treasure-answer-stage"><strong>{current.clue}</strong>{showHint&&<p>Hint: {current.hint||"No hint for this one — you’ve got this!"}</p>}<input autoFocus value={answer} onChange={event=>setAnswer(event.target.value)} onKeyDown={event=>event.key==="Enter"&&check()} placeholder="Type your answer"/><div><button onClick={()=>setStage("clue")}>← Back to clue</button><button onClick={()=>setShowHint(true)}>Show hint</button><button onClick={check}>Check →</button></div><output>{message}</output></div>}</div>;
+}
+
+function CalendarPlay({config}:{config:Record<string,string>}){
+  const days=Math.min(Number(config.days)||7,30);
+  const defaults=["A reason I adore you","A favourite memory","A tiny promise","A photo that makes me smile","Your song of the day","A little challenge","Your final surprise"];
+  const stored=parseJson<string[]>(config.calendarNotes,defaults);
+  const notes=Array.from({length:days},(_,index)=>stored[index]||`A little surprise for day ${index+1}`);
+  const [opened,setOpened]=useState<number[]>([]);
+  const [selectedDay,setSelectedDay]=useState<number|null>(null);
+  const [today,setToday]=useState("");
+  useEffect(()=>{const refresh=()=>setToday(new Date().toISOString().slice(0,10));refresh()},[]);
+  const start=config.startDate?new Date(`${config.startDate}T00:00:00`):null;
+  const current=today?new Date(`${today}T00:00:00`):null;
+  const elapsed=start&&current?Math.floor((current.getTime()-start.getTime())/86400000)+1:1;
+  const available=config.unlockRule==="Recipient can open anytime"?days:Math.min(Math.max(elapsed,1),days);
+  function openDay(index:number){if(index>=available)return;setOpened(current=>current.includes(index)?current:[...current,index]);setSelectedDay(index)}
+  return <div className="calendar-experience"><header><span>▣</span><div><small>{config.unlockRule==="Recipient can open anytime"?"OPEN ANYTIME":"ONE NEW DOOR EACH DAY"}</small><strong>{available} of {days} {available===1?"day is":"days are"} ready</strong></div></header><p>{config.unlockRule==="Recipient can open anytime"?"Every surprise is available now. Tap any numbered door.":"Come back each day to unlock another note, memory or surprise."}</p><div className="calendar-doors">{notes.map((_,index)=><button key={index} className={`${opened.includes(index)?"opened":""} ${index>=available?"locked":""}`} onClick={()=>openDay(index)} aria-label={index>=available?`Day ${index+1} is locked`:`Open day ${index+1}`}><span>{index>=available?"⌾":index+1}</span><b>{opened.includes(index)?"♥":"✦"}</b></button>)}</div><div className={`calendar-reveal ${selectedDay===null?"empty":""}`}>{selectedDay===null?<><small>HOW IT WORKS</small><strong>Tap an available door to reveal today’s message.</strong></>:<><small>DAY {selectedDay+1}</small><strong>{notes[selectedDay]}</strong></>}</div></div>;
 }
 
 function GiftCardPlay({config}:{config:Record<string,string>}){

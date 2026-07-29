@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { LandingShowcase } from "./LandingShowcase";
 import { BuilderLivePreview } from "./BuilderLivePreview";
 import { BlockCustomization } from "./BlockCustomization";
@@ -22,6 +22,7 @@ const activities: Block[] = [
   { id: "flowers", icon: "✦", name: "E-gifts", description: "Full-screen flowers, fireworks and celebrations", price: 29, color: "pink", message: "A beautiful celebration, just for you." },
   { id: "quiz", icon: "?", name: "Playful quiz", description: "Normal or floating wrong answers", price: 49, color: "blue", message: "How well do you know us?" },
   { id: "wheel", icon: "◎", name: "Spin the wheel", description: "Custom prizes and limited spins", price: 49, color: "amber", message: "Let chance choose your surprise." },
+  { id: "slots", icon: "♛", name: "Slot machine", description: "Pull the lever to reveal a prize", price: 49, color: "red", message: "Pull the lever and let the reels decide." },
   { id: "puzzle", icon: "▦", name: "Photo puzzle", description: "Turn a memory into a 3×3 or 4×4", price: 59, color: "mint", message: "Put this favourite memory back together." },
   { id: "memory", icon: "⌁", name: "Memory lane", description: "Photos, dates and little stories", price: 79, color: "rose", message: "Every chapter with you is my favourite." },
   { id: "scratch", icon: "◇", name: "Scratch reveal", description: "Hide a gift, photo or promise", price: 39, color: "gold", message: "Something lovely is hiding here." },
@@ -44,11 +45,12 @@ const blockDefaults: Record<string, Record<string, string>> = {
   flowers: { effect: "Flower shower", timing: "Entire show", intensity: "Lush", effectNote: "A beautiful celebration, just for you." },
   quiz: { quizQuestions: JSON.stringify([{ id: "q1", question: "Where did we first meet?", options: [{ text: "At our favourite café", image: "" }, { text: "At a party", image: "" }, { text: "Online", image: "" }, { text: "I forgot", image: "" }], correctIndex: 0, interaction: "floating" }]) },
   wheel: { prizes: "Breakfast in bed\nMovie night\nMystery date\nA long hug\nSweet treat", spins: "1", resultMode: "Random", plannedResults: "Breakfast in bed", revealAnimation: "Confetti burst" },
+  slots: { prizes: "Movie night\nBreakfast date\nA long hug\nSweet treat", pulls: "3", resultMode: "Random", plannedResults: "", revealAnimation: "Sparkle shower" },
   puzzle: { imageUrl: "/mypookie-puzzle-picnic.png", imageName: "", difficulty: "3 × 3 · Sweet and simple", successMessage: "You put this memory back together." },
   memory: { memoryItems: "[]", coverImage: "/mypookie-letter-photo.png", coverCaption: "Our little book of us" },
   scratch: { revealText: "A candlelit dinner ♡", revealDetail: "Friday · 8:00 PM", coating: "Lilac shimmer" },
   treasure: { treasureClues: JSON.stringify([{ clue: "Start where we first said hello.", hint: "Think about our first conversation.", answer: "cafe", photo: "", caption: "" }, { clue: "Find the place in our favourite photo.", hint: "It was outdoors.", answer: "picnic", photo: "", caption: "" }]), finalSurprise: "A mystery date for us" },
-  calendar: { days: "7", unlockRule: "One per day", firstNote: "Day one: a reason I adore you" },
+  calendar: { days: "7", unlockRule: "One per day", startDate: "", calendarNotes: JSON.stringify(["A reason I adore you","A favourite memory","A tiny promise","A photo that makes me smile","Your song of the day","A little challenge","Your final surprise"]) },
   gift: { brand: "Custom gift", code: "POOKIE-LOVE-24", value: "₹1,000", giftMessage: "Choose something that makes you smile.", interaction: "Flip to reveal", showCode: "true", showValue: "true", showNote: "true" },
 };
 
@@ -72,6 +74,7 @@ export default function Home() {
   const [heroStage, setHeroStage] = useState<"closed" | "open" | "flipped">("closed");
   const [currentTime, setCurrentTime] = useState("");
   const [occasionFx, setOccasionFx] = useState<string | null>(null);
+  const [soundtrack, setSoundtrack] = useState({ enabled: false, audioUrl: "", name: "", startMode: "From the beginning", startBlockId: "", startSeconds: "0" });
 
   const subtotal = useMemo(() => selected.reduce((sum, item) => sum + item.price, 0), [selected]);
   const activeBlock = selected[active];
@@ -159,7 +162,7 @@ export default function Home() {
         occasion,
         theme,
         ambience,
-        blocksJson: JSON.stringify(selected),
+        blocksJson: JSON.stringify({ version: 2, blocks: selected, soundtrack }),
         scheduledAt: null,
       };
       const response = await fetch(`${api}/api/gifts${giftId ? `/${giftId}` : ""}`, {
@@ -286,6 +289,7 @@ export default function Home() {
       <main className={`recipient-preview theme-${theme.toLowerCase().replaceAll(" ","-")}`}>
         {showEffect && <div className={`recipient-effect-overlay effect-${(effectConfig.intensity||"Lush").toLowerCase()}`} aria-hidden="true">{Array.from({length:28},(_,index)=><i key={index} style={{left:`${(index*37)%100}%`,animationDelay:`${(index%9)*-.32}s`}}>{(effectSymbols[effectConfig.effect]||effectSymbols["Flower shower"])[index%3]}</i>)}</div>}
         <button className="exit-preview" onClick={() => setScreen("builder")}>← Back to builder</button>
+        <GiftSoundtrack settings={soundtrack} blocks={selected} step={previewStep} />
         <div className="recipient-experience-shell">
           <div className="preview-count">{previewStep + 1} of {selected.length}</div>
           {!item ? <div className="preview-empty"><div className="big-symbol">♡</div><h1>Your gift needs a little magic</h1><p>Add an activity in the builder to begin.</p></div> : <BuilderLivePreview key={`${item.id}-${previewStep}`} block={item} name={name} theme={theme} ambience={ambience} onInteract={()=>setOpened(true)} />}
@@ -320,6 +324,7 @@ export default function Home() {
           {!activeBlock ? <div className="custom-empty"><span>✎</span><h3>Select an activity</h3><p>Choose a moment to personalize its words, behaviour and style.</p></div> : <>
             <div className="current-block"><i className={activeBlock.color}>{activeBlock.icon}</i><div><small>MOMENT {active+1}</small><h2>{activeBlock.name}</h2></div></div>
             <BlockCustomization key={activeBlock.id} block={activeBlock} onMessage={updateMessage} onConfig={updateBlockConfig} />
+            <SoundtrackEditor settings={soundtrack} blocks={selected} onChange={patch=>setSoundtrack(current=>({...current,...patch}))} />
             <div className="style-row"><label className="field">Theme<select value={theme} onChange={e=>setTheme(e.target.value)}><option>Blush romance</option><option>Golden celebration</option><option>Midnight magic</option></select></label><label className="field">Ambience<select value={ambience} onChange={e=>setAmbience(e.target.value)}><option>Petals</option><option>Soft sparkles</option><option>None</option></select></label></div>
             <div className="customizer-live-note"><i /> You’re editing the live preview</div>
             <div className="next-row"><button disabled={active===0} onClick={()=>setActive(active-1)}>←</button><button onClick={()=>setActive(Math.min(active+1,selected.length-1))}>{active===selected.length-1?"Finish customization":"Save & customize next"} <span>→</span></button></div>
@@ -330,4 +335,69 @@ export default function Home() {
       <footer className="checkout-bar"><div><small>YOUR GIFT</small><strong>{selected.length} moments for {name}</strong></div><div className="price"><span>Live total</span><strong>₹{subtotal}</strong></div><button disabled={!selected.length} onClick={launchPreview}>Review & continue <span>→</span></button></footer>
     </main>
   );
+}
+
+type SoundtrackSettings = {
+  enabled: boolean;
+  audioUrl: string;
+  name: string;
+  startMode: string;
+  startBlockId: string;
+  startSeconds: string;
+};
+
+function SoundtrackEditor({settings,blocks,onChange}:{settings:SoundtrackSettings;blocks:Block[];onChange:(patch:Partial<SoundtrackSettings>)=>void}){
+  const [uploadError,setUploadError]=useState("");
+  function upload(files:FileList|null){
+    const file=files?.[0];
+    if(!file)return;
+    if(file.size>15*1024*1024){setUploadError("Please choose a song under 15 MB.");return}
+    const reader=new FileReader();
+    reader.onload=()=>{onChange({audioUrl:String(reader.result),name:file.name,enabled:true});setUploadError("")};
+    reader.readAsDataURL(file);
+  }
+  const startBlock=settings.startBlockId&&blocks.some(block=>block.id===settings.startBlockId)?settings.startBlockId:(blocks[0]?.id||"");
+  return <details className="soundtrack-editor">
+    <summary><span>♫</span><div><strong>Gift soundtrack</strong><small>{settings.enabled&&settings.audioUrl?settings.name:"Optional background music"}</small></div><b>{settings.enabled?"ON":"OFF"}</b></summary>
+    <div className="soundtrack-body">
+      <label className="soundtrack-toggle"><input type="checkbox" checked={settings.enabled} onChange={event=>onChange({enabled:event.target.checked})}/><span/><div><strong>Play background music</strong><small>The recipient can always pause or mute it.</small></div></label>
+      <label className="audio-template-upload">♪<strong>{settings.name||"Upload a song template"}</strong><span>MP3, M4A, WAV or OGG · up to 15 MB</span><input type="file" accept="audio/*" onChange={event=>upload(event.target.files)}/></label>
+      {uploadError&&<p className="soundtrack-error">{uploadError}</p>}
+      <p className="template-note">Your curated song templates will appear here when you provide them.</p>
+      <label className="field">When should it begin?<select value={settings.startMode} onChange={event=>onChange({startMode:event.target.value})}><option>From the beginning</option><option>From a specific block</option></select></label>
+      {settings.startMode==="From a specific block"&&<label className="field">Start at block<select value={startBlock} onChange={event=>onChange({startBlockId:event.target.value})}>{blocks.map((block,index)=><option value={block.id} key={block.id}>{index+1}. {block.name}</option>)}</select></label>}
+      <label className="field">Start song at<input type="number" min="0" max="600" value={settings.startSeconds} onChange={event=>onChange({startSeconds:event.target.value})}/><small>seconds</small></label>
+    </div>
+  </details>;
+}
+
+function GiftSoundtrack({settings,blocks,step}:{settings:SoundtrackSettings;blocks:Block[];step:number}){
+  const audioRef=useRef<HTMLAudioElement>(null);
+  const initialized=useRef(false);
+  const [playing,setPlaying]=useState(false);
+  const startIndex=settings.startMode==="From a specific block"?Math.max(0,blocks.findIndex(block=>block.id===(settings.startBlockId||blocks[0]?.id))):0;
+  const ready=step>=startIndex;
+
+  useEffect(()=>{
+    const audio=audioRef.current;
+    if(!audio)return;
+    if(!settings.enabled||!playing||!ready){audio.pause();return}
+    if(!initialized.current){
+      const seek=Math.max(0,Number(settings.startSeconds)||0);
+      if(Number.isFinite(audio.duration))audio.currentTime=Math.min(seek,Math.max(audio.duration-.25,0));
+      else audio.currentTime=seek;
+      initialized.current=true;
+    }
+    void audio.play().catch(()=>{});
+  },[playing,ready,settings.enabled,settings.startSeconds]);
+
+  useEffect(()=>{initialized.current=false},[settings.audioUrl,settings.startBlockId,settings.startMode]);
+
+  if(!settings.enabled)return null;
+  const target=blocks[startIndex]?.name||"the first block";
+  return <div className={`recipient-soundtrack ${playing?"playing":""}`}>
+    <button disabled={!settings.audioUrl} onClick={()=>setPlaying(value=>!value)} aria-label={playing?"Pause soundtrack":"Play soundtrack"}>{playing?"Ⅱ":"♫"}</button>
+    <div><strong>{settings.audioUrl?(settings.name||"Your soundtrack"):"Add a song in the builder"}</strong><small>{!settings.audioUrl?"No audio selected":playing&&!ready?`Queued for ${target}`:playing?"Playing through your gift":settings.startMode==="From a specific block"?`Starts at ${target}`:"Tap to play"}</small></div>
+    {settings.audioUrl&&<audio ref={audioRef} src={settings.audioUrl} loop preload="metadata"/>}
+  </div>;
 }

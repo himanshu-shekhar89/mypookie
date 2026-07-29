@@ -64,6 +64,8 @@ export function BlockCustomization({ block, onMessage, onConfig }: { block: Cust
 
   if (block.id === "wheel") return <WheelEditor config={config} onConfig={onConfig} />;
 
+  if (block.id === "slots") return <SlotEditor config={config} onConfig={onConfig} />;
+
   if (block.id === "puzzle") return <CustomizationSection title="Photo puzzle" hint="Upload the photo they will rebuild">
     <UploadBox label="Choose puzzle photo" note={config.imageName || "JPG or PNG from your gallery"} accept="image/*" onFiles={files=>imageUpload("imageUrl","imageName",files)} />
     <label className="field">Difficulty<select value={config.difficulty} onChange={event=>onConfig("difficulty",event.target.value)}><option>3 × 3 · Sweet and simple</option><option>4 × 4 · A little challenge</option><option>5 × 5 · Puzzle lover</option></select></label>
@@ -80,11 +82,7 @@ export function BlockCustomization({ block, onMessage, onConfig }: { block: Cust
 
   if (block.id === "treasure") return <TreasureEditor config={config} onConfig={onConfig} />;
 
-  if (block.id === "calendar") return <CustomizationSection title="Unlock calendar" hint="Decide its length and first daily moment">
-    <label className="field">Number of days<select value={config.days} onChange={event=>onConfig("days",event.target.value)}><option>7</option><option>14</option><option>30</option></select></label>
-    <label className="field">Unlock schedule<select value={config.unlockRule} onChange={event=>onConfig("unlockRule",event.target.value)}><option>One per day</option><option>Recipient can open anytime</option><option>Sender chooses dates</option></select></label>
-    <label className="field">Day one message<textarea rows={3} maxLength={90} value={config.firstNote || ""} onChange={event=>onConfig("firstNote",event.target.value)} /><small>{(config.firstNote || "").length}/90</small></label>
-  </CustomizationSection>;
+  if (block.id === "calendar") return <CalendarEditor config={config} onConfig={onConfig} />;
 
   return <GiftCardEditor config={config} onConfig={onConfig} />;
 }
@@ -184,6 +182,44 @@ function WheelEditor({ config, onConfig }: { config: Record<string,string>; onCo
   </CustomizationSection>;
 }
 
+function SlotEditor({ config, onConfig }: { config: Record<string,string>; onConfig:(key:string,value:string)=>void }) {
+  const prizes=(config.prizes||"").split("\n").map(item=>item.trim()).filter(Boolean).slice(0,5);
+  const pullCount=Math.min(Number(config.pulls)||1,6);
+  const planned=(config.plannedResults||"").split("\n");
+  function setPlanned(index:number,value:string){
+    const next=Array.from({length:pullCount},(_,pullIndex)=>planned[pullIndex]||"");
+    next[index]=value;
+    onConfig("plannedResults",next.join("\n"));
+  }
+  return <CustomizationSection title="Slot machine" hint="They pull the lever to line up a prize">
+    <label className="field">Possible prizes<textarea rows={5} value={config.prizes||""} onChange={event=>onConfig("prizes",event.target.value.split("\n").slice(0,5).join("\n"))}/><small>{prizes.length}/5</small></label>
+    <label className="field">Number of lever pulls<select value={config.pulls} onChange={event=>onConfig("pulls",event.target.value)}>{[1,2,3,4,5,6].map(value=><option key={value}>{value}</option>)}</select></label>
+    <label className="field">Prize outcomes<select value={config.resultMode} onChange={event=>onConfig("resultMode",event.target.value)}><option>Random</option><option>Plan every pull</option></select></label>
+    {config.resultMode==="Plan every pull"&&<div className="planned-spin-results"><strong>Select each outcome</strong>{Array.from({length:pullCount},(_,index)=><label key={index}>Pull {index+1}<select value={prizes.includes(planned[index])?planned[index]:""} onChange={event=>setPlanned(index,event.target.value)}><option value="" disabled>Choose a prize</option>{prizes.map(prize=><option key={prize}>{prize}</option>)}</select></label>)}</div>}
+    <label className="field">Winning animation<select value={config.revealAnimation} onChange={event=>onConfig("revealAnimation",event.target.value)}><option>Sparkle shower</option><option>Confetti pop</option><option>Golden glow</option></select></label>
+  </CustomizationSection>;
+}
+
+function CalendarEditor({config,onConfig}:{config:Record<string,string>;onConfig:(key:string,value:string)=>void}){
+  const days=Math.min(Number(config.days)||7,30);
+  const defaults=["A reason I adore you","A favourite memory","A tiny promise","A photo that makes me smile","Your song of the day","A little challenge","Your final surprise"];
+  const stored=safeParse<string[]>(config.calendarNotes,defaults);
+  const notes=Array.from({length:days},(_,index)=>stored[index]||`A little surprise for day ${index+1}`);
+  function setDays(value:string){
+    const count=Number(value);
+    onConfig("days",value);
+    onConfig("calendarNotes",JSON.stringify(Array.from({length:count},(_,index)=>stored[index]||`A little surprise for day ${index+1}`)));
+  }
+  function setNote(index:number,value:string){onConfig("calendarNotes",JSON.stringify(notes.map((note,noteIndex)=>noteIndex===index?value:note)))}
+  return <CustomizationSection title="Unlock calendar" hint="A series of little gifts revealed over several days">
+    <div className="calendar-explainer"><span>1</span><p>You write one short surprise for every day.</p><span>2</span><p>The recipient opens the available numbered door.</p><span>3</span><p>A new door unlocks each day—or you can make them all available.</p></div>
+    <label className="field">Number of days<select value={config.days} onChange={event=>setDays(event.target.value)}><option>7</option><option>14</option><option>30</option></select></label>
+    <label className="field">Unlock schedule<select value={config.unlockRule} onChange={event=>onConfig("unlockRule",event.target.value)}><option>One per day</option><option>Recipient can open anytime</option></select></label>
+    {config.unlockRule==="One per day"&&<label className="field">First day<input type="date" value={config.startDate||""} onChange={event=>onConfig("startDate",event.target.value)}/></label>}
+    <div className="calendar-note-list"><strong>What each door reveals</strong>{notes.map((note,index)=><label key={index}><span>Day {index+1}</span><input maxLength={80} value={note} onChange={event=>setNote(index,event.target.value)}/></label>)}</div>
+  </CustomizationSection>;
+}
+
 function MemoryEditor({ config, onConfig }: { config: Record<string,string>; onConfig:(key:string,value:string)=>void }) {
   const items=safeParse<MemoryItem[]>(config.memoryItems,[]);
   async function add(files:FileList|null){if(!files)return;const added=await Promise.all(Array.from(files).slice(0,12).map(async(file,index)=>({id:`memory-${Date.now()}-${index}`,image:await imageToDataUrl(file),caption:file.name.replace(/\.[^.]+$/,"")})));onConfig("memoryItems",JSON.stringify([...items,...added].slice(0,20)))}
@@ -205,7 +241,8 @@ function TreasureEditor({ config, onConfig }: { config: Record<string,string>; o
   async function cluePhoto(index:number,files:FileList|null){const file=files?.[0];if(file)patch(index,"photo",await imageToDataUrl(file))}
   return <CustomizationSection title="Treasure hunt" hint="Each clue has an answer and optional hint">
     <div className="treasure-editor-list">{clues.map((item,index)=><article key={index}><header><strong>Clue {index+1}</strong><button disabled={clues.length===1} onClick={()=>onConfig("treasureClues",JSON.stringify(clues.filter((_,i)=>i!==index)))}>Remove</button></header>
-      <label className="clue-photo-upload">{item.photo?<img src={item.photo} alt={`Clue ${index+1}`}/>:<span>＋</span>}<strong>{item.photo?"Change clue photo":"Add clue photo"}</strong><input type="file" accept="image/*" onChange={event=>cluePhoto(index,event.target.files)}/></label>
+      <label className="clue-photo-upload">{item.photo?<img src={item.photo} alt={`Clue ${index+1}`}/>:<span>＋</span>}<strong>{item.photo?"Change optional photo":"Add optional photo"}<small>{item.photo?"This visual clue will be shown.":"Skip this if the clue only needs text."}</small></strong><input type="file" accept="image/*" onChange={event=>cluePhoto(index,event.target.files)}/></label>
+      {item.photo&&<button className="remove-clue-photo" onClick={()=>patch(index,"photo","")}>Remove photo</button>}
       <label className="field">Photo caption<input maxLength={65} value={item.caption||""} onChange={event=>patch(index,"caption",event.target.value)}/></label>
       <label className="field">Clue<input maxLength={100} value={item.clue} onChange={event=>patch(index,"clue",event.target.value)}/></label><label className="field">Hint<input maxLength={80} value={item.hint} onChange={event=>patch(index,"hint",event.target.value)}/></label><label className="field">Accepted answer<input maxLength={45} value={item.answer} onChange={event=>patch(index,"answer",event.target.value)}/></label></article>)}</div>
     <button className="add-collection-item" disabled={clues.length>=7} onClick={()=>onConfig("treasureClues",JSON.stringify([...clues,{clue:"",hint:"",answer:"",photo:"",caption:""}]))}>＋ Add clue</button>
