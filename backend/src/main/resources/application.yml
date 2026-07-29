@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: mypookie-api
+  datasource:
+    url: ${DATABASE_URL:jdbc:h2:mem:mypookie;MODE=MySQL;DB_CLOSE_DELAY=-1}
+    username: ${DATABASE_USERNAME:sa}
+    password: ${DATABASE_PASSWORD:}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+server:
+  port: ${PORT:8080}
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost:3000}
+  auth:
+    firebase-enabled: ${FIREBASE_ENABLED:false}
+  razorpay:
+    key-id: ${RAZORPAY_KEY_ID:}
+    key-secret: ${RAZORPAY_KEY_SECRET:}

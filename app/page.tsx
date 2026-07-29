@@ -45,6 +45,8 @@ export default function Home() {
   const [ambience, setAmbience] = useState("Petals");
   const [previewStep, setPreviewStep] = useState(0);
   const [opened, setOpened] = useState(false);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "offline">("idle");
+  const [giftId, setGiftId] = useState<string | null>(null);
 
   const subtotal = useMemo(() => selected.reduce((sum, item) => sum + item.price, 0), [selected]);
   const activeBlock = selected[active];
@@ -78,11 +80,39 @@ export default function Home() {
     setScreen("preview");
   }
 
+  async function saveDraft() {
+    setSaveState("saving");
+    try {
+      const api = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+      const body = {
+        title: `${occasion} for ${name}`,
+        recipientName: name,
+        recipientType: recipient,
+        occasion,
+        theme,
+        ambience,
+        blocksJson: JSON.stringify(selected),
+        scheduledAt: null,
+      };
+      const response = await fetch(`${api}/api/gifts${giftId ? `/${giftId}` : ""}`, {
+        method: giftId ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json", "X-Demo-User": "local-creator" },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) throw new Error("Save failed");
+      const gift = await response.json();
+      setGiftId(gift.id);
+      setSaveState("saved");
+    } catch {
+      setSaveState("offline");
+    }
+  }
+
   if (screen === "welcome") {
     return (
       <main className="welcome-page">
         <nav className="nav">
-          <button className="brand" onClick={() => setScreen("welcome")}><span>m</span> mypookie</button>
+          <button className="brand" onClick={() => setScreen("welcome")}><span>m</span> mypookie.</button>
           <div className="nav-links"><a href="#how">How it works</a><a href="#ideas">Gift ideas</a><a href="#pricing">Pricing</a></div>
           <button className="signin">Continue with Google <span>→</span></button>
         </nav>
@@ -132,7 +162,7 @@ export default function Home() {
   if (screen === "catalog") {
     return (
       <main className="product-page">
-        <header className="app-header"><button className="brand" onClick={() => setScreen("welcome")}><span>m</span> mypookie</button><div className="progress"><i className="done"/><i/><i/><span>Start</span></div><button className="avatar">H</button></header>
+        <header className="app-header"><button className="brand" onClick={() => setScreen("welcome")}><span>m</span> mypookie.</button><div className="progress"><i className="done"/><i/><i/><span>Start</span></div><button className="avatar">H</button></header>
         <section className="catalog-intro">
           <button className="back" onClick={() => setScreen("welcome")}>← Back</button>
           <div className="section-kicker">LET’S MAKE SOMETHING BEAUTIFUL</div>
@@ -175,7 +205,7 @@ export default function Home() {
 
   return (
     <main className="builder-page">
-      <header className="app-header builder-header"><button className="brand" onClick={() => setScreen("welcome")}><span>m</span> mypookie</button><div className="gift-title"><small>CREATING FOR</small><strong>{name || "Someone special"} <i>♡</i></strong></div><div className="header-actions"><button className="quiet">Save draft</button><button className="preview-button" onClick={launchPreview}>Preview gift <span>▶</span></button></div></header>
+      <header className="app-header builder-header"><button className="brand" onClick={() => setScreen("welcome")}><span>m</span> mypookie.</button><div className="gift-title"><small>CREATING FOR</small><strong>{name || "Someone special"} <i>♡</i></strong></div><div className="header-actions"><button className="quiet" onClick={saveDraft}>{saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved ✓" : saveState === "offline" ? "Backend offline · Retry" : "Save draft"}</button><button className="preview-button" onClick={launchPreview}>Preview gift <span>▶</span></button></div></header>
       <div className="builder-shell">
         <aside className="library">
           <div className="library-head"><div><div className="section-kicker">ACTIVITY LIBRARY</div><h2>Add a little magic</h2></div><span>{activities.length}</span></div>
