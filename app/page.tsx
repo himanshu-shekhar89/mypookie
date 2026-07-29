@@ -19,7 +19,7 @@ type Block = {
 const activities: Block[] = [
   { id: "letter", icon: "✉", name: "Personal letter", description: "A message they tap to unfold", price: 29, color: "coral", message: "You make ordinary days feel like celebrations." },
   { id: "voice", icon: "◖", name: "Voice message", description: "Record something only you can say", price: 39, color: "violet", message: "A little message from my heart to yours." },
-  { id: "flowers", icon: "✿", name: "E-flowers", description: "A bouquet that blooms on screen", price: 29, color: "pink", message: "These flowers will never fade." },
+  { id: "flowers", icon: "✦", name: "E-gifts", description: "Full-screen flowers, fireworks and celebrations", price: 29, color: "pink", message: "A beautiful celebration, just for you." },
   { id: "quiz", icon: "?", name: "Playful quiz", description: "Normal or floating wrong answers", price: 49, color: "blue", message: "How well do you know us?" },
   { id: "wheel", icon: "◎", name: "Spin the wheel", description: "Custom prizes and limited spins", price: 49, color: "amber", message: "Let chance choose your surprise." },
   { id: "puzzle", icon: "▦", name: "Photo puzzle", description: "Turn a memory into a 3×3 or 4×4", price: 59, color: "mint", message: "Put this favourite memory back together." },
@@ -41,15 +41,15 @@ const recipients = ["Lover", "Friend", "Parents", "Sibling", "Other"];
 const blockDefaults: Record<string, Record<string, string>> = {
   letter: { signoff: "— sent with love", animation: "Lift and unfold" },
   voice: { audioName: "", playbackStyle: "Classic waveform" },
-  flowers: { flowerStyle: "Blush tulips", flowerNote: "These flowers will never fade.", fallAnimation: "Soft petals" },
-  quiz: { question: "Where did we first meet?", answer1: "At our favourite café", answer2: "I forgot", interaction: "Wrong answer floats away" },
-  wheel: { prizes: "Breakfast in bed\nMovie night\nMystery date\nA long hug\nYour choice\nSweet treat", spins: "1", revealAnimation: "Confetti burst" },
+  flowers: { effect: "Flower shower", timing: "Entire show", intensity: "Lush", effectNote: "A beautiful celebration, just for you." },
+  quiz: { quizQuestions: JSON.stringify([{ id: "q1", question: "Where did we first meet?", options: [{ text: "At our favourite café", image: "" }, { text: "At a party", image: "" }, { text: "Online", image: "" }, { text: "I forgot", image: "" }], correctIndex: 0, interaction: "floating" }]) },
+  wheel: { prizes: "Breakfast in bed\nMovie night\nMystery date\nA long hug\nSweet treat", spins: "1", resultMode: "Random", plannedResults: "Breakfast in bed", revealAnimation: "Confetti burst" },
   puzzle: { imageUrl: "/mypookie-puzzle-picnic.png", imageName: "", difficulty: "3 × 3 · Sweet and simple", successMessage: "You put this memory back together." },
-  memory: { imageUrl: "/mypookie-letter-photo.png", imageName: "", caption: "The fair lights & us", date: "Our favourite evening" },
+  memory: { memoryItems: "[]" },
   scratch: { revealText: "A candlelit dinner ♡", revealDetail: "Friday · 8:00 PM", coating: "Lilac shimmer" },
-  treasure: { clues: "Start where we first said hello.\nLook beside your favourite photo.\nYour surprise is waiting at our café.", finalSurprise: "A mystery date for us" },
+  treasure: { treasureClues: JSON.stringify([{ clue: "Start where we first said hello.", hint: "Think about our first conversation.", answer: "cafe" }, { clue: "Find the place in our favourite photo.", hint: "It was outdoors.", answer: "picnic" }]), finalSurprise: "A mystery date for us" },
   calendar: { days: "7", unlockRule: "One per day", firstNote: "Day one: a reason I adore you" },
-  gift: { brand: "Custom gift", code: "POOKIE-LOVE-24", value: "₹1,000", giftMessage: "Choose something that makes you smile." },
+  gift: { brand: "Custom gift", code: "POOKIE-LOVE-24", value: "₹1,000", giftMessage: "Choose something that makes you smile.", interaction: "Flip to reveal", showCode: "true", showValue: "true", showNote: "true" },
 };
 
 function createBlock(item: Block): Block {
@@ -83,7 +83,7 @@ export default function Home() {
     return () => window.clearInterval(timer);
   }, []);
 
-  function useBundle(ids: string[]) {
+  function chooseBundle(ids: string[]) {
     setSelected(ids.map(id => activities.find(a => a.id === id)).filter(Boolean).map(item => createBlock(item!)));
     setActive(0);
     setScreen("builder");
@@ -180,7 +180,7 @@ export default function Home() {
             <p>Build a little world of messages, memories, games and surprises—personalized by you, opened by them.</p>
             <div className="hero-actions">
               <button className="primary" onClick={() => setScreen("catalog")}>Create a gift <span>→</span></button>
-              <button className="text-button" onClick={() => useBundle(bundles[0].ids)}><span className="play">▶</span> Preview an experience</button>
+              <button className="text-button" onClick={() => chooseBundle(bundles[0].ids)}><span className="play">▶</span> Preview an experience</button>
             </div>
             <div className="social-proof"><div className="faces"><b>😊</b><b>🥰</b><b>🤍</b><b>✨</b></div><span><strong>4,800+ moments</strong><br/>made unforgettable</span></div>
           </div>
@@ -250,7 +250,7 @@ export default function Home() {
         </section>
         <section className="creation-choice">
           <div className="choice-heading"><div><div className="section-kicker">CHOOSE YOUR WAY</div><h2>Start with a story or make your own</h2></div><button className="scratch-link" onClick={() => {setSelected([]);setScreen("builder")}}>Build from scratch <span>→</span></button></div>
-          <div className="bundle-grid">{bundles.map((b, index) => <article className={`bundle bundle-${index}`} key={b.id}><div className="bundle-art"><span>{index === 0 ? "♡" : index === 1 ? "✦" : "☺"}</span><div className="bundle-pages"><i/><i/><i/></div></div><div className="bundle-content"><small>{b.badge}</small><h3>{b.name}</h3><p>{b.copy}</p><div className="bundle-includes">{b.ids.slice(0,4).map(id => <span key={id}>{activities.find(a => a.id === id)?.icon}</span>)}<b>+{b.ids.length-4}</b></div><div className="bundle-bottom"><strong>₹{b.price}</strong><button onClick={() => useBundle(b.ids)}>Choose bundle →</button></div><em>Everything can be changed</em></div></article>)}</div>
+          <div className="bundle-grid">{bundles.map((b, index) => <article className={`bundle bundle-${index}`} key={b.id}><div className="bundle-art"><span>{index === 0 ? "♡" : index === 1 ? "✦" : "☺"}</span><div className="bundle-pages"><i/><i/><i/></div></div><div className="bundle-content"><small>{b.badge}</small><h3>{b.name}</h3><p>{b.copy}</p><div className="bundle-includes">{b.ids.slice(0,4).map(id => <span key={id}>{activities.find(a => a.id === id)?.icon}</span>)}<b>+{b.ids.length-4}</b></div><div className="bundle-bottom"><strong>₹{b.price}</strong><button onClick={() => chooseBundle(b.ids)}>Choose bundle →</button></div><em>Everything can be changed</em></div></article>)}</div>
         </section>
       </main>
     );
@@ -258,23 +258,18 @@ export default function Home() {
 
   if (screen === "preview") {
     const item = selected[previewStep];
+    const effectBlock = selected.find(block => block.id === "flowers");
+    const effectConfig = effectBlock?.config || {};
+    const effectSymbols: Record<string,string[]> = {"Flower shower":["🌸","🌷","🌼"],"Fireworks":["🎆","✨","🎇"],"Birthday party":["🎈","🎂","🎉"],"Christmas magic":["🎄","❄️","🎁"],"Hearts":["💗","💕","💖"],"Snowfall":["❄️","❅","✦"]};
+    const showEffect = Boolean(effectBlock) && (effectConfig.timing === "Entire show" || (effectConfig.timing === "Only on this block" && item?.id === "flowers") || (effectConfig.timing === "After winning or interacting" && opened) || (effectConfig.timing === "At the end" && previewStep === selected.length-1));
     return (
       <main className={`recipient-preview theme-${theme.toLowerCase().replaceAll(" ","-")}`}>
-        {ambience === "Petals" && <div className="falling"><i>✿</i><i>·</i><i>✿</i><i>·</i><i>✿</i></div>}
+        {showEffect && <div className={`recipient-effect-overlay effect-${(effectConfig.intensity||"Lush").toLowerCase()}`} aria-hidden="true">{Array.from({length:28},(_,index)=><i key={index} style={{left:`${(index*37)%100}%`,animationDelay:`${(index%9)*-.32}s`}}>{(effectSymbols[effectConfig.effect]||effectSymbols["Flower shower"])[index%3]}</i>)}</div>}
         <button className="exit-preview" onClick={() => setScreen("builder")}>← Back to builder</button>
-        <div className="recipient-card">
+        <div className="recipient-experience-shell">
           <div className="preview-count">{previewStep + 1} of {selected.length}</div>
-          {!item ? <><div className="big-symbol">♡</div><h1>Your gift needs a little magic</h1><p>Add an activity in the builder to begin.</p></> : <>
-            <div className={`activity-symbol ${item.color}`}>{item.icon}</div>
-            <div className="section-kicker">A LITTLE SOMETHING FOR {name.toUpperCase()}</div>
-            <h1>{item.name}</h1>
-            <p>{item.message}</p>
-            {item.id === "quiz" && opened && <div className="preview-answers"><button>Our first date</button><button className="dodge">I forgot</button></div>}
-            {item.id === "puzzle" && opened && <div className="puzzle-grid">{Array.from({length:9}).map((_,i)=><i key={i}>{i+1}</i>)}</div>}
-            {item.id === "flowers" && opened && <div className="bouquet">🌷<span>🌸</span>🌷</div>}
-            {!opened ? <button className="primary preview-action" onClick={() => setOpened(true)}>{item.id === "letter" ? "Open your letter" : item.id === "wheel" ? "Spin the wheel" : item.id === "scratch" ? "Scratch to reveal" : item.id === "flowers" ? "Let them bloom" : item.id === "puzzle" ? "Start puzzle" : "Begin this moment"} <span>→</span></button> :
-            <button className="primary preview-action" onClick={() => { if (previewStep < selected.length-1) {setPreviewStep(previewStep+1);setOpened(false)} else {setPreviewStep(0);setOpened(false)} }}>{previewStep < selected.length-1 ? "Show me what’s next" : "Experience it again"} <span>→</span></button>}
-          </>}
+          {!item ? <div className="preview-empty"><div className="big-symbol">♡</div><h1>Your gift needs a little magic</h1><p>Add an activity in the builder to begin.</p></div> : <BuilderLivePreview key={`${item.id}-${previewStep}`} block={item} name={name} theme={theme} ambience={ambience} onInteract={()=>setOpened(true)} />}
+          {item && <button className="primary recipient-next" onClick={() => { if (previewStep < selected.length-1) {setPreviewStep(previewStep+1);setOpened(false)} else {setPreviewStep(0);setOpened(false)} }}>{previewStep < selected.length-1 ? "Continue to the next moment" : "Experience it again"} <span>→</span></button>}
         </div>
       </main>
     );
