@@ -48,6 +48,8 @@ export default function Home() {
   const [opened, setOpened] = useState(false);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "offline">("idle");
   const [giftId, setGiftId] = useState<string | null>(null);
+  const [heroOpened, setHeroOpened] = useState(false);
+  const [occasionFx, setOccasionFx] = useState<string | null>(null);
 
   const subtotal = useMemo(() => selected.reduce((sum, item) => sum + item.price, 0), [selected]);
   const activeBlock = selected[active];
@@ -109,11 +111,18 @@ export default function Home() {
     }
   }
 
+  function celebrateOccasion(type: string) {
+    setOccasionFx(null);
+    window.requestAnimationFrame(() => setOccasionFx(type));
+    window.setTimeout(() => setOccasionFx(null), 3200);
+  }
+
 
   if (screen === "welcome") {
     return (
       <main className="welcome-page">
         <div className="landing-motion" aria-hidden="true"><i/><i/><i/><span>♡</span><span>✦</span><span>✿</span></div>
+        {occasionFx && <div className={`occasion-fx fx-${occasionFx}`} aria-live="polite"><div className="fx-icons">{occasionFx === "birthday" ? <><i>🎈</i><i>🎂</i><i>🎉</i><i>🎈</i><i>✨</i></> : occasionFx === "anniversary" ? <><i>♡</i><i>💐</i><i>💍</i><i>♡</i><i>✨</i></> : occasionFx === "friendship" ? <><i>🎊</i><i>📸</i><i>🥳</i><i>🎊</i><i>⭐</i></> : <><i>🌸</i><i>💌</i><i>✨</i><i>🌷</i><i>♡</i></>}</div><strong>{occasionFx === "birthday" ? "Make their birthday pop!" : occasionFx === "anniversary" ? "Celebrate every chapter." : occasionFx === "friendship" ? "For your favourite chaos." : "Because ordinary days deserve magic."}</strong></div>}
         <nav className="nav">
           <button className="brand" onClick={() => setScreen("welcome")}><span>m</span> mypookie.</button>
           <div className="nav-links"><a href="#how">How it works</a><a href="#ideas">Gift ideas</a><a href="#pricing">Pricing</a></div>
@@ -133,14 +142,15 @@ export default function Home() {
           <div className="hero-art">
             <div className="orbit orbit-one" />
             <div className="orbit orbit-two" />
-            <div className="phone">
+            <div className={`phone ${heroOpened ? "surprise-opened" : ""}`}>
               <div className="phone-top"><span>9:41</span><i /></div>
               <div className="phone-scene">
                 <div className="mini-petals">✿　·　✿</div>
                 <small>A LITTLE SOMETHING FOR</small>
                 <h3>Ananya</h3>
                 <div className="envelope"><div className="letter">You make every day brighter ♡</div><div className="flap" /></div>
-                <button>Open your surprise</button>
+                <div className="phone-reveal"><img src="/mypookie-puzzle-picnic.png" alt="" /><strong>One beautiful memory</strong><span>and a hundred more to make ♡</span></div>
+                <button onClick={() => setHeroOpened(value => !value)}>{heroOpened ? "Close surprise" : "Open your surprise"}</button>
               </div>
             </div>
             <div className="float-card card-memory"><span>⌁</span><div><small>MEMORY LANE</small><strong>Our first adventure</strong></div></div>
@@ -148,7 +158,15 @@ export default function Home() {
             <div className="float-card card-gift"><span>♢</span><div><small>ONE MORE THING</small><strong>A surprise awaits</strong></div></div>
           </div>
         </section>
-        <section className="marquee" id="ideas"><span>Personal letters</span><i>✦</i><span>Memory lanes</span><i>✦</i><span>Playful quizzes</span><i>✦</i><span>Photo puzzles</span><i>✦</i><span>Little surprises</span></section>
+        <section className="occasion-strip" aria-label="Preview gifts by occasion">
+          <div><small>SEE THE MAGIC FOR</small><strong>What are you celebrating?</strong></div>
+          {[
+            ["birthday","Birthday"],
+            ["anniversary","Anniversary"],
+            ["friendship","Friendship"],
+            ["just-because","Just because"],
+          ].map(([id,label], index) => <button key={id} onClick={() => celebrateOccasion(id)}><i style={{backgroundImage:"url('/mypookie-occasions.png')",backgroundPosition:`${index * 33.333}% center`}}/><span>{label}</span><b>Try it →</b></button>)}
+        </section>
         <LandingShowcase />
         <section className="how" id="how">
           <div className="section-kicker">HOW IT WORKS</div>

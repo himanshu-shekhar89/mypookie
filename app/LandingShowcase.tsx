@@ -16,6 +16,7 @@ export function LandingShowcase() {
   const [puzzle, setPuzzle] = useState([8, 2, 5, 1, 7, 0, 4, 6, 3]);
   const [picked, setPicked] = useState<number | null>(null);
   const [moves, setMoves] = useState(0);
+  const [puzzleHint, setPuzzleHint] = useState("Tap a piece, then one beside it");
   const scratchRef = useRef<HTMLCanvasElement>(null);
   const scratching = useRef(false);
 
@@ -45,8 +46,8 @@ export function LandingShowcase() {
     if (wheelSpinning) return;
     setWheelSpinning(true);
     setWheelPrize("Spinning…");
-    const winningIndex = 3;
-    setWheelRotation(value => value + 1440 + (360 - winningIndex * 60 - 30));
+    const winningIndex = Math.floor(Math.random() * prizes.length);
+    setWheelRotation(value => value + 1440 + (360 - winningIndex * 60 - 30) + Math.floor(Math.random() * 3) * 360);
     window.setTimeout(() => {
       setWheelPrize(`You won: ${prizes[winningIndex]} ♡`);
       setWheelSpinning(false);
@@ -62,8 +63,9 @@ export function LandingShowcase() {
     }, 85);
     window.setTimeout(() => {
       window.clearInterval(timer);
-      setSlotSymbols(["🎁", "🎁", "🎁"]);
-      setSlotPrize("Jackpot: mystery date unlocked!");
+      const result = Array.from({ length: 3 }, () => slotIcons[Math.floor(Math.random() * slotIcons.length)]);
+      setSlotSymbols(result);
+      setSlotPrize(result.every(symbol => symbol === result[0]) ? "Jackpot: mystery date unlocked!" : `You found ${result.join(" ")} — one sweet surprise!`);
       setSlotSpinning(false);
     }, 2100);
   }
@@ -77,14 +79,26 @@ export function LandingShowcase() {
       setPicked(null);
       return;
     }
+    const firstRow = Math.floor(picked / 3);
+    const firstCol = picked % 3;
+    const nextRow = Math.floor(index / 3);
+    const nextCol = index % 3;
+    if (Math.abs(firstRow - nextRow) + Math.abs(firstCol - nextCol) !== 1) {
+      setPuzzleHint("Only neighboring pieces can swap");
+      setPicked(null);
+      return;
+    }
     setPuzzle(current => {
       const next = [...current];
       [next[picked], next[index]] = [next[index], next[picked]];
       return next;
     });
+    setPuzzleHint("Nice move — keep going!");
     setPicked(null);
     setMoves(value => value + 1);
   }
+
+  const puzzleSolved = puzzle.every((tile, index) => tile === index);
 
   function scratch(event: React.PointerEvent<HTMLCanvasElement>) {
     if (!scratching.current && event.type === "pointermove") return;
@@ -137,9 +151,9 @@ export function LandingShowcase() {
           <CardTitle number="03" eyebrow="PUT IT TOGETHER" title="3 × 3 photo puzzle" />
           <div className="puzzle-layout">
             <div className="reference-photo"><img src="/mypookie-puzzle-picnic.png" alt="Completed picnic memory" /><span>the real photo</span></div>
-            <div className="tile-grid">{puzzle.map((tile, index) => <button key={`${tile}-${index}`} className={picked === index ? "picked" : ""} onClick={() => pickTile(index)} aria-label={`Puzzle tile ${index + 1}`} style={{ backgroundImage: "url('/mypookie-puzzle-picnic.png')", backgroundPosition: `${(tile % 3) * 50}% ${Math.floor(tile / 3) * 50}%` }} />)}</div>
+            <div className={`tile-grid ${puzzleSolved ? "solved" : ""}`}>{puzzle.map((tile, index) => <button key={`${tile}-${index}`} className={picked === index ? "picked" : ""} onClick={() => pickTile(index)} aria-label={`Puzzle tile ${index + 1}`} style={{ backgroundImage: "url('/mypookie-puzzle-picnic.png')", backgroundPosition: `${(tile % 3) * 50}% ${Math.floor(tile / 3) * 50}%` }} />)}{puzzleSolved && <div className="puzzle-success"><b>Perfect! ✦</b><span>You put this memory back together.</span></div>}</div>
           </div>
-          <div className="puzzle-tools"><span>{moves} moves · tap two pieces to swap</span><button onClick={() => { setPuzzle([0,1,2,3,4,5,6,7,8]); setPicked(null); }}>Solve</button></div>
+          <div className="puzzle-tools"><span>{puzzleSolved ? `Solved in ${moves} moves!` : `${moves} moves · ${puzzleHint}`}</span><button onClick={() => { setPuzzle([8,2,5,1,7,0,4,6,3]); setPicked(null); setMoves(0); setPuzzleHint("Tap a piece, then one beside it"); }}>Shuffle</button></div>
         </article>
 
         <article className="play-card letter-card">
