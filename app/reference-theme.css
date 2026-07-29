@@ -1,0 +1,293 @@
+/* Exact visual system from the supplied reference. */
+:root:root {
+  --paper: #fff6f9;
+  --paper-2: #ffffff;
+  --cream: #fff6f9;
+  --ink: #2b1b2e;
+  --muted: #7a6a7e;
+  --berry: #ff6f91;
+  --rose: #e8496d;
+  --blush: #ffeaf1;
+  --lilac: #9b8cff;
+  --peach: #ffb86b;
+  --mint: #5fc9ae;
+  --gold: #ffb86b;
+  --line: rgba(43, 27, 46, 0.1);
+  --shadow: 0 22px 70px rgba(43, 27, 46, 0.12);
+}
+
+html,
+body,
+button,
+input,
+select,
+textarea {
+  font-family: "Nunito", sans-serif !important;
+}
+
+body {
+  background: var(--paper) !important;
+  color: var(--ink);
+}
+
+:where(
+  h1,
+  h2,
+  h3,
+  .brand,
+  .float-card strong,
+  .magic-label strong,
+  .lab-title strong,
+  .bundle-content h3,
+  .bundle-bottom strong,
+  .gift-title strong,
+  .library-head h2,
+  .sequence-head h2,
+  .activity-list strong,
+  .sequence-list strong,
+  .current-block h2,
+  .checkout-bar strong,
+  .price strong,
+  .occasion-strip strong
+) {
+  font-family: "Baloo 2", sans-serif !important;
+}
+
+:where(
+  .script,
+  .marquee,
+  .phone-letter-front,
+  .phone-letter-back small,
+  .letter-sheet p,
+  .reference-photo span,
+  .lever-hint,
+  .show-bouquet b,
+  .show-scratch,
+  .occasion-strip button span,
+  .occasion-fx > strong,
+  .puzzle-success b,
+  .phone-reveal strong
+) {
+  font-family: "Caveat", cursive !important;
+  font-style: normal !important;
+}
+
+.nav,
+.app-header {
+  background: rgba(255, 246, 249, 0.88) !important;
+  border-color: var(--line);
+}
+
+.product-page,
+.builder-page {
+  background: var(--paper) !important;
+}
+
+.hero {
+  background:
+    radial-gradient(circle at 6% 10%, rgba(255, 111, 145, 0.2), transparent 25%),
+    radial-gradient(circle at 92% 16%, rgba(155, 140, 255, 0.2), transparent 25%),
+    radial-gradient(circle at 45% 94%, rgba(255, 184, 107, 0.14), transparent 24%);
+}
+
+.hero h1,
+.catalog-intro h1,
+.showcase-heading h2,
+.how h2,
+.creation-choice h2 {
+  color: var(--ink);
+  font-weight: 700 !important;
+  letter-spacing: -0.025em;
+}
+
+.hero h1 em,
+.how h2 em,
+.showcase-heading h2 em {
+  color: var(--rose);
+  font-style: normal;
+}
+
+.hero-copy > p,
+.showcase-heading > p,
+.catalog-intro > p,
+.sequence > p,
+.library > p,
+.recipient-card > p {
+  color: var(--muted);
+  font-family: "Nunito", sans-serif !important;
+}
+
+.primary,
+.phone-scene button,
+.bundle-bottom button,
+.empty-sequence button,
+.next-row > button:last-child,
+.play-action,
+.mini-action {
+  background: var(--berry) !important;
+  color: white;
+  box-shadow: 0 10px 22px -8px rgba(255, 111, 145, 0.65);
+}
+
+.preview-button,
+.checkout-bar {
+  background: var(--ink) !important;
+}
+
+.checkout-bar > button {
+  background: var(--peach) !important;
+  color: var(--ink);
+}
+
+.pill,
+.library-head > span,
+.sequence-head > span {
+  background: rgba(255, 111, 145, 0.12) !important;
+  border-color: rgba(232, 73, 109, 0.24);
+  color: var(--rose);
+}
+
+.section-kicker,
+.scratch-link,
+.activity-list > button > b,
+.play-card output,
+.puzzle-tools button {
+  color: var(--rose);
+}
+
+.magic-showcase,
+.experience-lab {
+  background:
+    radial-gradient(circle at 8% 22%, rgba(255, 111, 145, 0.13), transparent 16%),
+    radial-gradient(circle at 92% 76%, rgba(155, 140, 255, 0.14), transparent 18%),
+    var(--paper) !important;
+}
+
+.magic-card,
+.play-card,
+.steps article,
+.bundle,
+.sequence-list article,
+.recipient-card {
+  background-color: var(--paper-2);
+  border-color: var(--line);
+}
+
+.magic-card:nth-child(4n + 1),
+.bundle-1 .bundle-art {
+  background-color: rgba(255, 184, 107, 0.12);
+}
+
+.magic-card:nth-child(4n + 2),
+.bundle-2 .bundle-art {
+  background-color: rgba(155, 140, 255, 0.1);
+}
+
+.magic-card:nth-child(4n + 3),
+.bundle-art {
+  background-color: rgba(255, 111, 145, 0.1);
+}
+
+.show-wheel,
+.real-wheel {
+  background: conic-gradient(
+    #ff6f91 0 60deg,
+    #ffb86b 60deg 120deg,
+    #9b8cff 120deg 180deg,
+    #5fc9ae 180deg 240deg,
+    #e8496d 240deg 300deg,
+    #ff92ac 300deg
+  );
+}
+
+.show-slots,
+.real-slots {
+  background: var(--ink);
+}
+
+.show-slots i,
+.real-slots i {
+  background: #fff;
+}
+
+.real-lever b,
+.slot-lever {
+  background: var(--peach);
+  color: var(--peach);
+}
+
+.wheel-pointer,
+.show-wheel::before {
+  border-top-color: var(--rose);
+}
+
+.occasion-strip {
+  background: var(--rose) !important;
+}
+
+.occasion-strip > div small,
+.occasion-strip button b {
+  color: #ffe1e9;
+}
+
+.phone,
+.catalog-intro,
+.recipient-preview {
+  background-color: var(--paper);
+}
+
+.phone-envelope-back {
+  background: #ffa8bd;
+}
+
+.phone-envelope-front {
+  background:
+    linear-gradient(145deg, transparent 49.5%, #e8496d 50%),
+    linear-gradient(215deg, transparent 49.5%, #ff6f91 50%);
+}
+
+.phone-envelope-flap {
+  background: #ffc1d0;
+}
+
+.phone-letter-front,
+.phone-letter-back,
+.letter-sheet {
+  background: white;
+  border-color: var(--line);
+}
+
+.coral,
+.red,
+.pink,
+.rose {
+  background: rgba(255, 111, 145, 0.14);
+  color: var(--rose);
+}
+
+.violet,
+.purple,
+.blue {
+  background: rgba(155, 140, 255, 0.14);
+  color: #6f60db;
+}
+
+.amber,
+.gold {
+  background: rgba(255, 184, 107, 0.18);
+  color: #b96e1b;
+}
+
+.mint,
+.green {
+  background: rgba(95, 201, 174, 0.16);
+  color: #318f77;
+}
+
+.activity-list > button:hover,
+.activity-list > button.selected,
+.sequence-list article.active,
+.recipient-row button.active {
+  border-color: var(--berry);
+  background: rgba(255, 111, 145, 0.06);
+}
