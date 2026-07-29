@@ -16,6 +16,8 @@ type Block = {
   config?: Record<string, string>;
 };
 
+type WonItem = { id: number; source: string; reward: string };
+
 const activities: Block[] = [
   { id: "letter", icon: "✉", name: "Personal letter", description: "A message they tap to unfold", price: 29, color: "coral", message: "You make ordinary days feel like celebrations." },
   { id: "voice", icon: "◖", name: "Voice message", description: "Record something only you can say", price: 39, color: "violet", message: "A little message from my heart to yours." },
@@ -75,6 +77,10 @@ export default function Home() {
   const [currentTime, setCurrentTime] = useState("");
   const [occasionFx, setOccasionFx] = useState<string | null>(null);
   const [soundtrack, setSoundtrack] = useState({ enabled: false, audioUrl: "", name: "", startMode: "From the beginning", startBlockId: "", startSeconds: "0" });
+  const [completedSteps,setCompletedSteps]=useState<number[]>([]);
+  const [wonItems,setWonItems]=useState<WonItem[]>([]);
+  const [winsOpen,setWinsOpen]=useState(false);
+  const rewardCounter=useRef(0);
 
   const subtotal = useMemo(() => selected.reduce((sum, item) => sum + item.price, 0), [selected]);
   const activeBlock = selected[active];
@@ -148,6 +154,9 @@ export default function Home() {
   function launchPreview() {
     setPreviewStep(0);
     setOpened(false);
+    setCompletedSteps([]);
+    setWonItems([]);
+    setWinsOpen(false);
     setScreen("preview");
   }
 
@@ -285,15 +294,23 @@ export default function Home() {
     const effectConfig = effectBlock?.config || {};
     const effectSymbols: Record<string,string[]> = {"Flower shower":["🌸","🌷","🌼"],"Fireworks":["🎆","✨","🎇"],"Birthday party":["🎈","🎂","🎉"],"Christmas magic":["🎄","❄️","🎁"],"Hearts":["💗","💕","💖"],"Snowfall":["❄️","❅","✦"]};
     const showEffect = Boolean(effectBlock) && (effectConfig.timing === "Entire show" || (effectConfig.timing === "Only on this block" && item?.id === "flowers") || (effectConfig.timing === "After winning or interacting" && opened) || (effectConfig.timing === "At the end" && previewStep === selected.length-1));
+    const currentComplete=completedSteps.includes(previewStep);
+    function completeMoment(){setCompletedSteps(current=>current.includes(previewStep)?current:[...current,previewStep])}
+    function addReward(reward:string){
+      rewardCounter.current+=1;
+      setWonItems(current=>[...current,{id:rewardCounter.current,source:item?.name||"A surprise",reward}]);
+      setWinsOpen(true);
+    }
     return (
       <main className={`recipient-preview theme-${theme.toLowerCase().replaceAll(" ","-")}`}>
         {showEffect && <div className={`recipient-effect-overlay effect-${(effectConfig.intensity||"Lush").toLowerCase()}`} aria-hidden="true">{Array.from({length:28},(_,index)=><i key={index} style={{left:`${(index*37)%100}%`,animationDelay:`${(index%9)*-.32}s`}}>{(effectSymbols[effectConfig.effect]||effectSymbols["Flower shower"])[index%3]}</i>)}</div>}
         <button className="exit-preview" onClick={() => setScreen("builder")}>← Back to builder</button>
         <GiftSoundtrack settings={soundtrack} blocks={selected} step={previewStep} />
+        <WinningTray items={wonItems} open={winsOpen} onToggle={()=>setWinsOpen(value=>!value)} />
         <div className="recipient-experience-shell">
           <div className="preview-count">{previewStep + 1} of {selected.length}</div>
-          {!item ? <div className="preview-empty"><div className="big-symbol">♡</div><h1>Your gift needs a little magic</h1><p>Add an activity in the builder to begin.</p></div> : <BuilderLivePreview key={`${item.id}-${previewStep}`} block={item} name={name} theme={theme} ambience={ambience} onInteract={()=>setOpened(true)} />}
-          {item && <button className="primary recipient-next" onClick={() => { if (previewStep < selected.length-1) {setPreviewStep(previewStep+1);setOpened(false)} else {setPreviewStep(0);setOpened(false)} }}>{previewStep < selected.length-1 ? "Continue to the next moment" : "Experience it again"} <span>→</span></button>}
+          {!item ? <div className="preview-empty"><div className="big-symbol">♡</div><h1>Your gift needs a little magic</h1><p>Add an activity in the builder to begin.</p></div> : <BuilderLivePreview key={`${item.id}-${previewStep}`} block={item} name={name} theme={theme} ambience={ambience} onInteract={()=>setOpened(true)} onComplete={completeMoment} onReward={addReward} />}
+          {item && <div className="recipient-progress-gate"><button className="primary recipient-next" disabled={!currentComplete} onClick={() => { if (previewStep < selected.length-1) {setPreviewStep(previewStep+1);setOpened(false)} else {setPreviewStep(0);setOpened(false);setCompletedSteps([]);setWonItems([])} }}>{previewStep < selected.length-1 ? "Continue to the next moment" : "Experience it again"} <span>→</span></button>{!currentComplete&&<small>Complete this moment to unlock the next one</small>}{currentComplete&&<small className="ready">Moment complete ✓</small>}</div>}
         </div>
       </main>
     );
@@ -400,4 +417,11 @@ function GiftSoundtrack({settings,blocks,step}:{settings:SoundtrackSettings;bloc
     <div><strong>{settings.audioUrl?(settings.name||"Your soundtrack"):"Add a song in the builder"}</strong><small>{!settings.audioUrl?"No audio selected":playing&&!ready?`Queued for ${target}`:playing?"Playing through your gift":settings.startMode==="From a specific block"?`Starts at ${target}`:"Tap to play"}</small></div>
     {settings.audioUrl&&<audio ref={audioRef} src={settings.audioUrl} loop preload="metadata"/>}
   </div>;
+}
+
+function WinningTray({items,open,onToggle}:{items:WonItem[];open:boolean;onToggle:()=>void}){
+  return <aside className={`winning-tray ${open?"open":""}`}>
+    <button onClick={onToggle} aria-expanded={open}><span>🏆</span><div><strong>Things you won</strong><small>{items.length?`${items.length} collected`:"Your prizes appear here"}</small></div><b>{items.length}</b></button>
+    {open&&<div className="winning-list">{items.length===0?<p>Play the games to fill this little trophy case.</p>:items.map(item=><article key={item.id}><span>✦</span><div><small>{item.source}</small><strong>{item.reward}</strong></div></article>)}</div>}
+  </aside>;
 }
