@@ -6,13 +6,17 @@ import { playSound } from "./soundFx";
 type Props = {
   id:string;
   config:Record<string,string>;
+  giftId?:string;
+  recipientName?:string;
   onComplete?:()=>void;
   onReward?:(reward:string)=>void;
 };
 type Pair={left:string;right:string};
 type PairPhoto={id:string;image:string;caption:string};
 type Milestone={year:string;label:string};
-type BoardNote={from:string;message:string};
+type BoardNote={from:string;message:string;photos?:string[]};
+type SavedResponse={id:string;contributorName:string;responseText:string;photoUrls:string};
+const api=process.env.NEXT_PUBLIC_API_URL||"https://backend-production-22bd.up.railway.app";
 
 function parse<T>(value:string|undefined,fallback:T):T{try{return value?JSON.parse(value) as T:fallback}catch{return fallback}}
 function lines(value:string|undefined,fallback:string[]){const result=(value||"").split("\n").map(item=>item.trim()).filter(Boolean);return result.length?result:fallback}
@@ -57,11 +61,22 @@ function NeverHave({config,onComplete,onReward}:Props){
   return <div className="never-have-deck"><div className="deck-progress">{index+1}/{statements.length}</div><article><small>NEVER HAVE I EVER…</small><strong>{statements[index]}</strong></article><div><button onClick={()=>answer(false)}>I haven’t</button><button onClick={()=>answer(true)}>I have</button></div></div>;
 }
 
-function TruthDare({config,onComplete,onReward}:Props){
+function TruthDare({config,giftId,recipientName,onComplete,onReward}:Props){
   const truths=lines(config.truths,["What was your first impression of me?"]);const dares=lines(config.dares,["Send me your cutest selfie"]);
-  const [rotation,setRotation]=useState(0);const [result,setResult]=useState("");const [spinning,setSpinning]=useState(false);
-  function spin(){if(spinning)return;setSpinning(true);setResult("");playSound("wheel");const truth=randomIndex(2)===0;const prompts=truth?truths:dares;const prompt=prompts[randomIndex(prompts.length)];setRotation(value=>value+1440+(truth?0:180));window.setTimeout(()=>{setSpinning(false);setResult(`${truth?"TRUTH":"DARE"} · ${prompt}`);onReward?.(`${truth?"Truth":"Dare"}: ${prompt}`);onComplete?.();playSound("win")},1800)}
-  return <div className="truth-dare-play"><div className="td-wheel" style={{transform:`rotate(${rotation}deg)`}}><span>TRUTH</span><span>DARE</span><i>♡</i></div><i className="td-pointer"/><button onClick={spin} disabled={spinning}>{spinning?"Choosing…":"Spin roulette"}</button><output>{result||"Truth or dare? Let chance decide."}</output></div>;
+  const [rotation,setRotation]=useState(0);const [result,setResult]=useState("");const [resultType,setResultType]=useState<"TRUTH"|"DARE"|"">("");const [spinning,setSpinning]=useState(false);const [answer,setAnswer]=useState("");const [saveState,setSaveState]=useState<"idle"|"saving"|"saved"|"error">("idle");
+  function spin(){if(spinning)return;setSpinning(true);setResult("");setResultType("");setAnswer("");setSaveState("idle");playSound("wheel");const truth=randomIndex(2)===0;const prompts=truth?truths:dares;const prompt=prompts[randomIndex(prompts.length)];setRotation(value=>value+1440+(truth?0:180));window.setTimeout(()=>{setSpinning(false);setResult(prompt);setResultType(truth?"TRUTH":"DARE");playSound("reveal")},1800)}
+  async function finish(){
+    if(resultType==="TRUTH"&&!answer.trim())return;
+    setSaveState("saving");
+    try{
+      if(giftId&&resultType==="TRUTH"){
+        const response=await fetch(`${api}/api/public/gifts/${giftId}/responses`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({blockId:"truthdare",responseType:"TRUTH",contributorName:recipientName||"Recipient",responseText:`${result} — ${answer.trim()}`,photoUrls:[]})});
+        if(!response.ok)throw new Error();
+      }
+      setSaveState("saved");onReward?.(resultType==="TRUTH"?`Truth answer: ${answer.trim()}`:`Dare accepted: ${result}`);onComplete?.();playSound("win");
+    }catch{setSaveState("error")}
+  }
+  return <div className="truth-dare-play"><div className="td-wheel" style={{transform:`rotate(${rotation}deg)`}}><span>TRUTH</span><span>DARE</span><i>♡</i></div><i className="td-pointer"/><button onClick={spin} disabled={spinning||Boolean(resultType)}>{spinning?"Choosing…":resultType?"Roulette complete":"Spin roulette"}</button><output>{resultType?<><b>{resultType}</b> · {result}</>:"Truth or dare? Let chance decide."}</output>{resultType==="TRUTH"&&<div className="truth-answer-box"><label>Your answer<textarea rows={3} maxLength={500} value={answer} onChange={event=>setAnswer(event.target.value)} placeholder="Type the truth…"/></label><button onClick={finish} disabled={!answer.trim()||saveState==="saving"||saveState==="saved"}>{saveState==="saving"?"Saving…":saveState==="saved"?"Saved for sender ✓":"Save answer for sender"}</button>{saveState==="error"&&<small>Couldn’t save yet. Please try again.</small>}</div>}{resultType==="DARE"&&<button className="dare-done" onClick={finish} disabled={saveState==="saved"}>{saveState==="saved"?"Dare accepted ✓":"I’ll do it →"}</button>}</div>;
 }
 
 function TapHeart({config,onComplete,onReward}:Props){
@@ -108,7 +123,8 @@ function GrowthRing({config,onComplete}:Props){
 
 function MovieReveal({config,onComplete}:Props){
   const [revealed,setRevealed]=useState(false);
-  return <button className={`movie-poster ${revealed?"revealed":""}`} onClick={()=>{if(!revealed){setRevealed(true);playSound("reveal");onComplete?.()}}}><div className="movie-curtain left"/><div className="movie-curtain right"/><small>A MYPOOKIE. {String(config.genre||"ROMANCE").toUpperCase()}</small><strong>{config.movieTitle||"Us, Somehow"}</strong><p>{config.tagline}</p><b>STARRING {config.starring}</b><span>{revealed?"NOW PLAYING · FOREVER":"Tap for the premiere"}</span></button>;
+  const template=(config.posterTemplate||"Golden musical").toLowerCase().replaceAll(" ","-");
+  return <button className={`movie-poster poster-${template} ${config.posterImage?"uploaded":""} ${revealed?"revealed":""}`} style={config.posterImage?{backgroundImage:`linear-gradient(transparent 10%,rgba(30,15,24,.82)),url("${config.posterImage}")`}:undefined} onClick={()=>{if(!revealed){setRevealed(true);playSound("reveal");onComplete?.()}}}><div className="movie-curtain left"/><div className="movie-curtain right"/><small>A MYPOOKIE. {String(config.genre||"ROMANCE").toUpperCase()}</small><strong>{config.movieTitle||"Us, Somehow"}</strong><p>{config.tagline}</p><b>STARRING {config.starring}</b><span>{revealed?"NOW PLAYING · FOREVER":"Tap for the premiere"}</span></button>;
 }
 
 function AlwaysYou({config,onComplete,onReward}:Props){
@@ -138,7 +154,7 @@ function FortuneCookie({config,onComplete,onReward}:Props){
 function MysteryBox({config,onComplete,onReward}:Props){
   const surprises=lines(config.surprises,["A long drive"]);const [state,setState]=useState<"closed"|"shaking"|"open">("closed");const [result,setResult]=useState("");
   function open(){if(state!=="closed")return;setState("shaking");playSound("lever");window.setTimeout(()=>{const value=config.boxMode==="Always reveal the first"?surprises[0]:surprises[randomIndex(surprises.length)];setResult(value);setState("open");playSound("win");onReward?.(value);onComplete?.()},1050)}
-  return <button className={`mystery-box-play ${state}`} onClick={open}><div className="box-lid"><i/></div><div className="box-body"><span>{state==="open"?"✦":"♡"}</span></div><strong>{state==="closed"?"Tap the box":state==="shaking"?"Something is moving…":result}</strong></button>;
+  return <button className={`mystery-box-play ${state}`} onClick={open}>{state==="open"&&<div className="box-prize"><span>✦</span><strong>{result}</strong><i>YOUR SURPRISE</i></div>}<div className="box-lid"><i/></div><div className="box-body"><span>{state==="open"?"✦":"♡"}</span></div><strong className="box-instruction">{state==="closed"?"Tap the box":state==="shaking"?"Something is moving…":"Surprise!"}</strong></button>;
 }
 
 function PlaylistReveal({config,onComplete}:Props){
@@ -153,8 +169,11 @@ function CountdownInvite({config,onComplete,onReward}:Props){
   return <div className="countdown-invite"><small>YOU’RE INVITED</small><strong>{config.eventTitle||"Our surprise date"}</strong><div><b>{time.days}<span>days</span></b><b>{String(time.hours).padStart(2,"0")}<span>hours</span></b><b>{String(time.minutes).padStart(2,"0")}<span>min</span></b><b>{String(time.seconds).padStart(2,"0")}<span>sec</span></b></div><p>{config.inviteNote}</p><button className={rsvp?"accepted":""} onClick={()=>{if(!rsvp){setRsvp(true);playSound("win");onReward?.(`RSVP: I'm in for ${config.eventTitle||"the date"}`);onComplete?.()}}}>{rsvp?"You’re in! See you there ♡":"I’m in 💛"}</button></div>;
 }
 
-function GroupBoard({config,onComplete}:Props){
-  const notes=parse<BoardNote[]>(config.boardNotes,[{from:"Someone who loves you",message:"You make every room warmer."}]);const [index,setIndex]=useState(0);const viewed=useRef(new Set([0]));
-  function move(direction:number){const next=(index+direction+notes.length)%notes.length;setIndex(next);viewed.current.add(next);playSound("page");if(viewed.current.size===notes.length)onComplete?.()}
-  return <div className="group-message-board"><header><span>♡</span><div><small>A CARD FROM EVERYONE</small><strong>{notes.length} people, one big message</strong></div></header><div className="board-stack">{notes.map((note,noteIndex)=><article key={noteIndex} className={noteIndex===index?"active":""} style={{transform:`translate(${(noteIndex-index)*7}px,${Math.abs(noteIndex-index)*4}px) rotate(${(noteIndex-index)*2}deg)`}}><p>{note.message}</p><strong>— {note.from}</strong></article>)}</div><footer><button onClick={()=>move(-1)}>←</button><span>{index+1}/{notes.length}</span><button onClick={()=>move(1)}>→</button></footer></div>;
+function GroupBoard({config,giftId,onComplete}:Props){
+  const starter=parse<BoardNote[]>(config.boardNotes,[{from:"Someone who loves you",message:"You make every room warmer."}]);
+  const [received,setReceived]=useState<BoardNote[]>([]);const [index,setIndex]=useState(0);const [viewed,setViewed]=useState<number[]>([0]);
+  useEffect(()=>{if(!giftId)return;fetch(`${api}/api/public/gifts/${giftId}/responses?blockId=groupboard`).then(response=>response.ok?response.json():[]).then((responses:SavedResponse[])=>setReceived(responses.map(response=>({from:response.contributorName,message:response.responseText,photos:parse<string[]>(response.photoUrls,[])})))).catch(()=>{})},[giftId]);
+  const notes=[...starter,...received];const current=notes[index]||starter[0];
+  function select(next:number){setIndex(next);const nextViewed=viewed.includes(next)?viewed:[...viewed,next];setViewed(nextViewed);playSound("page");if(nextViewed.length===notes.length)onComplete?.()}
+  return <div className="group-message-board names-first"><header><span>♡</span><div><small>A CARD FROM EVERYONE</small><strong>{notes.length} people left something for you</strong></div></header><div className="board-names">{notes.map((note,noteIndex)=><button key={`${note.from}-${noteIndex}`} className={noteIndex===index?"active":""} onClick={()=>select(noteIndex)}><span>{note.from.slice(0,1).toUpperCase()}</span>{note.from}</button>)}</div><div className="board-reveal-card"><small>A NOTE FROM</small><strong>{current.from}</strong><p>{current.message}</p>{current.photos&&current.photos.length>0&&<div>{current.photos.map((photo,photoIndex)=><img src={photo} alt={`Memory from ${current.from} ${photoIndex+1}`} key={photoIndex}/>)}</div>}</div><footer><span>{viewed.length}/{notes.length} opened</span><small>Tap every name to complete this moment</small></footer></div>;
 }

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { LandingShowcase } from "./LandingShowcase";
 import { BuilderLivePreview } from "./BuilderLivePreview";
 import { BlockCustomization } from "./BlockCustomization";
+import { GroupContributionPage } from "./GroupContributionPage";
 
 type Block = {
   id: string;
@@ -28,11 +29,10 @@ const activities: Block[] = [
   { id: "quiz", icon: "?", name: "Playful quiz", description: "Normal or floating wrong answers", price: 49, color: "blue", category: "Playful games", message: "How well do you know us?" },
   { id: "thisorthat", icon: "↔", name: "This or that", description: "Fast little choices about your story", price: 39, color: "violet", category: "Playful games", message: "No overthinking—choose your favourite." },
   { id: "emoji", icon: "☺", name: "Emoji decoder", description: "Guess the memory hidden in symbols", price: 39, color: "amber", category: "Playful games", message: "Can you decode this little memory?" },
-  { id: "heartcatch", icon: "♡", name: "Catch the hearts", description: "A tiny reflex game with a prize", price: 39, color: "pink", category: "Playful games", message: "Catch every heart before your surprise appears." },
   { id: "wouldrather", icon: "⇄", name: "Would You Rather", description: "Swipe through sender-written either/or cards", price: 39, color: "violet", category: "Playful games", message: "Choose quickly—your picks tell a story." },
   { id: "neverhave", icon: "✋", name: "Never Have I Ever", description: "A light, shareable confession deck", price: 39, color: "amber", category: "Playful games", message: "No judgement. Maybe a little teasing." },
   { id: "truthdare", icon: "◉", name: "Truth or Dare Roulette", description: "Spin into sender-written truths and dares", price: 49, color: "red", category: "Playful games", message: "Let the wheel choose what happens next." },
-  { id: "tapheart", icon: "♥", name: "Tap the Heart", description: "Ten seconds of fast, floating-heart taps", price: 39, color: "pink", category: "Playful games", message: "How many hearts can you catch in ten seconds?" },
+  { id: "tapheart", icon: "♥", name: "Tap the Hearts", description: "Ten seconds of fast, floating-heart taps", price: 39, color: "pink", category: "Playful games", message: "How many hearts can you catch in ten seconds?" },
   { id: "matchpair", icon: "▥", name: "Match the Pair", description: "A memory flip game made from your photos", price: 59, color: "mint", category: "Playful games", message: "Find every matching memory." },
   { id: "wheel", icon: "◎", name: "Spin the wheel", description: "Custom prizes and limited spins", price: 49, color: "amber", category: "Playful games", message: "Let chance choose your surprise." },
   { id: "slots", icon: "♛", name: "Slot machine", description: "Pull the lever to reveal a prize", price: 49, color: "red", category: "Playful games", message: "Pull the lever and let the reels decide." },
@@ -71,7 +71,6 @@ const blockDefaults: Record<string, Record<string, string>> = {
   quiz: { quizQuestions: JSON.stringify([{ id: "q1", question: "Where did we first meet?", options: [{ text: "At our favourite café", image: "" }, { text: "At a party", image: "" }, { text: "Online", image: "" }, { text: "I forgot", image: "" }], correctIndex: 0, interaction: "floating" }]) },
   thisorthat: { thisOrThatRounds: JSON.stringify([{prompt:"Our perfect evening",left:"Movie night",right:"Long drive"},{prompt:"Pick a treat",left:"Ice cream",right:"Chocolate"},{prompt:"Choose our trip",left:"Mountains",right:"Beach"}]) },
   emoji: { emojiClue: "☕ + 🌧 + ♡", emojiAnswer: "our rainy cafe date", emojiHint: "Think about where we hid from the rain." },
-  heartcatch: { target: "6", prize: "Six kisses, redeemable anytime" },
   wouldrather: { pairs: JSON.stringify([{left:"Sunrise date",right:"Midnight drive"},{left:"Beach holiday",right:"Mountain cabin"},{left:"Cook together",right:"Order everything"}]) },
   neverhave: { statements: "Danced in the kitchen\nRe-read our old chats\nPlanned a surprise date\nPretended not to miss you", shareSummary: "true" },
   truthdare: { truths: "What was your first impression of me?\nWhich memory makes you smile instantly?\nWhat is one thing you want us to try?", dares: "Send me your cutest selfie\nRecreate our first photo\nPlan our next snack date" },
@@ -90,7 +89,7 @@ const blockDefaults: Record<string, Record<string, string>> = {
   countdownus: { sinceDate: "2024-02-14T18:30", counterLabel: "Since our story began" },
   constellation: { starName: "Ananya's Star", starMessage: "Even in a sky full of light, I would find you.", skyStyle: "Midnight rose" },
   growthring: { milestones: JSON.stringify([{year:"2023",label:"We met"},{year:"2024",label:"Our first adventure"},{year:"2025",label:"A thousand little memories"}]) },
-  movie: { genre: "Romantic comedy", movieTitle: "Us, Somehow", tagline: "Two people. Too many inside jokes. One beautiful story.", starring: "Ananya & Himanshu" },
+  movie: { genre: "Romantic comedy", movieTitle: "Us, Somehow", tagline: "Two people. Too many inside jokes. One beautiful story.", starring: "Ananya & Himanshu", posterTemplate: "Golden musical", posterImage: "" },
   alwaysyou: { question: "Who makes every ordinary day better?", answers: "You\nStill you\nObviously you\nThe person reading this" },
   calendar: { days: "7", unlockRule: "One per day", startDate: "", calendarNotes: JSON.stringify(["A reason I adore you","A favourite memory","A tiny promise","A photo that makes me smile","Your song of the day","A little challenge","Your final surprise"]) },
   gift: { brand: "Custom gift", code: "POOKIE-LOVE-24", value: "₹1,000", giftMessage: "Choose something that makes you smile.", interaction: "Flip to reveal", showCode: "true", showValue: "true", showNote: "true" },
@@ -104,6 +103,8 @@ function createBlock(item: Block): Block {
 }
 
 export default function Home() {
+  const browserReady=useSyncExternalStore(()=>()=>{},()=>true,()=>false);
+  const contributionGiftId=browserReady?new URLSearchParams(window.location.search).get("contribute"):null;
   const [screen, setScreen] = useState<"welcome" | "catalog" | "builder" | "preview">("welcome");
   const [recipient, setRecipient] = useState("Lover");
   const [name, setName] = useState("Ananya");
@@ -238,6 +239,9 @@ export default function Home() {
   }
 
 
+  if(!browserReady)return <main className="contribution-loading">♡</main>;
+  if(contributionGiftId)return <GroupContributionPage giftId={contributionGiftId}/>;
+
   if (screen === "welcome") {
     return (
       <main className="welcome-page">
@@ -352,7 +356,7 @@ export default function Home() {
         <WinningTray items={wonItems} open={winsOpen} onToggle={()=>setWinsOpen(value=>!value)} />
         <div className="recipient-experience-shell">
           <div className="preview-count">{previewStep + 1} of {selected.length}</div>
-          {!item ? <div className="preview-empty"><div className="big-symbol">♡</div><h1>Your gift needs a little magic</h1><p>Add an activity in the builder to begin.</p></div> : <BuilderLivePreview key={`${item.id}-${previewStep}`} block={item} name={name} theme={theme} ambience={ambience} onInteract={()=>setOpened(true)} onComplete={completeMoment} onReward={addReward} />}
+          {!item ? <div className="preview-empty"><div className="big-symbol">♡</div><h1>Your gift needs a little magic</h1><p>Add an activity in the builder to begin.</p></div> : <BuilderLivePreview key={`${item.id}-${previewStep}`} block={item} name={name} theme={theme} ambience={ambience} giftId={giftId||undefined} onInteract={()=>setOpened(true)} onComplete={completeMoment} onReward={addReward} />}
           {item && <div className="recipient-progress-gate"><button className="primary recipient-next" disabled={!currentComplete} onClick={() => { if (previewStep < selected.length-1) {setPreviewStep(previewStep+1);setOpened(false)} else {setPreviewStep(0);setOpened(false);setCompletedSteps([]);setWonItems([])} }}>{previewStep < selected.length-1 ? "Continue to the next moment" : "Experience it again"} <span>→</span></button>{!currentComplete&&<small>Complete this moment to unlock the next one</small>}{currentComplete&&<small className="ready">Moment complete ✓</small>}</div>}
         </div>
       </main>
@@ -379,14 +383,14 @@ export default function Home() {
         </aside>
         <section className="live-editor">
           <div className="live-editor-head"><div><div className="section-kicker">LIVE RECIPIENT PREVIEW</div><h2>{activeBlock ? activeBlock.name : "Choose a block to begin"}</h2><p>{activeBlock ? "Play with it here. Changes from the right appear instantly." : "Select any activity from the library and its real interaction will appear here."}</p></div>{activeBlock && <span className="live-badge"><i /> Interactive</span>}</div>
-          {activeBlock ? <BuilderLivePreview key={activeBlock.id} block={activeBlock} name={name} theme={theme} ambience={ambience} /> : <div className="empty-live-preview"><div className="empty-live-orbit"><span>✦</span><i>♡</i><b>✿</b></div><h3>Your live preview will appear here</h3><p>Try the letter, wheel, puzzle, quiz and every other block before sending it.</p><button onClick={() => selectActivity(activities[0])}>Start with a personal letter →</button></div>}
+          {activeBlock ? <BuilderLivePreview key={activeBlock.id} block={activeBlock} name={name} theme={theme} ambience={ambience} giftId={giftId||undefined} /> : <div className="empty-live-preview"><div className="empty-live-orbit"><span>✦</span><i>♡</i><b>✿</b></div><h3>Your live preview will appear here</h3><p>Try the letter, wheel, puzzle, quiz and every other block before sending it.</p><button onClick={() => selectActivity(activities[0])}>Start with a personal letter →</button></div>}
           {selected.length > 0 && <div className="journey-rail"><div className="journey-rail-head"><div><small>GIFT SEQUENCE</small><strong>{selected.length} moments for {name}</strong></div><span>Tap a block to edit it</span></div><div className="journey-chips">{selected.map((item,index)=><div className={`journey-chip ${active===index?"active":""}`} key={item.id}><button className="journey-select" onClick={()=>setActive(index)}><i className={item.color}>{item.icon}</i><span><small>{index+1}</small>{item.name}</span></button><div><button onClick={()=>move(index,-1)} disabled={index===0} aria-label={`Move ${item.name} earlier`}>←</button><button onClick={()=>move(index,1)} disabled={index===selected.length-1} aria-label={`Move ${item.name} later`}>→</button></div></div>)}</div></div>}
         </section>
         <aside className="customizer">
           <div className="customizer-head"><div className="section-kicker">CUSTOMIZE</div><span>{selected.length ? `${active+1} / ${selected.length}` : "0 / 0"}</span></div>
           {!activeBlock ? <div className="custom-empty"><span>✎</span><h3>Select an activity</h3><p>Choose a moment to personalize its words, behaviour and style.</p></div> : <>
             <div className="current-block"><i className={activeBlock.color}>{activeBlock.icon}</i><div><small>MOMENT {active+1}</small><h2>{activeBlock.name}</h2></div></div>
-            <BlockCustomization key={activeBlock.id} block={activeBlock} onMessage={updateMessage} onConfig={updateBlockConfig} />
+            <BlockCustomization key={activeBlock.id} block={activeBlock} giftId={giftId||undefined} onMessage={updateMessage} onConfig={updateBlockConfig} />
             <SoundtrackEditor settings={soundtrack} blocks={selected} onChange={patch=>setSoundtrack(current=>({...current,...patch}))} />
             <div className="style-row"><label className="field">Theme<select value={theme} onChange={e=>setTheme(e.target.value)}><option>Blush romance</option><option>Golden celebration</option><option>Midnight magic</option></select></label><label className="field">Ambience<select value={ambience} onChange={e=>setAmbience(e.target.value)}><option>Petals</option><option>Soft sparkles</option><option>None</option></select></label></div>
             <div className="customizer-live-note"><i /> You’re editing the live preview</div>

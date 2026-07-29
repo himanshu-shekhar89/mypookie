@@ -38,7 +38,7 @@ async function imageToDataUrl(file: File): Promise<string> {
   }
 }
 
-export function BlockCustomization({ block, onMessage, onConfig }: { block: CustomBlock; onMessage: (value: string) => void; onConfig: (key: string, value: string) => void }) {
+export function BlockCustomization({ block, giftId, onMessage, onConfig }: { block: CustomBlock; giftId?:string; onMessage: (value: string) => void; onConfig: (key: string, value: string) => void }) {
   const config = block.config || {};
 
   async function imageUpload(key: string, nameKey: string, files: FileList | null) {
@@ -104,7 +104,7 @@ export function BlockCustomization({ block, onMessage, onConfig }: { block: Cust
 
   if (block.id === "calendar") return <CalendarEditor config={config} onConfig={onConfig} />;
 
-  if (["wouldrather","neverhave","truthdare","tapheart","matchpair","countdownus","constellation","growthring","movie","alwaysyou","excuse","roast","fortune","mysterybox","playlist","countdowninvite","groupboard"].includes(block.id)) return <TinyBlockCustomization id={block.id} config={config} onConfig={onConfig} />;
+  if (["wouldrather","neverhave","truthdare","tapheart","matchpair","countdownus","constellation","growthring","movie","alwaysyou","excuse","roast","fortune","mysterybox","playlist","countdowninvite","groupboard"].includes(block.id)) return <TinyBlockCustomization id={block.id} config={config} giftId={giftId} onConfig={onConfig} />;
 
   return <GiftCardEditor config={config} onConfig={onConfig} />;
 }
