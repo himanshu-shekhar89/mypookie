@@ -7,7 +7,9 @@ import com.mypookie.api.model.ExperienceResponse;
 import com.mypookie.api.repository.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import java.util.*;
 
 @RestController
@@ -33,6 +35,7 @@ public class ExperienceResponseController {
  @PostMapping
  public ExperienceResponse create(@PathVariable String giftId,@Valid @RequestBody ExperienceResponseRequest request) throws JsonProcessingException {
   gifts.findById(giftId).orElseThrow();
+  if("GROUP_MESSAGE".equalsIgnoreCase(request.responseType()))throw new ResponseStatusException(HttpStatus.GONE,"Use a one-time contribution invitation.");
   var response=new ExperienceResponse();
   response.setId(UUID.randomUUID().toString());
   response.setGiftId(giftId);

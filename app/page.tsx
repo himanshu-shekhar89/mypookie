@@ -5,7 +5,7 @@ import { LandingShowcase } from "./LandingShowcase";
 import { BuilderLivePreview } from "./BuilderLivePreview";
 import { BlockCustomization } from "./BlockCustomization";
 import { GroupContributionPage } from "./GroupContributionPage";
-import { CheckoutPage } from "./CheckoutPage";
+import { CheckoutPage, type PaymentOrder, type RazorpayResult } from "./CheckoutPage";
 import { PublicGiftExperience } from "./PublicGiftExperience";
 
 type Block = {
@@ -215,7 +215,7 @@ export default function Home() {
   async function saveDraft():Promise<string|null> {
     setSaveState("saving");
     try {
-      const api = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+      const api = process.env.NEXT_PUBLIC_API_URL || "https://backend-production-22bd.up.railway.app";
       const body = {
         title: `${occasion} for ${name}`,
         recipientName: name,
@@ -255,21 +255,38 @@ export default function Home() {
     setAfterAuth(null);
   }
 
-  async function placeOrder(coupon:string){
+  async function createPaymentOrder(coupon:string):Promise<PaymentOrder|null>{
     const id=await saveDraft();
     if(!id)return null;
     try{
-      const api=process.env.NEXT_PUBLIC_API_URL||"http://localhost:8080";
-      const order=await fetch(`${api}/api/orders`,{method:"POST",headers:{"Content-Type":"application/json","X-Demo-User":"local-creator"},body:JSON.stringify({giftId:id,couponCode:coupon})});
-      if(!order.ok)throw new Error();
-      const publish=await fetch(`${api}/api/gifts/${id}/publish`,{method:"POST",headers:{"X-Demo-User":"local-creator"}});
-      if(!publish.ok)throw new Error();
-      const published=await publish.json();
-      return `${window.location.origin}/?gift=${published.shareToken}`;
+      const api=process.env.NEXT_PUBLIC_API_URL||"https://backend-production-22bd.up.railway.app";
+      const response=await fetch(`${api}/api/orders`,{method:"POST",headers:{"Content-Type":"application/json","X-Demo-User":"local-creator"},body:JSON.stringify({giftId:id,couponCode:coupon})});
+      if(!response.ok)throw new Error();
+      return await response.json() as PaymentOrder;
     }catch{
       setSaveState("offline");
       return null;
     }
+  }
+
+  async function verifyPayment(orderId:string,result:RazorpayResult){
+    try{
+      const api=process.env.NEXT_PUBLIC_API_URL||"https://backend-production-22bd.up.railway.app";
+      const response=await fetch(`${api}/api/orders/${orderId}/verify`,{method:"POST",headers:{"Content-Type":"application/json","X-Demo-User":"local-creator"},body:JSON.stringify({razorpayOrderId:result.razorpay_order_id,razorpayPaymentId:result.razorpay_payment_id,razorpaySignature:result.razorpay_signature})});
+      if(!response.ok)throw new Error();
+      const paid=await response.json();
+      return `${window.location.origin}/?gift=${paid.shareToken}`;
+    }catch{return null}
+  }
+
+  async function completeDemoPayment(orderId:string){
+    try{
+      const api=process.env.NEXT_PUBLIC_API_URL||"https://backend-production-22bd.up.railway.app";
+      const response=await fetch(`${api}/api/orders/${orderId}/demo-complete`,{method:"POST",headers:{"X-Demo-User":"local-creator"}});
+      if(!response.ok)throw new Error();
+      const paid=await response.json();
+      return `${window.location.origin}/?gift=${paid.shareToken}`;
+    }catch{return null}
   }
 
   function celebrateOccasion(type: string) {
@@ -280,7 +297,7 @@ export default function Home() {
 
 
   if(!browserReady)return <main className="contribution-loading">♡</main>;
-  if(contributionGiftId)return <GroupContributionPage giftId={contributionGiftId}/>;
+  if(contributionGiftId)return <GroupContributionPage inviteToken={contributionGiftId}/>;
   if(publicGiftToken)return <PublicGiftExperience token={publicGiftToken}/>;
 
   const signInPopup=authOpen?<SignInPopup onClose={()=>setAuthOpen(false)} onSignIn={finishSignIn}/>:null;
@@ -381,7 +398,7 @@ export default function Home() {
   }
 
   if (screen === "checkout") {
-    return <>{signInPopup}<CheckoutPage blocks={selected} name={name} occasion={occasion} subtotal={subtotal} revealAt={revealAt} onRevealAt={setRevealAt} onBack={() => setScreen("builder")} onPlaceOrder={placeOrder}/></>;
+    return <>{signInPopup}<CheckoutPage blocks={selected} name={name} occasion={occasion} subtotal={subtotal} revealAt={revealAt} onRevealAt={setRevealAt} onBack={() => setScreen("builder")} onCreateOrder={createPaymentOrder} onVerifyPayment={verifyPayment} onDemoComplete={completeDemoPayment}/></>;
   }
 
   if (screen === "preview") {
@@ -449,7 +466,7 @@ export default function Home() {
           </>}
         </aside>
       </div>
-      <footer className="checkout-bar"><div><small>YOUR GIFT</small><strong>{selected.length} moments for {name}</strong></div><div className="price"><span>Live total</span><strong>₹{subtotal}</strong></div><button disabled={!selected.length} onClick={() => signedIn ? setScreen("checkout") : requestSignIn("checkout")}>Checkout & schedule <span>→</span></button></footer>
+      <footer className="checkout-bar"><div><small>YOUR GIFT</small><strong>{selected.length} moments for {name}</strong></div><div className="price"><span>Live total</span><strong>₹{subtotal}</strong></div><button disabled={!selected.length} onClick={() => signedIn ? setScreen("checkout") : requestSignIn("checkout")}>Checkout <span>→</span></button></footer>
     </main>
   );
 }
