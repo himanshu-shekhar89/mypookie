@@ -47,7 +47,12 @@ export function LandingShowcase() {
     setWheelSpinning(true);
     setWheelPrize("Spinning…");
     const winningIndex = Math.floor(Math.random() * prizes.length);
-    setWheelRotation(value => value + 1440 + (360 - winningIndex * 60 - 30) + Math.floor(Math.random() * 3) * 360);
+    setWheelRotation(value => {
+      const currentAngle = ((value % 360) + 360) % 360;
+      const targetAngle = (360 - (winningIndex * 60 + 30)) % 360;
+      const exactOffset = (targetAngle - currentAngle + 360) % 360;
+      return value + 1440 + exactOffset;
+    });
     window.setTimeout(() => {
       setWheelPrize(`You won: ${prizes[winningIndex]} ♡`);
       setWheelSpinning(false);

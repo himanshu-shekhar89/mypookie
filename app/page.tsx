@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { LandingShowcase } from "./LandingShowcase";
 
 type Block = {
@@ -48,11 +48,19 @@ export default function Home() {
   const [opened, setOpened] = useState(false);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "offline">("idle");
   const [giftId, setGiftId] = useState<string | null>(null);
-  const [heroOpened, setHeroOpened] = useState(false);
+  const [heroStage, setHeroStage] = useState<"closed" | "open" | "flipped">("closed");
+  const [currentTime, setCurrentTime] = useState("");
   const [occasionFx, setOccasionFx] = useState<string | null>(null);
 
   const subtotal = useMemo(() => selected.reduce((sum, item) => sum + item.price, 0), [selected]);
   const activeBlock = selected[active];
+
+  useEffect(() => {
+    const updateClock = () => setCurrentTime(new Intl.DateTimeFormat([], { hour: "numeric", minute: "2-digit" }).format(new Date()));
+    updateClock();
+    const timer = window.setInterval(updateClock, 30000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   function useBundle(ids: string[]) {
     setSelected(ids.map(id => activities.find(a => a.id === id)!).filter(Boolean));
@@ -124,7 +132,7 @@ export default function Home() {
         <div className="landing-motion" aria-hidden="true"><i/><i/><i/><span>♡</span><span>✦</span><span>✿</span></div>
         {occasionFx && <div className={`occasion-fx fx-${occasionFx}`} aria-live="polite"><div className="fx-icons">{occasionFx === "birthday" ? <><i>🎈</i><i>🎂</i><i>🎉</i><i>🎈</i><i>✨</i></> : occasionFx === "anniversary" ? <><i>♡</i><i>💐</i><i>💍</i><i>♡</i><i>✨</i></> : occasionFx === "friendship" ? <><i>🎊</i><i>📸</i><i>🥳</i><i>🎊</i><i>⭐</i></> : <><i>🌸</i><i>💌</i><i>✨</i><i>🌷</i><i>♡</i></>}</div><strong>{occasionFx === "birthday" ? "Make their birthday pop!" : occasionFx === "anniversary" ? "Celebrate every chapter." : occasionFx === "friendship" ? "For your favourite chaos." : "Because ordinary days deserve magic."}</strong></div>}
         <nav className="nav">
-          <button className="brand" onClick={() => setScreen("welcome")}><span>m</span> mypookie.</button>
+          <button className="brand" onClick={() => setScreen("welcome")}><span className="brand-heart">♥</span> mypookie.</button>
           <div className="nav-links"><a href="#how">How it works</a><a href="#ideas">Gift ideas</a><a href="#pricing">Pricing</a></div>
           <button className="signin">Continue with Google <span>→</span></button>
         </nav>
@@ -142,15 +150,25 @@ export default function Home() {
           <div className="hero-art">
             <div className="orbit orbit-one" />
             <div className="orbit orbit-two" />
-            <div className={`phone ${heroOpened ? "surprise-opened" : ""}`}>
-              <div className="phone-top"><span>9:41</span><i /></div>
+            <div className={`phone phone-stage-${heroStage}`}>
+              <div className="phone-top"><span>{currentTime}</span><i /><b>●　⌁</b></div>
               <div className="phone-scene">
                 <div className="mini-petals">✿　·　✿</div>
                 <small>A LITTLE SOMETHING FOR</small>
                 <h3>Ananya</h3>
-                <div className="envelope"><div className="letter">You make every day brighter ♡</div><div className="flap" /></div>
-                <div className="phone-reveal"><img src="/mypookie-puzzle-picnic.png" alt="" /><strong>One beautiful memory</strong><span>and a hundred more to make ♡</span></div>
-                <button onClick={() => setHeroOpened(value => !value)}>{heroOpened ? "Close surprise" : "Open your surprise"}</button>
+                <div className="phone-envelope" role="button" tabIndex={0} onClick={() => heroStage === "closed" && setHeroStage("open")} onKeyDown={event => { if ((event.key === "Enter" || event.key === " ") && heroStage === "closed") setHeroStage("open"); }}>
+                  <div className="phone-card-wrap">
+                    <button className="phone-letter-card" onClick={event => { event.stopPropagation(); if (heroStage === "open") setHeroStage("flipped"); else if (heroStage === "flipped") setHeroStage("open"); }} aria-label={heroStage === "flipped" ? "Show letter message" : "Flip letter to reveal photo"}>
+                      <span className="phone-letter-front">You make every day<br/>brighter ♡<small>tap the letter</small></span>
+                      <span className="phone-letter-back"><img src="/mypookie-letter-photo.png" alt="A happy memory at the fair" /><small>one of my favourite memories</small></span>
+                    </button>
+                  </div>
+                  <div className="phone-envelope-back" />
+                  <div className="phone-envelope-front" />
+                  <div className="phone-envelope-flap" />
+                  <b className="phone-wax">♥</b>
+                </div>
+                <button className="phone-open-action" onClick={() => setHeroStage(heroStage === "closed" ? "open" : "closed")}>{heroStage === "closed" ? "Open your surprise" : "Close surprise"}</button>
               </div>
             </div>
             <div className="float-card card-memory"><span>⌁</span><div><small>MEMORY LANE</small><strong>Our first adventure</strong></div></div>
@@ -184,7 +202,7 @@ export default function Home() {
   if (screen === "catalog") {
     return (
       <main className="product-page">
-        <header className="app-header"><button className="brand" onClick={() => setScreen("welcome")}><span>m</span> mypookie.</button><div className="progress"><i className="done"/><i/><i/><span>Start</span></div><button className="avatar">H</button></header>
+        <header className="app-header"><button className="brand" onClick={() => setScreen("welcome")}><span className="brand-heart">♥</span> mypookie.</button><div className="progress"><i className="done"/><i/><i/><span>Start</span></div><button className="avatar">H</button></header>
         <section className="catalog-intro">
           <button className="back" onClick={() => setScreen("welcome")}>← Back</button>
           <div className="section-kicker">LET’S MAKE SOMETHING BEAUTIFUL</div>
@@ -227,7 +245,7 @@ export default function Home() {
 
   return (
     <main className="builder-page">
-      <header className="app-header builder-header"><button className="brand" onClick={() => setScreen("welcome")}><span>m</span> mypookie.</button><div className="gift-title"><small>CREATING FOR</small><strong>{name || "Someone special"} <i>♡</i></strong></div><div className="header-actions"><button className="quiet" onClick={saveDraft}>{saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved ✓" : saveState === "offline" ? "Backend offline · Retry" : "Save draft"}</button><button className="preview-button" onClick={launchPreview}>Preview gift <span>▶</span></button></div></header>
+      <header className="app-header builder-header"><button className="brand" onClick={() => setScreen("welcome")}><span className="brand-heart">♥</span> mypookie.</button><div className="gift-title"><small>CREATING FOR</small><strong>{name || "Someone special"} <i>♡</i></strong></div><div className="header-actions"><button className="quiet" onClick={saveDraft}>{saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved ✓" : saveState === "offline" ? "Backend offline · Retry" : "Save draft"}</button><button className="preview-button" onClick={launchPreview}>Preview gift <span>▶</span></button></div></header>
       <div className="builder-shell">
         <aside className="library">
           <div className="library-head"><div><div className="section-kicker">ACTIVITY LIBRARY</div><h2>Add a little magic</h2></div><span>{activities.length}</span></div>
