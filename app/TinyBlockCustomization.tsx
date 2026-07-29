@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { authHeaders } from "./authClient";
 
 type Props = {
   id: string;
@@ -105,7 +106,7 @@ function GroupBoardEditor({config,giftId,onConfig}:{config:Record<string,string>
     if(!giftId)return;
     setCreating(true);setInviteError("");
     try{
-      const response=await fetch(`${api}/api/gifts/${giftId}/contribution-invites`,{method:"POST",headers:{"X-Demo-User":"local-creator"}});
+      const response=await fetch(`${api}/api/gifts/${giftId}/contribution-invites`,{method:"POST",headers:await authHeaders()});
       if(!response.ok)throw new Error();
       const invite=await response.json();
       setLink(`${window.location.origin}/?contribute=${invite.token}`);

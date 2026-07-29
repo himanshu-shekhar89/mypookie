@@ -21,26 +21,31 @@ public class OrderController {
  private final UserService users;
  private final GiftService giftService;
  private final RazorpayService razorpay;
+ private final CouponService couponService;
+
+ @PostMapping("/quote")
+ public Map<String,Object> quote(@AuthenticationPrincipal FirebaseAuthenticationFilter.UserPrincipal principal,@Valid @RequestBody OrderRequest request){
+  var user=users.resolve(principal);
+  var gift=gifts.findById(request.giftId()).orElseThrow();
+  if(!gift.getSenderId().equals(user.getId()))throw new SecurityException("Not your gift");
+  var quote=couponService.quote(request.couponCode(),gift.getTotalPaise());
+  return Map.of("couponCode",quote.code(),"subtotalPaise",gift.getTotalPaise(),"discountPaise",quote.discountPaise(),"totalPaise",Math.max(0,gift.getTotalPaise()-quote.discountPaise()));
+ }
 
  @PostMapping
  public PaymentOrderResponse create(@AuthenticationPrincipal FirebaseAuthenticationFilter.UserPrincipal principal,@Valid @RequestBody OrderRequest request){
   var user=users.resolve(principal);
   var gift=gifts.findById(request.giftId()).orElseThrow();
   if(!gift.getSenderId().equals(user.getId()))throw new SecurityException("Not your gift");
-  var coupon=Optional.ofNullable(request.couponCode()).orElse("").trim().toUpperCase();
-  if(!coupon.isBlank()&&!Set.of("POOKIE10","FIRSTGIFT","LOVE50").contains(coupon))throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"This coupon is not active.");
   int total=gift.getTotalPaise();
-  int discount=switch(coupon){
-   case "POOKIE10" -> total/10;
-   case "FIRSTGIFT" -> Math.min(total*15/100,15000);
-   case "LOVE50" -> Math.min(5000,total);
-   default -> 0;
-  };
+  var quote=couponService.quote(request.couponCode(),total);
   var order=new GiftOrder();
   order.setId(UUID.randomUUID().toString());
   order.setGiftId(gift.getId());
   order.setSenderId(user.getId());
-  order.setAmountPaise(Math.max(0,total-discount));
+  order.setAmountPaise(Math.max(0,total-quote.discountPaise()));
+  order.setCouponCode(quote.code());
+  order.setDiscountPaise(quote.discountPaise());
   order.setCurrency("INR");
   if(order.getAmountPaise()==0){
    order.setProviderOrderId("FREE_"+order.getId());
@@ -61,10 +66,12 @@ public class OrderController {
   var user=users.resolve(principal);
   var order=orders.findById(orderId).orElseThrow();
   if(!order.getSenderId().equals(user.getId()))throw new SecurityException("Not your order");
+  if(Set.of("PAID","PAID_DEMO").contains(order.getStatus())){var paidGift=gifts.findById(order.getGiftId()).orElseThrow();return Map.of("shareToken",paidGift.getShareToken(),"status",order.getStatus());}
   if(!Objects.equals(order.getProviderOrderId(),request.razorpayOrderId())||!razorpay.verify(order.getProviderOrderId(),request.razorpayPaymentId(),request.razorpaySignature()))throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Payment verification failed.");
   order.setProviderPaymentId(request.razorpayPaymentId());
   order.setStatus("PAID");
   orders.save(order);
+  couponService.redeem(order.getCouponCode());
   var gift=giftService.publish(user.getId(),order.getGiftId());
   return Map.of("shareToken",gift.getShareToken(),"status","PAID");
  }
@@ -75,9 +82,11 @@ public class OrderController {
   if(razorpay.configured()&&order.getAmountPaise()>0)throw new ResponseStatusException(HttpStatus.NOT_FOUND);
   var user=users.resolve(principal);
   if(!order.getSenderId().equals(user.getId()))throw new SecurityException("Not your order");
+  if(Set.of("PAID","PAID_DEMO").contains(order.getStatus())){var paidGift=gifts.findById(order.getGiftId()).orElseThrow();return Map.of("shareToken",paidGift.getShareToken(),"status",order.getStatus());}
   order.setStatus("PAID_DEMO");
   order.setProviderPaymentId("DEMO_PAYMENT_"+UUID.randomUUID());
   orders.save(order);
+  couponService.redeem(order.getCouponCode());
   var gift=giftService.publish(user.getId(),order.getGiftId());
   return Map.of("shareToken",gift.getShareToken(),"status","PAID_DEMO");
  }

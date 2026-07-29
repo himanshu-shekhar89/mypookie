@@ -17,6 +17,8 @@ app:
   frontend-url: ${FRONTEND_URL:http://localhost:3000}
   auth:
     firebase-enabled: ${FIREBASE_ENABLED:false}
+    firebase-service-account-base64: ${FIREBASE_SERVICE_ACCOUNT_BASE64:}
+    admin-emails: ${ADMIN_EMAILS:}
   razorpay:
     key-id: ${RAZORPAY_KEY_ID:}
     key-secret: ${RAZORPAY_KEY_SECRET:}

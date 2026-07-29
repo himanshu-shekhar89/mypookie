@@ -12,7 +12,7 @@ public class SecurityConfig {
  @Bean SecurityFilterChain security(HttpSecurity http) throws Exception {
   return http.csrf(c->c.disable()).cors(c->c.configurationSource(cors()))
    .sessionManagement(s->s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-   .authorizeHttpRequests(a->a.requestMatchers("/error","/api/health","/api/auth/session","/api/catalog/**","/api/public/**","/api/ai/**").permitAll().anyRequest().authenticated())
+   .authorizeHttpRequests(a->a.requestMatchers("/error","/api/health","/api/catalog/**","/api/public/**","/api/ai/**").permitAll().requestMatchers("/api/admin/**").hasRole("ADMIN").anyRequest().authenticated())
    .addFilterBefore(firebaseFilter, UsernamePasswordAuthenticationFilter.class).build();
  }
  @Bean CorsConfigurationSource cors(){var c=new CorsConfiguration();c.setAllowedOriginPatterns(List.of(frontendUrl,"https://*.chatgpt.site","http://localhost:*"));c.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));c.setAllowedHeaders(List.of("*"));c.setAllowCredentials(true);var s=new UrlBasedCorsConfigurationSource();s.registerCorsConfiguration("/**",c);return s;}

@@ -4,7 +4,7 @@ import com.mypookie.api.repository.*; import lombok.RequiredArgsConstructor; imp
 import java.time.Instant; import java.util.*;
 @Service @RequiredArgsConstructor
 public class GiftService {
- private final GiftRepository gifts; private final ActivityTypeRepository activities; private final ObjectMapper json;
+ private final GiftRepository gifts; private final ActivityTypeRepository activities; private final BundleRepository bundles; private final ObjectMapper json;
  public Gift save(String senderId,String id,GiftRequest r){
   Gift g=id==null?new Gift():gifts.findById(id).orElseThrow();
   if(id==null){g.setId(UUID.randomUUID().toString());g.setSenderId(senderId);g.setStatus("DRAFT");}
@@ -18,6 +18,15 @@ public class GiftService {
    if(!blocks.isArray())throw new IllegalArgumentException("Missing blocks");
    Set<String> ids=new HashSet<>();
    blocks.forEach(n->ids.add(n.path("id").asText()));
+   String bundleId=root.path("bundleId").asText("");
+   if(!bundleId.isBlank()){
+    var bundle=bundles.findById(bundleId).filter(Bundle::isActive).orElse(null);
+    if(bundle!=null){
+     var configured=json.readTree(bundle.getActivityIds());
+     Set<String> bundleIds=new HashSet<>();configured.forEach(node->bundleIds.add(node.asText()));
+     if(bundleIds.equals(ids))return bundle.getPricePaise();
+    }
+   }
    return activities.findAllById(ids).stream().mapToInt(ActivityType::getPricePaise).sum();
   }
   catch(Exception e){throw new IllegalArgumentException("Invalid blocks JSON");}

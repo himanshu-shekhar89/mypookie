@@ -5,6 +5,9 @@ import lombok.RequiredArgsConstructor; import org.springframework.stereotype.Ser
 public class UserService {
  private final AppUserRepository users;
  public AppUser resolve(FirebaseAuthenticationFilter.UserPrincipal p){
-  return users.findByFirebaseUid(p.uid()).orElseGet(()->{var u=new AppUser();u.setId(UUID.randomUUID().toString());u.setFirebaseUid(p.uid());u.setEmail(p.email());u.setDisplayName(p.email().split("@")[0]);return users.save(u);});
+  var user=users.findByFirebaseUid(p.uid()).orElseGet(()->{var u=new AppUser();u.setId(UUID.randomUUID().toString());u.setFirebaseUid(p.uid());u.setEmail(p.email());u.setDisplayName(p.email().split("@")[0]);return u;});
+  user.setEmail(p.email());
+  if(p.admin())user.setRole("ADMIN");
+  return users.save(user);
  }
 }

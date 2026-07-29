@@ -7,6 +7,8 @@ import { BlockCustomization } from "./BlockCustomization";
 import { GroupContributionPage } from "./GroupContributionPage";
 import { CheckoutPage, type PaymentOrder, type RazorpayResult } from "./CheckoutPage";
 import { PublicGiftExperience } from "./PublicGiftExperience";
+import { AdminPanel } from "./AdminPanel";
+import { authHeaders, signInWithFirebase, watchFirebaseAuth } from "./authClient";
 
 type Block = {
   id: string;
@@ -63,6 +65,11 @@ const bundles = [
   { id: "friend", badge: "Good chaos", name: "Best friend forever", copy: "Shared lore, silly questions and real appreciation.", ids: ["voice", "memory", "quiz", "puzzle", "gift"], price: 219, tone: "friend" },
 ];
 
+type CatalogResponse = {
+  activities: Array<{id:string;name:string;description:string;pricePaise:number;active:boolean}>;
+  bundles: Array<{id:string;name:string;description:string;pricePaise:number;activityIds:string;active:boolean}>;
+};
+
 const recipients = ["Lover", "Friend", "Parents", "Sibling", "Other"];
 
 const blockDefaults: Record<string, Record<string, string>> = {
@@ -109,11 +116,13 @@ export default function Home() {
   const urlParams=browserReady?new URLSearchParams(window.location.search):null;
   const contributionGiftId=urlParams?.get("contribute")||null;
   const publicGiftToken=urlParams?.get("gift")||null;
+  const adminMode=urlParams?.get("admin")==="true";
   const [screen, setScreen] = useState<"welcome" | "catalog" | "builder" | "preview" | "checkout">("welcome");
   const [recipient, setRecipient] = useState("Lover");
   const [name, setName] = useState("Ananya");
   const [occasion, setOccasion] = useState("Just because");
   const [selected, setSelected] = useState<Block[]>([]);
+  const [selectedBundleId,setSelectedBundleId]=useState<string|null>(null);
   const [active, setActive] = useState(0);
   const [theme, setTheme] = useState("Blush romance");
   const [ambience, setAmbience] = useState("Petals");
@@ -127,14 +136,17 @@ export default function Home() {
   const [soundtrack, setSoundtrack] = useState({ enabled: false, templateId: "warm-sunset", audioUrl: "/music/warm-sunset.mp3", name: "Warm Sunset", startMode: "From the beginning", startBlockId: "", startSeconds: "0" });
   const [revealAt,setRevealAt]=useState("");
   const [signedIn,setSignedIn]=useState(false);
+  const [authError,setAuthError]=useState("");
   const [authOpen,setAuthOpen]=useState(false);
   const [afterAuth,setAfterAuth]=useState<"save"|"checkout"|null>(null);
   const [completedSteps,setCompletedSteps]=useState<number[]>([]);
   const [wonItems,setWonItems]=useState<WonItem[]>([]);
   const [winsOpen,setWinsOpen]=useState(false);
   const rewardCounter=useRef(0);
+  const [catalogActivities,setCatalogActivities]=useState<Block[]>(activities);
+  const [catalogBundles,setCatalogBundles]=useState(bundles);
 
-  const subtotal = useMemo(() => selected.reduce((sum, item) => sum + item.price, 0), [selected]);
+  const subtotal = useMemo(() => selectedBundleId ? (catalogBundles.find(bundle=>bundle.id===selectedBundleId)?.price ?? selected.reduce((sum,item)=>sum+item.price,0)) : selected.reduce((sum,item)=>sum+item.price,0), [selected,selectedBundleId,catalogBundles]);
   const activeBlock = selected[active];
 
   useEffect(() => {
@@ -144,8 +156,30 @@ export default function Home() {
     return () => window.clearInterval(timer);
   }, []);
 
-  function chooseBundle(ids: string[]) {
-    setSelected(ids.map(id => activities.find(a => a.id === id)).filter(Boolean).map(item => createBlock(item!)));
+  useEffect(()=>watchFirebaseAuth(user=>setSignedIn(Boolean(user))),[]);
+
+  useEffect(()=>{
+    const controller=new AbortController();
+    const api=process.env.NEXT_PUBLIC_API_URL||"https://backend-production-22bd.up.railway.app";
+    fetch(`${api}/api/catalog`,{signal:controller.signal}).then(response=>response.ok?response.json():Promise.reject()).then((catalog:CatalogResponse)=>{
+      const byId=new Map(catalog.activities.map(item=>[item.id,item]));
+      setCatalogActivities(activities.filter(item=>byId.has(item.id)).map(item=>{
+        const managed=byId.get(item.id)!;
+        return {...item,name:managed.name,description:managed.description,price:managed.pricePaise/100};
+      }));
+      setCatalogBundles(bundles.filter(bundle=>catalog.bundles.some(item=>item.id===bundle.id)).map(bundle=>{
+        const managed=catalog.bundles.find(item=>item.id===bundle.id)!;
+        let ids=bundle.ids;
+        try{const parsed=JSON.parse(managed.activityIds);if(Array.isArray(parsed))ids=parsed.filter(value=>typeof value==="string")}catch{}
+        return {...bundle,name:managed.name,copy:managed.description,price:managed.pricePaise/100,ids};
+      }));
+    }).catch(()=>{});
+    return()=>controller.abort();
+  },[]);
+
+  function chooseBundle(ids: string[],bundleId:string) {
+    setSelected(ids.map(id => catalogActivities.find(a => a.id === id)).filter(Boolean).map(item => createBlock(item!)));
+    setSelectedBundleId(bundleId);
     setActive(0);
     setScreen("builder");
   }
@@ -157,6 +191,7 @@ export default function Home() {
       return;
     }
     setSelected(current => [...current, createBlock(item)]);
+    setSelectedBundleId(null);
     setActive(selected.length);
   }
 
@@ -168,11 +203,13 @@ export default function Home() {
         return;
       }
       setSelected(current => [...current, createBlock(item)]);
+      setSelectedBundleId(null);
       setActive(selected.length);
       return;
     }
     if (existingIndex < 0) return;
     setSelected(current => current.filter(block => block.id !== item.id));
+    setSelectedBundleId(null);
     setActive(current => {
       if (existingIndex < current) return current - 1;
       if (existingIndex === current) return Math.max(0, Math.min(current, selected.length - 2));
@@ -183,6 +220,7 @@ export default function Home() {
   function removeActiveBlock() {
     if (!activeBlock) return;
     setSelected(current => current.filter((_, index) => index !== active));
+    setSelectedBundleId(null);
     setActive(current => Math.max(0, Math.min(current, selected.length - 2)));
   }
 
@@ -223,12 +261,12 @@ export default function Home() {
         occasion,
         theme,
         ambience,
-        blocksJson: JSON.stringify({ version: 2, blocks: selected, soundtrack }),
+        blocksJson: JSON.stringify({ version: 2, blocks: selected, soundtrack, bundleId:selectedBundleId }),
         scheduledAt: revealAt ? new Date(revealAt).toISOString() : null,
       };
       const response = await fetch(`${api}/api/gifts${giftId ? `/${giftId}` : ""}`, {
         method: giftId ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json", "X-Demo-User": "local-creator" },
+        headers: { "Content-Type": "application/json",...(await authHeaders()) },
         body: JSON.stringify(body),
       });
       if (!response.ok) throw new Error("Save failed");
@@ -247,12 +285,20 @@ export default function Home() {
     setAuthOpen(true);
   }
 
-  function finishSignIn(){
-    setSignedIn(true);
-    setAuthOpen(false);
-    if(afterAuth==="save")window.setTimeout(()=>void saveDraft(),0);
-    if(afterAuth==="checkout")window.setTimeout(()=>setScreen("checkout"),0);
-    setAfterAuth(null);
+  async function finishSignIn(provider:"google"|"apple"){
+    setAuthError("");
+    try{
+      const user=await signInWithFirebase(provider);
+      const api=process.env.NEXT_PUBLIC_API_URL||"https://backend-production-22bd.up.railway.app";
+      await fetch(`${api}/api/auth/session`,{method:"POST",headers:await authHeaders()});
+      setSignedIn(Boolean(user));
+      setAuthOpen(false);
+      if(afterAuth==="save")window.setTimeout(()=>void saveDraft(),0);
+      if(afterAuth==="checkout")window.setTimeout(()=>setScreen("checkout"),0);
+      setAfterAuth(null);
+    }catch{
+      setAuthError(provider==="apple"?"Apple sign-in needs the Apple Developer credentials to be enabled. Please use Google for now.":"Google sign-in did not finish. Please allow the popup and try again.");
+    }
   }
 
   async function createPaymentOrder(coupon:string):Promise<PaymentOrder|null>{
@@ -260,7 +306,7 @@ export default function Home() {
     if(!id)return null;
     try{
       const api=process.env.NEXT_PUBLIC_API_URL||"https://backend-production-22bd.up.railway.app";
-      const response=await fetch(`${api}/api/orders`,{method:"POST",headers:{"Content-Type":"application/json","X-Demo-User":"local-creator"},body:JSON.stringify({giftId:id,couponCode:coupon})});
+      const response=await fetch(`${api}/api/orders`,{method:"POST",headers:{"Content-Type":"application/json",...(await authHeaders())},body:JSON.stringify({giftId:id,couponCode:coupon})});
       if(!response.ok)throw new Error();
       return await response.json() as PaymentOrder;
     }catch{
@@ -272,7 +318,7 @@ export default function Home() {
   async function verifyPayment(orderId:string,result:RazorpayResult){
     try{
       const api=process.env.NEXT_PUBLIC_API_URL||"https://backend-production-22bd.up.railway.app";
-      const response=await fetch(`${api}/api/orders/${orderId}/verify`,{method:"POST",headers:{"Content-Type":"application/json","X-Demo-User":"local-creator"},body:JSON.stringify({razorpayOrderId:result.razorpay_order_id,razorpayPaymentId:result.razorpay_payment_id,razorpaySignature:result.razorpay_signature})});
+      const response=await fetch(`${api}/api/orders/${orderId}/verify`,{method:"POST",headers:{"Content-Type":"application/json",...(await authHeaders())},body:JSON.stringify({razorpayOrderId:result.razorpay_order_id,razorpayPaymentId:result.razorpay_payment_id,razorpaySignature:result.razorpay_signature})});
       if(!response.ok)throw new Error();
       const paid=await response.json();
       return `${window.location.origin}/?gift=${paid.shareToken}`;
@@ -282,10 +328,21 @@ export default function Home() {
   async function completeDemoPayment(orderId:string){
     try{
       const api=process.env.NEXT_PUBLIC_API_URL||"https://backend-production-22bd.up.railway.app";
-      const response=await fetch(`${api}/api/orders/${orderId}/demo-complete`,{method:"POST",headers:{"X-Demo-User":"local-creator"}});
+      const response=await fetch(`${api}/api/orders/${orderId}/demo-complete`,{method:"POST",headers:await authHeaders()});
       if(!response.ok)throw new Error();
       const paid=await response.json();
       return `${window.location.origin}/?gift=${paid.shareToken}`;
+    }catch{return null}
+  }
+
+  async function quoteCoupon(coupon:string){
+    const id=giftId||await saveDraft();
+    if(!id)return null;
+    try{
+      const api=process.env.NEXT_PUBLIC_API_URL||"https://backend-production-22bd.up.railway.app";
+      const response=await fetch(`${api}/api/orders/quote`,{method:"POST",headers:{"Content-Type":"application/json",...(await authHeaders())},body:JSON.stringify({giftId:id,couponCode:coupon})});
+      if(!response.ok)return null;
+      return await response.json() as {couponCode:string;subtotalPaise:number;discountPaise:number;totalPaise:number};
     }catch{return null}
   }
 
@@ -297,10 +354,11 @@ export default function Home() {
 
 
   if(!browserReady)return <main className="contribution-loading">♡</main>;
+  if(adminMode)return <AdminPanel onExit={()=>window.location.assign(window.location.origin)}/>;
   if(contributionGiftId)return <GroupContributionPage inviteToken={contributionGiftId}/>;
   if(publicGiftToken)return <PublicGiftExperience token={publicGiftToken}/>;
 
-  const signInPopup=authOpen?<SignInPopup onClose={()=>setAuthOpen(false)} onSignIn={finishSignIn}/>:null;
+  const signInPopup=authOpen?<SignInPopup onClose={()=>setAuthOpen(false)} onSignIn={finishSignIn} error={authError}/>:null;
 
   if (screen === "welcome") {
     return (
@@ -320,7 +378,7 @@ export default function Home() {
             <p>Build a little world of messages, memories, games and surprises—personalized by you, opened by them.</p>
             <div className="hero-actions">
               <button className="primary" onClick={() => setScreen("catalog")}>Create a gift <span>→</span></button>
-              <button className="text-button" onClick={() => chooseBundle(bundles[0].ids)}><span className="play">▶</span> Preview an experience</button>
+              <button className="text-button" onClick={() => chooseBundle(catalogBundles[0]?.ids||bundles[0].ids,catalogBundles[0]?.id||bundles[0].id)}><span className="play">▶</span> Preview an experience</button>
             </div>
             <div className="social-proof"><div className="faces"><b>😊</b><b>🥰</b><b>🤍</b><b>✨</b></div><span><strong>4,800+ moments</strong><br/>made unforgettable</span></div>
           </div>
@@ -390,15 +448,15 @@ export default function Home() {
           <div className="quick-fields"><label>Their name<input value={name} onChange={e => setName(e.target.value)} /></label><label>Occasion<select value={occasion} onChange={e => setOccasion(e.target.value)}><option>Just because</option><option>Birthday</option><option>Anniversary</option><option>I’m sorry</option><option>Congratulations</option></select></label></div>
         </section>
         <section className="creation-choice">
-          <div className="choice-heading"><div><div className="section-kicker">CHOOSE YOUR WAY</div><h2>Start with a story or make your own</h2></div><button className="scratch-link" onClick={() => {setSelected([]);setScreen("builder")}}>Build from scratch <span>→</span></button></div>
-          <div className="bundle-grid">{bundles.map((b, index) => <article className={`bundle bundle-${index}`} key={b.id}><div className="bundle-art"><span>{index === 0 ? "♡" : index === 1 ? "✦" : "☺"}</span><div className="bundle-pages"><i/><i/><i/></div></div><div className="bundle-content"><small>{b.badge}</small><h3>{b.name}</h3><p>{b.copy}</p><div className="bundle-includes">{b.ids.slice(0,4).map(id => <span key={id}>{activities.find(a => a.id === id)?.icon}</span>)}<b>+{b.ids.length-4}</b></div><div className="bundle-bottom"><strong>₹{b.price}</strong><button onClick={() => chooseBundle(b.ids)}>Choose bundle →</button></div><em>Everything can be changed</em></div></article>)}</div>
+          <div className="choice-heading"><div><div className="section-kicker">CHOOSE YOUR WAY</div><h2>Start with a story or make your own</h2></div><button className="scratch-link" onClick={() => {setSelected([]);setSelectedBundleId(null);setScreen("builder")}}>Build from scratch <span>→</span></button></div>
+          <div className="bundle-grid">{catalogBundles.map((b, index) => <article className={`bundle bundle-${index}`} key={b.id}><div className="bundle-art"><span>{index === 0 ? "♡" : index === 1 ? "✦" : "☺"}</span><div className="bundle-pages"><i/><i/><i/></div></div><div className="bundle-content"><small>{b.badge}</small><h3>{b.name}</h3><p>{b.copy}</p><div className="bundle-includes">{b.ids.slice(0,4).map(id => <span key={id}>{catalogActivities.find(a => a.id === id)?.icon}</span>)}<b>+{b.ids.length-4}</b></div><div className="bundle-bottom"><strong>₹{b.price}</strong><button onClick={() => chooseBundle(b.ids,b.id)}>Choose bundle →</button></div><em>Everything can be changed</em></div></article>)}</div>
         </section>
       </main>
     );
   }
 
   if (screen === "checkout") {
-    return <>{signInPopup}<CheckoutPage blocks={selected} name={name} occasion={occasion} subtotal={subtotal} revealAt={revealAt} onRevealAt={setRevealAt} onBack={() => setScreen("builder")} onCreateOrder={createPaymentOrder} onVerifyPayment={verifyPayment} onDemoComplete={completeDemoPayment}/></>;
+    return <>{signInPopup}<CheckoutPage blocks={selected} name={name} occasion={occasion} subtotal={subtotal} revealAt={revealAt} onRevealAt={setRevealAt} onBack={() => setScreen("builder")} onQuote={quoteCoupon} onCreateOrder={createPaymentOrder} onVerifyPayment={verifyPayment} onDemoComplete={completeDemoPayment}/></>;
   }
 
   if (screen === "preview") {
@@ -435,11 +493,11 @@ export default function Home() {
       <header className="app-header builder-header"><div className="builder-brand-row"><button className="editor-back" onClick={() => setScreen("catalog")} aria-label="Go back to gift choices">← <span>Back</span></button><button className="brand" onClick={() => setScreen("welcome")}><span className="brand-heart">♥</span> mypookie.</button></div><div className="gift-title"><small>CREATING FOR</small><strong>{name || "Someone special"} <i>♡</i></strong></div><div className="header-actions"><button className="quiet" onClick={() => signedIn ? void saveDraft() : requestSignIn("save")}>{saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved ✓" : saveState === "offline" ? "Backend offline · Retry" : "Save draft"}</button><button className="preview-button" onClick={launchPreview}>Preview gift <span>▶</span></button></div></header>
       <div className="builder-shell">
         <aside className="library">
-          <div className="library-head"><div><div className="section-kicker">ACTIVITY LIBRARY</div><h2>Add a little magic</h2></div><span>{activities.length}</span></div>
+          <div className="library-head"><div><div className="section-kicker">ACTIVITY LIBRARY</div><h2>Add a little magic</h2></div><span>{catalogActivities.length}</span></div>
           <p>Choose a block to add it and try it live in the centre.</p>
           <div className="activity-categories">{(["Messages & media","Memories","Playful games","Sentimental stories","Celebrations & gifts","Plans & together"] as const).map(category=><section className="activity-category" key={category}>
-            <header><strong>{category}</strong><span>{activities.filter(item=>item.category===category).length}</span></header>
-            <div className="activity-list">{activities.filter(item=>item.category===category).map(item => {const selectedIndex=selected.findIndex(x=>x.id===item.id);const isSelected=selectedIndex>=0;const isActive=isSelected&&active===selectedIndex;return <label className={`activity-choice ${isSelected?"selected":""} ${isActive?"active":""}`} key={item.id}>
+            <header><strong>{category}</strong><span>{catalogActivities.filter(item=>item.category===category).length}</span></header>
+            <div className="activity-list">{catalogActivities.filter(item=>item.category===category).map(item => {const selectedIndex=selected.findIndex(x=>x.id===item.id);const isSelected=selectedIndex>=0;const isActive=isSelected&&active===selectedIndex;return <label className={`activity-choice ${isSelected?"selected":""} ${isActive?"active":""}`} key={item.id}>
               <input type="checkbox" checked={isSelected} onChange={event=>setActivitySelected(item,event.target.checked)} aria-label={`${isSelected?"Remove":"Add"} ${item.name}`} />
               <span className="activity-check" aria-hidden="true">{isSelected?"✓":""}</span>
               <i className={item.color}>{item.icon}</i>
@@ -450,7 +508,7 @@ export default function Home() {
         </aside>
         <section className="live-editor">
           <div className="live-editor-head"><div><div className="section-kicker">LIVE RECIPIENT PREVIEW</div><h2>{activeBlock ? activeBlock.name : "Choose a block to begin"}</h2><p>{activeBlock ? "Play with it here. Changes from the right appear instantly." : "Select any activity from the library and its real interaction will appear here."}</p></div>{activeBlock && <span className="live-badge"><i /> Interactive</span>}</div>
-          {activeBlock ? <BuilderLivePreview key={activeBlock.id} block={activeBlock} name={name} theme={theme} ambience={ambience} giftId={giftId||undefined} /> : <div className="empty-live-preview"><div className="empty-live-orbit"><span>✦</span><i>♡</i><b>✿</b></div><h3>Your live preview will appear here</h3><p>Try the letter, wheel, puzzle, quiz and every other block before sending it.</p><button onClick={() => selectActivity(activities[0])}>Start with a personal letter →</button></div>}
+          {activeBlock ? <BuilderLivePreview key={activeBlock.id} block={activeBlock} name={name} theme={theme} ambience={ambience} giftId={giftId||undefined} /> : <div className="empty-live-preview"><div className="empty-live-orbit"><span>✦</span><i>♡</i><b>✿</b></div><h3>Your live preview will appear here</h3><p>Try the letter, wheel, puzzle, quiz and every other block before sending it.</p><button onClick={() => selectActivity(catalogActivities[0]||activities[0])}>Start with a personal letter →</button></div>}
           {selected.length > 0 && <div className="journey-rail"><div className="journey-rail-head"><div><small>GIFT SEQUENCE</small><strong>{selected.length} moments for {name}</strong></div><span>Tap a block to edit it</span></div><div className="journey-chips">{selected.map((item,index)=><div className={`journey-chip ${active===index?"active":""}`} key={item.id}><button className="journey-select" onClick={()=>setActive(index)}><i className={item.color}>{item.icon}</i><span><small>{index+1}</small>{item.name}</span></button><div><button onClick={()=>move(index,-1)} disabled={index===0} aria-label={`Move ${item.name} earlier`}>←</button><button onClick={()=>move(index,1)} disabled={index===selected.length-1} aria-label={`Move ${item.name} later`}>→</button></div></div>)}</div></div>}
         </section>
         <aside className="customizer">
@@ -471,7 +529,7 @@ export default function Home() {
   );
 }
 
-function SignInPopup({onClose,onSignIn}:{onClose:()=>void;onSignIn:()=>void}){
+function SignInPopup({onClose,onSignIn,error}:{onClose:()=>void;onSignIn:(provider:"google"|"apple")=>Promise<void>;error:string}){
   return <div className="signin-modal-backdrop" role="presentation" onMouseDown={event=>event.target===event.currentTarget&&onClose()}>
     <section className="signin-modal" role="dialog" aria-modal="true" aria-labelledby="signin-title">
       <button className="signin-modal-close" onClick={onClose} aria-label="Close sign in">×</button>
@@ -481,9 +539,10 @@ function SignInPopup({onClose,onSignIn}:{onClose:()=>void;onSignIn:()=>void}){
       <h2 id="signin-title">Sign in to keep creating.</h2>
       <p>Save drafts, return from any device, track recipient answers and see every group contribution in one place.</p>
       <div className="signin-benefits"><span>✓ Drafts stay saved</span><span>✓ Responses are tracked</span><span>✓ Private links stay manageable</span></div>
-      <button className="provider-button google" onClick={onSignIn}><b>G</b> Continue with Google</button>
-      <button className="provider-button apple" onClick={onSignIn}><b>●</b> Continue with Apple</button>
-      <em>Demo sign-in is enabled while account providers are being connected.</em>
+      <button className="provider-button google" onClick={()=>void onSignIn("google")}><b>G</b> Continue with Google</button>
+      <button className="provider-button apple" onClick={()=>void onSignIn("apple")}><b>●</b> Continue with Apple</button>
+      {error&&<output className="signin-error">{error}</output>}
+      <em>Authentication is secured by Firebase. Your gift stays private.</em>
     </section>
   </div>;
 }

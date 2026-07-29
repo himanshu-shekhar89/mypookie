@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { authHeaders } from "./authClient";
 import { TinyBlockCustomization } from "./TinyBlockCustomization";
 
 type CustomBlock = {
@@ -138,7 +139,7 @@ function QuizEditor({ config, onConfig }: { config: Record<string,string>; onCon
     setAiState("loading");
     try {
       const api=process.env.NEXT_PUBLIC_API_URL||"https://backend-production-22bd.up.railway.app";
-      const response=await fetch(`${api}/api/ai/quiz-suggestions`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({relationship:"two people who care deeply about each other",tone:"playful, romantic and sweet"})});
+      const response=await fetch(`${api}/api/ai/quiz-suggestions`,{method:"POST",headers:{"Content-Type":"application/json",...(await authHeaders())},body:JSON.stringify({relationship:"two people who care deeply about each other",tone:"playful, romantic and sweet"})});
       if(!response.ok) throw new Error();
       const data=await response.json();
       const generated:QuizQuestion[]=(data.questions||[]).map((item:{question?:string;options?:string[];correctIndex?:number;interaction?:string},index:number)=>{
