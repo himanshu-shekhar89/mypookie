@@ -73,7 +73,8 @@ public class AiController {
         String gameType = safe(request, "gameType", "playful quiz");
         String relationship = safe(request, "relationship", "two people who care about each other");
         String tone = safe(request, "tone", "warm, playful and clever");
-        int count = boundedInt(request == null ? null : request.get("count"), 6, 2, 12);
+        boolean singleIdeaAllowed=gameType.toLowerCase().replaceAll("[^a-z]","").equals("memorycaptions");
+        int count = boundedInt(request == null ? null : request.get("count"), 6, singleIdeaAllowed?1:2, 12);
         String activityRules = activityRulesFor(gameType);
         String prompt = """
             Create exactly %d editable ideas for the digital-gift activity "%s".
@@ -186,6 +187,10 @@ public class AiController {
             case "movie", "song" -> """
                 Every prompt is a surprising, funny bonding question about shared chaos, snacks, plot twists, bloopers, superpowers, or inside-joke energy.
                 Keep every options array empty. Avoid generic compatibility questions and never write dares.
+                """;
+            case "memorycaptions", "memorylane" -> """
+                Every prompt is one warm scrapbook photo caption of at most 7 words. Write captions in the same order as the supplied page labels.
+                Keep every options array empty. Do not write questions, hashtags, quotation marks, labels, explanations, truths, or dares.
                 """;
             default -> """
                 Every prompt must belong only to the named activity. Use zero to four concise options only when that activity genuinely needs choices.

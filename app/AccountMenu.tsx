@@ -23,6 +23,21 @@ type OrderHistoryItem={
   shareToken:string|null;
 };
 
+export type SavedDraft={
+  id:string;
+  title:string;
+  senderName:string;
+  recipientName:string;
+  recipientType:string;
+  occasion:string;
+  theme:string;
+  ambience:string;
+  blocksJson:string;
+  status:string;
+  scheduledAt:string|null;
+  updatedAt:string;
+};
+
 export function AccountMenu({
   signedIn,
   profile,
@@ -32,6 +47,7 @@ export function AccountMenu({
   onLogout,
   onCreate,
   onAdmin,
+  onOpenDraft,
 }:{
   signedIn:boolean;
   profile:AccountProfile|null;
@@ -41,20 +57,22 @@ export function AccountMenu({
   onLogout:()=>Promise<void>;
   onCreate:()=>void;
   onAdmin:()=>void;
+  onOpenDraft:(draft:SavedDraft)=>void;
 }){
   const [open,setOpen]=useState(false);
-  const [showOrders,setShowOrders]=useState(false);
+  const [panel,setPanel]=useState<"account"|"orders"|"drafts">("account");
   const [orders,setOrders]=useState<OrderHistoryItem[]>([]);
+  const [drafts,setDrafts]=useState<SavedDraft[]>([]);
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState("");
   const root=useRef<HTMLDivElement>(null);
 
   useEffect(()=>{
     function close(event:PointerEvent){
-      if(root.current&&!root.current.contains(event.target as Node)){setOpen(false);setShowOrders(false)}
+      if(root.current&&!root.current.contains(event.target as Node)){setOpen(false);setPanel("account")}
     }
     function escape(event:KeyboardEvent){
-      if(event.key==="Escape"){setOpen(false);setShowOrders(false)}
+      if(event.key==="Escape"){setOpen(false);setPanel("account")}
     }
     document.addEventListener("pointerdown",close);
     document.addEventListener("keydown",escape);
@@ -65,12 +83,12 @@ export function AccountMenu({
     playSound("tile");
     if(!signedIn){onSignIn();return}
     setOpen(value=>!value);
-    setShowOrders(false);
+    setPanel("account");
   }
 
   async function loadOrders(){
     playSound("reveal");
-    setShowOrders(true);
+    setPanel("orders");
     setLoading(true);
     setError("");
     try{
@@ -85,6 +103,24 @@ export function AccountMenu({
     }
   }
 
+  async function loadDrafts(){
+    playSound("reveal");
+    setPanel("drafts");
+    setLoading(true);
+    setError("");
+    try{
+      const api=process.env.NEXT_PUBLIC_API_URL||"https://backend-production-22bd.up.railway.app";
+      const response=await fetch(`${api}/api/gifts`,{headers:await authHeaders()});
+      if(!response.ok)throw new Error();
+      const gifts=await response.json() as SavedDraft[];
+      setDrafts(gifts.filter(gift=>gift.status==="DRAFT"));
+    }catch{
+      setError("We couldn’t load your drafts. Please try again.");
+    }finally{
+      setLoading(false);
+    }
+  }
+
   const label=profile?.displayName||profile?.email.split("@")[0]||"Profile";
   const initial=label.charAt(0).toUpperCase()||"♡";
 
@@ -93,19 +129,20 @@ export function AccountMenu({
       {profile?.photoURL?<img src={profile.photoURL} alt=""/>:<b>{signedIn?initial:"♡"}</b>}
       {!compact&&<><span>{signedIn?label:"Hop in"}</span><i>{signedIn?"⌄":"→"}</i></>}
     </button>
-    {open&&<section className={`account-popover ${showOrders?"show-orders":""}`} role="menu">
+    {open&&<section className={`account-popover ${panel!=="account"?"show-orders":""}`} role="menu">
       <header>
         {profile?.photoURL?<img src={profile.photoURL} alt=""/>:<b>{initial}</b>}
         <span><strong>{profile?.displayName||"Your mypookie. account"}</strong><small>{profile?.email}</small></span>
-        <button onClick={()=>{setOpen(false);setShowOrders(false)}} aria-label="Close account menu">×</button>
+        <button onClick={()=>{setOpen(false);setPanel("account")}} aria-label="Close account menu">×</button>
       </header>
-      {!showOrders?<div className="account-actions">
+      {panel==="account"?<div className="account-actions">
+        <button onClick={()=>void loadDrafts()}><i>✎</i><span><strong>Saved drafts</strong><small>Continue gifts you haven’t published</small></span><b>→</b></button>
         <button onClick={()=>void loadOrders()}><i>⌁</i><span><strong>Order history</strong><small>Receipts and published gifts</small></span><b>→</b></button>
         <button onClick={()=>{setOpen(false);onCreate()}}><i>＋</i><span><strong>Create a new gift</strong><small>Start another little world</small></span><b>→</b></button>
         {isAdmin&&<button onClick={()=>{setOpen(false);onAdmin()}}><i>⚙</i><span><strong>Admin console</strong><small>Manage orders, coupons and pricing</small></span><b>→</b></button>}
         <button className="account-logout" onClick={()=>{playSound("page");void onLogout().then(()=>setOpen(false))}}><i>↗</i><span><strong>Log out</strong><small>Sign out of this device</small></span></button>
-      </div>:<div className="order-history">
-        <button className="order-back" onClick={()=>setShowOrders(false)}>← Account</button>
+      </div>:panel==="orders"?<div className="order-history">
+        <button className="order-back" onClick={()=>setPanel("account")}>← Account</button>
         <div className="order-history-title"><small>YOUR PURCHASES</small><strong>Order history</strong></div>
         {loading&&<div className="order-state">Loading your gifts…</div>}
         {error&&<div className="order-state error">{error}<button onClick={()=>void loadOrders()}>Try again</button></div>}
@@ -116,6 +153,15 @@ export function AccountMenu({
           <b>₹{(order.amountPaise/100).toLocaleString("en-IN")}</b>
           {order.shareToken&&<a href={`/?gift=${order.shareToken}`}>Open gift ↗</a>}
         </article>)}
+      </div>:<div className="order-history draft-history">
+        <button className="order-back" onClick={()=>setPanel("account")}>← Account</button>
+        <div className="order-history-title"><small>KEEP CREATING</small><strong>Saved drafts</strong></div>
+        {loading&&<div className="order-state">Loading your drafts…</div>}
+        {error&&<div className="order-state error">{error}<button onClick={()=>void loadDrafts()}>Try again</button></div>}
+        {!loading&&!error&&drafts.length===0&&<div className="order-state"><span>✎</span><strong>No saved drafts</strong><small>Use “Save draft” in the editor and it will appear here.</small></div>}
+        {!loading&&!error&&drafts.map(draft=><button className="draft-row" key={draft.id} onClick={()=>{setOpen(false);setPanel("account");onOpenDraft(draft)}}>
+          <i>✎</i><span><small>UPDATED {new Date(draft.updatedAt).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</small><strong>{draft.title}</strong><b>For {draft.recipientName} · {draft.occasion}</b></span><em>Continue →</em>
+        </button>)}
       </div>}
     </section>}
   </div>;

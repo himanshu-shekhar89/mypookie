@@ -306,6 +306,7 @@ function CalendarEditor({config,onConfig}:{config:Record<string,string>;onConfig
 
 function MemoryEditor({ config, onConfig }: { config: Record<string,string>; onConfig:(key:string,value:string)=>void }) {
   const storedItems=safeParse<MemoryItem[]>(config.memoryItems,[]);
+  const [captionState,setCaptionState]=useState<"idle"|"loading"|"done"|"error">("idle");
   const upgraded=config.extraPages==="true";
   const maxPages=upgraded?12:7;
   const items=storedItems.slice(0,maxPages);
@@ -314,6 +315,23 @@ function MemoryEditor({ config, onConfig }: { config: Record<string,string>; onC
   async function addCollage(files:FileList|null){if(!files||remaining===0)return;const chosen=Array.from(files).slice(0,4);if(chosen.length<2)return;const images=await Promise.all(chosen.map(imageToDataUrl));const item:MemoryItem={id:`collage-${Date.now()}`,image:images[0],images,layout:images.length===2?"Two-photo collage":images.length===3?"Three-photo collage":"Four-photo grid",caption:"A collage of us",note:"",arrow:"Curve right",animation:"Polaroid pop"};onConfig("memoryItems",JSON.stringify([...items,item].slice(0,maxPages)))}
   async function cover(files:FileList|null){const file=files?.[0];if(file)onConfig("coverImage",await imageToDataUrl(file))}
   function patch(index:number,key:keyof MemoryItem,value:string){onConfig("memoryItems",JSON.stringify(items.map((item,i)=>i===index?{...item,[key]:value}:item)))}
+  async function fillCaptions(){
+    if(!items.length||captionState==="loading")return;
+    setCaptionState("loading");
+    try{
+      const api=process.env.NEXT_PUBLIC_API_URL||"https://backend-production-22bd.up.railway.app";
+      const photoLabels=items.map((item,index)=>`Page ${index+1}: ${item.caption||"uploaded memory"}`).join("; ");
+      const response=await fetch(`${api}/api/ai/playful-prompts`,{method:"POST",headers:{"Content-Type":"application/json",...(await authHeaders())},body:JSON.stringify({gameType:"memorycaptions",relationship:`A personal memory album. Existing photo labels: ${photoLabels}`,tone:"warm, specific, affectionate and natural",count:items.length})});
+      if(!response.ok)throw new Error();
+      const data=await response.json() as {items?:{prompt?:string}[]};
+      const suggestions=(data.items||[]).map(item=>(item.prompt||"").trim()).filter(Boolean);
+      if(suggestions.length!==items.length)throw new Error();
+      onConfig("memoryItems",JSON.stringify(items.map((item,index)=>({...item,caption:suggestions[index].slice(0,65)}))));
+      setCaptionState("done");
+    }catch{
+      setCaptionState("error");
+    }
+  }
   return <CustomizationSection title="Scrapbook album" hint="Design every page with photos, words, arrows and motion">
     <div className="memory-cover-note"><img src={config.coverImage||"/mypookie-letter-photo.png"} alt="Memory book cover"/><div><strong>Your cover</strong><span>Shown first when the memory lane opens.</span></div></div>
     <UploadBox label="Customize cover photo" note="The complete photo will stay visible" accept="image/*" onFiles={cover}/>
@@ -327,6 +345,7 @@ function MemoryEditor({ config, onConfig }: { config: Record<string,string>; onC
     <label className="album-upgrade"><input type="checkbox" checked={upgraded} onChange={event=>{onConfig("extraPages",String(event.target.checked));if(!event.target.checked&&items.length>7)onConfig("memoryItems",JSON.stringify(items.slice(0,7)))}}/><span>＋5</span><div><strong>Add five more album pages</strong><small>Increase the limit from 7 to 12 pages.</small></div><b>₹20</b></label>
     <div className={remaining===0?"upload-disabled":""}><UploadBox label="Add memory photos" note={remaining?`Each photo becomes a page · ${remaining} available`:"Page limit reached"} accept="image/*" multiple onFiles={add}/></div>
     <div className={remaining===0?"upload-disabled":""}><UploadBox label="Create a collage page" note="Choose 2–4 photos · counts as one page" accept="image/*" multiple onFiles={addCollage}/></div>
+    <div className="memory-ai-captions"><span>✦</span><div><strong>Let AI caption the album</strong><small>Creates one short caption for every uploaded page. You can edit each one afterwards.</small></div><button disabled={!items.length||captionState==="loading"} onClick={()=>void fillCaptions()}>{captionState==="loading"?"Writing…":captionState==="done"?"Refresh captions":items.length?`Caption ${items.length} page${items.length===1?"":"s"}`:"Upload photos first"}</button>{captionState==="error"&&<output>AI could not write captions just now. Please try again.</output>}</div>
     <div className="memory-item-editor scrapbook-editor">{items.map((item,index)=><article key={item.id}>{item.images&&item.images.length>1?<div className={`editor-collage collage-${item.images.length}`}>{item.images.map((image,imageIndex)=><img src={image} alt={`Collage photo ${imageIndex+1}`} key={imageIndex}/>)}</div>:<img src={item.image} alt="Uploaded memory"/>}<div className="scrapbook-page-fields">{item.images&&item.images.length>1&&<label>Collage layout<select value={item.layout||"Four-photo grid"} onChange={event=>patch(index,"layout",event.target.value)}><option>Two-photo collage</option><option>Three-photo collage</option><option>Four-photo grid</option></select></label>}<label>Photo caption<input maxLength={65} value={item.caption} onChange={event=>patch(index,"caption",event.target.value)}/></label><label>Handwritten text<textarea rows={2} maxLength={140} value={item.note||""} onChange={event=>patch(index,"note",event.target.value)} placeholder="Add a date, joke or tiny memory…"/></label><div><label>Curved arrow<select value={item.arrow||"Curve right"} onChange={event=>patch(index,"arrow",event.target.value)}><option>Curve right</option><option>Curve left</option><option>Loop around</option><option>None</option></select></label><label>Page animation<select value={item.animation||"Polaroid pop"} onChange={event=>patch(index,"animation",event.target.value)}><option>Polaroid pop</option><option>Soft zoom</option><option>Film slide</option><option>Sparkle reveal</option></select></label></div></div><button onClick={()=>onConfig("memoryItems",JSON.stringify(items.filter((_,i)=>i!==index)))}>×</button></article>)}</div>
     {items.length===0&&<div className="collection-empty">Your uploaded pages will appear here.</div>}
   </CustomizationSection>;

@@ -43,4 +43,13 @@ class AiControllerPromptRulesTest {
             .contains("Truth questions")
             .contains("Dare instructions");
     }
+
+    @Test
+    void memoryLaneGetsShortOrderedCaptions() {
+        assertThat(AiController.activityRulesFor("memorycaptions"))
+            .contains("scrapbook photo caption")
+            .contains("at most 7 words")
+            .contains("same order")
+            .contains("options array empty");
+    }
 }

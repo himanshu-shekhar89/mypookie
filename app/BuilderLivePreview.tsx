@@ -85,7 +85,7 @@ export function BuilderLivePreview({ block, name, senderName, theme, ambience, g
       <h3>{block.name}</h3>
       {block.id !== "letter" && block.id !== "voice" && block.id !== "video" && <p>{block.message}</p>}
       <div className="live-interaction" onClickCapture={onInteract} onPointerDownCapture={onInteract}>
-        {block.id === "letter" && <div className={`letter-reveal-scene effect-${letterEffect} stage-${letterStage} envelope-${envelopeStyle} seal-${sealStyle} page-${pageStyle} font-${fontStyle}`} style={{"--letter-ink":config.letterColor||"#3f3036"} as React.CSSProperties}><div className="letter-particles" aria-hidden="true">{Array.from({length:letterDensity},(_,index)=><i key={index} style={{"--angle":`${index*(360/letterDensity)}deg`,"--distance":`${70+(index%5)*18}px`,"--delay":`${(index%6)*.04}s`} as React.CSSProperties}>{letterSymbols[index%letterSymbols.length]}</i>)}</div><button className={`envelope-3d ${opened?"opened":""} ${letterStage==="revealed"?"message-ready":""}`} onClick={letterStage==="closed"?openLetter:resetLetter} aria-label={letterStage==="closed"?"Open the envelope":"Close and replay the letter"}><span className="envelope-card"><span className="envelope-face envelope-front"><i className="envelope-stamp">{stampSymbols[config.stampStyle||"Rose stamp"]}</i><strong>{config.frontText||`For ${name}`}</strong><em className="envelope-stickers">{stickerSymbols[config.stickerStyle||"Daisies"]}</em><b className="envelope-seal">{sealSymbols[config.envelopeSeal||"Wax heart"]}</b></span><span className="envelope-face envelope-back"><i className="envelope-flap"/><strong>{config.backText||`From ${senderName||"someone special"}`}</strong><b className="envelope-seal">{sealSymbols[config.envelopeSeal||"Wax heart"]}</b></span></span><article className="letter-sheet"><p>{block.message.slice(0,240)}</p><small>{config.signoff||"— sent with love"}</small></article></button><small className="letter-effect-caption">{letterStage==="closed"?"Tap the rotating envelope":letterStage==="burst"?"A little magic is unfolding…":"Tap to close and replay"}</small></div>}
+        {block.id === "letter" && <div className={`letter-reveal-scene effect-${letterEffect} stage-${letterStage} envelope-${envelopeStyle} seal-${sealStyle} page-${pageStyle} font-${fontStyle} ${block.message.length>200?"letter-copy-max":block.message.length>140?"letter-copy-long":""}`} style={{"--letter-ink":config.letterColor||"#3f3036"} as React.CSSProperties}><div className="letter-particles" aria-hidden="true">{Array.from({length:letterDensity},(_,index)=><i key={index} style={{"--angle":`${index*(360/letterDensity)}deg`,"--distance":`${70+(index%5)*18}px`,"--delay":`${(index%6)*.04}s`} as React.CSSProperties}>{letterSymbols[index%letterSymbols.length]}</i>)}</div><button className={`envelope-3d ${opened?"opened":""} ${letterStage==="revealed"?"message-ready":""}`} onClick={letterStage==="closed"?openLetter:resetLetter} aria-label={letterStage==="closed"?"Open the envelope":"Close and replay the letter"}><span className="envelope-card"><span className="envelope-face envelope-front"><i className="envelope-stamp">{stampSymbols[config.stampStyle||"Rose stamp"]}</i><strong>{config.frontText||`For ${name}`}</strong><em className="envelope-stickers">{stickerSymbols[config.stickerStyle||"Daisies"]}</em><b className="envelope-seal">{sealSymbols[config.envelopeSeal||"Wax heart"]}</b></span><span className="envelope-face envelope-back"><i className="envelope-flap"/><strong>{config.backText||`From ${senderName||"someone special"}`}</strong><b className="envelope-seal">{sealSymbols[config.envelopeSeal||"Wax heart"]}</b></span></span><article className="letter-sheet"><p>{block.message.slice(0,240)}</p><small>{config.signoff||"— sent with love"}</small></article></button><small className="letter-effect-caption">{letterStage==="closed"?"Tap the rotating envelope":letterStage==="burst"?"A little magic is unfolding…":"Tap to close and replay"}</small></div>}
         {block.id === "voice" && <VoicePreview audioUrl={config.audioUrl} playerStyle={config.playbackStyle} onComplete={onComplete} />}
         {block.id === "video" && <VideoNotePlay config={config} onComplete={onComplete} />}
         {block.id === "flowers" && <EGiftPreview config={config} onComplete={onComplete} />}
@@ -237,20 +237,38 @@ function SlotMachinePlay({config,onComplete,onReward}:{config:Record<string,stri
   const symbols=["♡","✦","🍓","🎁","🌙"];
   const [reels,setReels]=useState([0,1,2]);
   const [rolling,setRolling]=useState(false);
+  const [stoppedReels,setStoppedReels]=useState(3);
   const [pulls,setPulls]=useState(0);
   const [result,setResult]=useState("Pull the lever");
+  const timersRef=useRef<number[]>([]);
+  const intervalRef=useRef<number|null>(null);
+  const stoppedReelsRef=useRef(3);
   const maxPulls=Math.min(Number(config.pulls)||1,6);
+  useEffect(()=>()=>{timersRef.current.forEach(timer=>window.clearTimeout(timer));if(intervalRef.current!==null)window.clearInterval(intervalRef.current)},[]);
   function pull(){
     if(rolling||pulls>=maxPulls)return;
     const planned=(config.plannedResults||"").split("\n");
     const plannedIndex=config.resultMode==="Plan every pull"?options.indexOf(planned[pulls]||""):-1;
     const random=globalThis.crypto.getRandomValues(new Uint32Array(1))[0];
     const winner=plannedIndex>=0?plannedIndex:random%options.length;
-    playSound("lever");setRolling(true);setResult("The reels are spinning…");
-    const timer=window.setInterval(()=>setReels(Array.from({length:3},()=>globalThis.crypto.getRandomValues(new Uint32Array(1))[0]%options.length)),110);
-    window.setTimeout(()=>{window.clearInterval(timer);const nextPulls=pulls+1;setReels([winner,winner,winner]);setPulls(nextPulls);setResult(`Jackpot: ${options[winner]} ♡`);playSound("win");onReward?.(options[winner]);if(nextPulls>=maxPulls)onComplete?.();setRolling(false)},1350);
+    playSound("lever");setRolling(true);setStoppedReels(0);stoppedReelsRef.current=0;setResult("The reels are spinning…");
+    const timer=window.setInterval(()=>setReels(current=>current.map((reel,index)=>index<stoppedReelsRef.current?reel:globalThis.crypto.getRandomValues(new Uint32Array(1))[0]%options.length)),90);
+    intervalRef.current=timer;
+    const stopReel=(index:number,label:string)=>window.setTimeout(()=>{
+      stoppedReelsRef.current=index+1;
+      setStoppedReels(index+1);
+      setReels(current=>current.map((reel,reelIndex)=>reelIndex===index?winner:reel));
+      setResult(label);
+      playSound("tile");
+    },700+index*420);
+    timersRef.current=[stopReel(0,"First reel locked…"),stopReel(1,"Two reels match…")];
+    timersRef.current.push(window.setTimeout(()=>{
+      window.clearInterval(timer);intervalRef.current=null;
+      stoppedReelsRef.current=3;setStoppedReels(3);
+      const nextPulls=pulls+1;setReels([winner,winner,winner]);setPulls(nextPulls);setResult(`Jackpot: ${options[winner]} ♡`);playSound("win");onReward?.(options[winner]);if(nextPulls>=maxPulls)onComplete?.();setRolling(false);
+    },1540));
   }
-  return <div className="live-slot-machine"><div className="slot-machine-rig"><div className={`slot-machine-reels ${rolling?"rolling":""}`}>{reels.map((reel,index)=><i key={index}>{symbols[reel%symbols.length]}</i>)}</div><button className={`slot-machine-lever ${rolling?"pulled":""}`} onClick={pull} disabled={rolling||pulls>=maxPulls} aria-label="Pull slot-machine lever"><b/><span/></button></div><output>{pulls>=maxPulls&&!rolling?`${result} · no pulls left`:`${result} · ${maxPulls-pulls} left`}</output></div>;
+  return <div className="live-slot-machine"><div className="slot-machine-rig"><div className={`slot-machine-reels ${rolling?"rolling":""}`}>{reels.map((reel,index)=><i key={index} className={rolling&&index>=stoppedReels?"spinning":"stopped"}>{symbols[reel%symbols.length]}</i>)}</div><button className={`slot-machine-lever ${rolling?"pulled":""}`} onClick={pull} disabled={rolling||pulls>=maxPulls} aria-label="Pull slot-machine lever"><b/><span/></button></div><output>{pulls>=maxPulls&&!rolling?`${result} · no pulls left`:`${result} · ${maxPulls-pulls} left`}</output></div>;
 }
 
 function shuffleTiles(size:number){

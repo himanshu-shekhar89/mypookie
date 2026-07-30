@@ -9,7 +9,7 @@ import { GroupContributionPage } from "./GroupContributionPage";
 import { CheckoutPage, type PaymentOrder, type RazorpayResult } from "./CheckoutPage";
 import { PublicGiftExperience } from "./PublicGiftExperience";
 import { AdminPanel } from "./AdminPanel";
-import { AccountMenu, type AccountProfile } from "./AccountMenu";
+import { AccountMenu, type AccountProfile, type SavedDraft } from "./AccountMenu";
 import { authenticateWithEmail, authHeaders, signInWithFirebase, signOutFirebase, watchFirebaseAuth } from "./authClient";
 import { playSound } from "./soundFx";
 
@@ -336,6 +336,36 @@ export default function Home() {
     setScreen("preview");
   }
 
+  function openSavedDraft(draft:SavedDraft){
+    try{
+      const parsed=JSON.parse(draft.blocksJson) as {blocks?:Block[];soundtrack?:typeof soundtrack;bundleId?:string|null}|Block[];
+      const blocks=Array.isArray(parsed)?parsed:parsed.blocks;
+      if(!Array.isArray(blocks))throw new Error("Missing draft blocks");
+      setSelected(blocks);
+      if(!Array.isArray(parsed)){
+        if(parsed.soundtrack)setSoundtrack(parsed.soundtrack);
+        setSelectedBundleId(parsed.bundleId||null);
+      }else setSelectedBundleId(null);
+      setGiftId(draft.id);
+      setSenderName(draft.senderName);
+      setName(draft.recipientName);
+      setRecipient((["Lover","Friend","Parents","Sibling","Other"].includes(draft.recipientType)?draft.recipientType:"Other") as Recipient);
+      setOccasion(draft.occasion);
+      setTheme(draft.theme);
+      setAmbience(draft.ambience);
+      if(draft.scheduledAt){
+        const date=new Date(draft.scheduledAt);
+        const localDate=new Date(date.getTime()-date.getTimezoneOffset()*60_000);
+        setRevealAt(localDate.toISOString().slice(0,16));
+      }else setRevealAt("");
+      setActive(0);
+      setSaveState("saved");
+      setScreen("builder");
+    }catch{
+      setSaveState("offline");
+    }
+  }
+
   async function saveDraft():Promise<string|null> {
     setSaveState("saving");
     try {
@@ -491,7 +521,7 @@ export default function Home() {
         <nav className="nav">
           <button className="brand" onClick={() => setScreen("welcome")}><span className="brand-heart">♥</span> mypookie.</button>
           <div className="nav-links"><a href="#how">How it works</a><a href="#ideas">Gift ideas</a><a href="#pricing">Pricing</a></div>
-          <AccountMenu signedIn={signedIn} profile={accountProfile} isAdmin={ROOT_ADMIN_EMAILS.has(accountProfile?.email.trim().toLowerCase()||"")} onSignIn={()=>requestSignIn(null)} onLogout={logout} onCreate={()=>setScreen("catalog")} onAdmin={()=>window.location.assign(`${window.location.origin}/?admin=true`)}/>
+          <AccountMenu signedIn={signedIn} profile={accountProfile} isAdmin={ROOT_ADMIN_EMAILS.has(accountProfile?.email.trim().toLowerCase()||"")} onSignIn={()=>requestSignIn(null)} onLogout={logout} onCreate={()=>setScreen("catalog")} onAdmin={()=>window.location.assign(`${window.location.origin}/?admin=true`)} onOpenDraft={openSavedDraft}/>
         </nav>
         <section className="hero">
           <div className="hero-copy">
@@ -564,7 +594,7 @@ export default function Home() {
         <header className="nav catalog-nav">
           <button className="brand" onClick={() => setScreen("welcome")}><span className="brand-heart">♥</span> mypookie.</button>
           <div className="nav-links"><a href="/#how">How it works</a><a href="/#ideas">Gift ideas</a><a href="/#pricing">Pricing</a></div>
-          <AccountMenu signedIn={signedIn} profile={accountProfile} isAdmin={ROOT_ADMIN_EMAILS.has(accountProfile?.email.trim().toLowerCase()||"")} onSignIn={()=>requestSignIn(null)} onLogout={logout} onCreate={()=>{setSelected([]);setSelectedBundleId(null);setScreen("builder")}} onAdmin={()=>window.location.assign(`${window.location.origin}/?admin=true`)}/>
+          <AccountMenu signedIn={signedIn} profile={accountProfile} isAdmin={ROOT_ADMIN_EMAILS.has(accountProfile?.email.trim().toLowerCase()||"")} onSignIn={()=>requestSignIn(null)} onLogout={logout} onCreate={()=>{setSelected([]);setSelectedBundleId(null);setGiftId(null);setScreen("builder")}} onAdmin={()=>window.location.assign(`${window.location.origin}/?admin=true`)} onOpenDraft={openSavedDraft}/>
         </header>
         <section className="catalog-intro">
           <button className="back" onClick={() => setScreen("welcome")}>← Back</button>
