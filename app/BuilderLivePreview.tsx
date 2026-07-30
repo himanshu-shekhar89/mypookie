@@ -186,14 +186,17 @@ function QuizPlay({config,onComplete,onReward}:{config:Record<string,string>;onC
   function floatFromCursor(event:React.PointerEvent<HTMLDivElement>){
     if(question.interaction!=="floating")return;
     const pointer={x:event.clientX,y:event.clientY};
-    const stage=event.currentTarget.getBoundingClientRect();
+    const stageElement=event.currentTarget;
+    const stage=stageElement.getBoundingClientRect();
+    const buttons=Array.from(stageElement.querySelectorAll<HTMLButtonElement>("button[data-option]")).map(button=>({
+      button,
+      optionIndex:Number(button.dataset.option),
+      rect:button.getBoundingClientRect()
+    }));
     setOffsets(current=>{
       const next={...current};
-      const buttons=Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>("button[data-option]"));
-      buttons.forEach(button=>{
-      const optionIndex=Number(button.dataset.option);
+      buttons.forEach(({button,optionIndex,rect})=>{
       if(optionIndex===question.correctIndex)return;
-      const rect=button.getBoundingClientRect();
       const dx=rect.left+rect.width/2-pointer.x;
       const dy=rect.top+rect.height/2-pointer.y;
       const distance=Math.max(Math.hypot(dx,dy),1);
@@ -206,9 +209,8 @@ function QuizPlay({config,onComplete,onReward}:{config:Record<string,string>;onC
         x=Math.min(Math.max(x,stage.left+10-rect.left),stage.right-10-rect.right);
         y=Math.min(Math.max(y,stage.top+10-rect.top),stage.bottom-10-rect.bottom);
         const candidate={left:rect.left+(x-previous.x),right:rect.right+(x-previous.x),top:rect.top+(y-previous.y),bottom:rect.bottom+(y-previous.y)};
-        const overlaps=buttons.some(otherButton=>{
+        const overlaps=buttons.some(({button:otherButton,rect:other})=>{
           if(otherButton===button)return false;
-          const other=otherButton.getBoundingClientRect();
           return candidate.left<other.right+12&&candidate.right>other.left-12&&candidate.top<other.bottom+12&&candidate.bottom>other.top-12;
         });
         if(overlaps){
