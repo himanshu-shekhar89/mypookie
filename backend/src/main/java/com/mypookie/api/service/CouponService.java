@@ -18,6 +18,25 @@ public class CouponService {
   var code=rawCode==null?"":rawCode.trim().toUpperCase();
   if(code.isBlank())return new Quote("",0);
   var coupon=coupons.findByCodeIgnoreCase(code).orElseThrow(()->bad("This coupon is not active."));
+  return calculate(coupon,totalPaise);
+ }
+
+ @Transactional
+ public Quote redeemValidated(String rawCode,int totalPaise,int expectedDiscountPaise){
+  var code=rawCode==null?"":rawCode.trim().toUpperCase();
+  if(code.isBlank()){
+   if(expectedDiscountPaise!=0)throw bad("The checkout discount is no longer valid.");
+   return new Quote("",0);
+  }
+  var coupon=coupons.findByCodeIgnoreCaseForUpdate(code).orElseThrow(()->bad("This coupon is not active."));
+  var quote=calculate(coupon,totalPaise);
+  if(quote.discountPaise()!=expectedDiscountPaise)throw bad("The checkout total has changed. Please apply the coupon again.");
+  coupon.setUsedCount(coupon.getUsedCount()+1);
+  coupon.setUpdatedAt(Instant.now());
+  return quote;
+ }
+
+ private Quote calculate(Coupon coupon,int totalPaise){
   var now=Instant.now();
   if(!coupon.isActive()||(coupon.getValidFrom()!=null&&coupon.getValidFrom().isAfter(now))||(coupon.getExpiresAt()!=null&&coupon.getExpiresAt().isBefore(now))||(coupon.getUsageLimit()!=null&&coupon.getUsedCount()>=coupon.getUsageLimit()))throw bad("This coupon is not active.");
   if(totalPaise<coupon.getMinOrderPaise())throw bad("This order does not meet the coupon minimum.");

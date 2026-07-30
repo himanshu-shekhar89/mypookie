@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import java.util.*;
@@ -86,7 +87,8 @@ public class OrderController {
   var user=users.resolve(principal);
   var order=orders.findById(orderId).orElseThrow();
   if(!order.getSenderId().equals(user.getId()))throw new SecurityException("Not your order");
-  if(Set.of("PAID","PAID_DEMO").contains(order.getStatus())){var paidGift=gifts.findById(order.getGiftId()).orElseThrow();return Map.of("shareToken",paidGift.getShareToken(),"status",order.getStatus());}
+  if(Set.of("PAID","PAID_DEMO","PAID_FREE").contains(order.getStatus())){var paidGift=gifts.findById(order.getGiftId()).orElseThrow();return Map.of("shareToken",paidGift.getShareToken(),"status",order.getStatus());}
+  if(order.getAmountPaise()<=0||!"CREATED".equals(order.getStatus()))throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"This order is not awaiting Razorpay payment.");
   if(!Objects.equals(order.getProviderOrderId(),request.razorpayOrderId())||!razorpay.verify(order.getProviderOrderId(),request.razorpayPaymentId(),request.razorpaySignature()))throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Payment verification failed.");
   order.setProviderPaymentId(request.razorpayPaymentId());
   order.setStatus("PAID");
@@ -96,13 +98,37 @@ public class OrderController {
   return Map.of("shareToken",gift.getShareToken(),"status","PAID");
  }
 
+ @Transactional
+ @PostMapping("/{orderId}/free-complete")
+ public Map<String,String> freeComplete(@AuthenticationPrincipal FirebaseAuthenticationFilter.UserPrincipal principal,@PathVariable String orderId){
+  var user=users.resolve(principal);
+  var order=orders.findByIdForUpdate(orderId).orElseThrow();
+  if(!order.getSenderId().equals(user.getId()))throw new SecurityException("Not your order");
+  if(Set.of("PAID","PAID_DEMO","PAID_FREE").contains(order.getStatus())){
+   var publishedGift=gifts.findById(order.getGiftId()).orElseThrow();
+   return Map.of("shareToken",publishedGift.getShareToken(),"status",order.getStatus());
+  }
+  if(order.getAmountPaise()!=0||!"AWAITING_FREE_CHECKOUT".equals(order.getStatus()))
+   throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"This order requires payment.");
+  var gift=gifts.findById(order.getGiftId()).orElseThrow();
+  if(!gift.getSenderId().equals(user.getId()))throw new SecurityException("Not your gift");
+  var confirmedCoupon=couponService.redeemValidated(order.getCouponCode(),gift.getTotalPaise(),order.getDiscountPaise());
+  if(Math.max(0,gift.getTotalPaise()-confirmedCoupon.discountPaise())!=0)
+   throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"The checkout total is no longer free. Please review it again.");
+  order.setStatus("PAID_FREE");
+  order.setProviderPaymentId("FREE_CHECKOUT_"+UUID.randomUUID());
+  orders.save(order);
+  var publishedGift=giftService.publish(user.getId(),order.getGiftId());
+  return Map.of("shareToken",publishedGift.getShareToken(),"status","PAID_FREE");
+ }
+
  @PostMapping("/{orderId}/demo-complete")
  public Map<String,String> demoComplete(@AuthenticationPrincipal FirebaseAuthenticationFilter.UserPrincipal principal,@PathVariable String orderId){
   var order=orders.findById(orderId).orElseThrow();
-  if(razorpay.configured()&&order.getAmountPaise()>0)throw new ResponseStatusException(HttpStatus.NOT_FOUND);
   var user=users.resolve(principal);
   if(!order.getSenderId().equals(user.getId()))throw new SecurityException("Not your order");
-  if(Set.of("PAID","PAID_DEMO").contains(order.getStatus())){var paidGift=gifts.findById(order.getGiftId()).orElseThrow();return Map.of("shareToken",paidGift.getShareToken(),"status",order.getStatus());}
+  if(Set.of("PAID","PAID_DEMO","PAID_FREE").contains(order.getStatus())){var paidGift=gifts.findById(order.getGiftId()).orElseThrow();return Map.of("shareToken",paidGift.getShareToken(),"status",order.getStatus());}
+  if(razorpay.configured()||order.getAmountPaise()<=0||!"AWAITING_DEMO_PAYMENT".equals(order.getStatus()))throw new ResponseStatusException(HttpStatus.NOT_FOUND);
   order.setStatus("PAID_DEMO");
   order.setProviderPaymentId("DEMO_PAYMENT_"+UUID.randomUUID());
   orders.save(order);

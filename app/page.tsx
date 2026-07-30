@@ -486,6 +486,16 @@ export default function Home() {
     }catch{return null}
   }
 
+  async function completeFreeCheckout(orderId:string){
+    try{
+      const api=process.env.NEXT_PUBLIC_API_URL||"https://backend-production-22bd.up.railway.app";
+      const response=await fetch(`${api}/api/orders/${orderId}/free-complete`,{method:"POST",headers:await authHeaders()});
+      if(!response.ok)throw new Error();
+      const completed=await response.json();
+      return `${window.location.origin}/?gift=${completed.shareToken}`;
+    }catch{return null}
+  }
+
   async function quoteCoupon(coupon:string){
     const id=giftId||await saveDraft();
     if(!id)return null;
@@ -613,7 +623,7 @@ export default function Home() {
   }
 
   if (screen === "checkout") {
-    return <>{signInPopup}<CheckoutPage blocks={selected} senderName={senderName.trim()||"Someone special"} name={name} occasion={occasion} subtotal={subtotal} revealAt={revealAt} onRevealAt={setRevealAt} compatibilityPin={compatibilityPin} onCompatibilityPin={setCompatibilityPin} onBack={() => setScreen("builder")} onQuote={quoteCoupon} onCreateOrder={createPaymentOrder} onVerifyPayment={verifyPayment} onDemoComplete={completeDemoPayment}/></>;
+    return <>{signInPopup}<CheckoutPage blocks={selected} senderName={senderName.trim()||"Someone special"} name={name} occasion={occasion} subtotal={subtotal} revealAt={revealAt} onRevealAt={setRevealAt} compatibilityPin={compatibilityPin} onCompatibilityPin={setCompatibilityPin} onBack={() => setScreen("builder")} onQuote={quoteCoupon} onCreateOrder={createPaymentOrder} onVerifyPayment={verifyPayment} onFreeComplete={completeFreeCheckout} onDemoComplete={completeDemoPayment}/></>;
   }
 
   if (screen === "preview") {

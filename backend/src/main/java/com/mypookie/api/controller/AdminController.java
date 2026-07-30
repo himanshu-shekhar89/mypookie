@@ -35,8 +35,8 @@ public class AdminController {
  @GetMapping("/overview")
  public Map<String,Object> overview(){
   var allOrders=orders.findAll();
-  long paidOrders=allOrders.stream().filter(order->Set.of("PAID","PAID_DEMO").contains(order.getStatus())).count();
-  int revenue=allOrders.stream().filter(order->Set.of("PAID","PAID_DEMO").contains(order.getStatus())).mapToInt(GiftOrder::getAmountPaise).sum();
+  long paidOrders=allOrders.stream().filter(order->Set.of("PAID","PAID_DEMO","PAID_FREE").contains(order.getStatus())).count();
+  int revenue=allOrders.stream().filter(order->Set.of("PAID","PAID_DEMO","PAID_FREE").contains(order.getStatus())).mapToInt(GiftOrder::getAmountPaise).sum();
   return Map.of(
    "users",users.count(),"gifts",gifts.count(),"orders",orders.count(),"paidOrders",paidOrders,
    "revenuePaise",revenue,"responses",responses.count(),"activeCoupons",coupons.findAll().stream().filter(Coupon::isActive).count(),
