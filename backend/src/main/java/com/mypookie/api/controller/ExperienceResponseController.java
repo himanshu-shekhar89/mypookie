@@ -29,7 +29,7 @@ public class ExperienceResponseController {
  @GetMapping
  public List<ExperienceResponse> list(@PathVariable String giftId,@RequestParam String blockId){
   gifts.findById(giftId).orElseThrow();
-  return responses.findByGiftIdAndBlockIdOrderByCreatedAtAsc(giftId,blockId);
+  return responses.findByGiftIdAndBlockIdOrderByCreatedAtAsc(giftId,blockId).stream().filter(response->!"THIS_OR_THAT".equalsIgnoreCase(response.getResponseType())).toList();
  }
 
  @PostMapping

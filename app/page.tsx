@@ -163,6 +163,7 @@ export default function Home() {
   const [theme, setTheme] = useState("Blush romance");
   const [ambience, setAmbience] = useState("Petals");
   const [previewStep, setPreviewStep] = useState(0);
+  const [previewOrigin,setPreviewOrigin]=useState<"welcome"|"builder">("builder");
   const [opened, setOpened] = useState(false);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "offline">("idle");
   const [giftId, setGiftId] = useState<string | null>(null);
@@ -173,6 +174,7 @@ export default function Home() {
   const [soundtrackOpen,setSoundtrackOpen]=useState(false);
   const [builderPreviewNonce,setBuilderPreviewNonce]=useState(0);
   const [revealAt,setRevealAt]=useState("");
+  const [compatibilityPin,setCompatibilityPin]=useState("");
   const [signedIn,setSignedIn]=useState(false);
   const [accountProfile,setAccountProfile]=useState<AccountProfile|null>(null);
   const [authError,setAuthError]=useState("");
@@ -299,6 +301,29 @@ export default function Home() {
   }
 
   function launchPreview() {
+    setPreviewOrigin("builder");
+    setPreviewStep(0);
+    setOpened(false);
+    setCompletedSteps([]);
+    setWonItems([]);
+    setWinsOpen(false);
+    setScreen("preview");
+  }
+
+  function launchDemoGift(){
+    const demoIds=["letter","memory","thisorthat","wheel","scratch"];
+    const demo=demoIds.map(id=>createBlock((catalogActivities.find(item=>item.id===id)||activities.find(item=>item.id===id))!));
+    const byId=new Map(demo.map(block=>[block.id,block]));
+    const letter=byId.get("letter");if(letter){letter.message="You deserve a little corner of the internet made only to make you smile.";letter.config={...(letter.config||{}),frontText:"For you",backText:"A tiny preview from mypookie.",animation:"Flower burst"}}
+    const memory=byId.get("memory");if(memory)memory.config={...(memory.config||{}),coverCaption:"A tiny album of lovely moments",memoryItems:JSON.stringify([{id:"demo-memory-1",image:"/mypookie-puzzle-picnic.png",caption:"The days worth keeping",note:"Every ordinary afternoon can become a favourite chapter.",arrow:"Curve right",animation:"Polaroid pop"},{id:"demo-memory-2",image:"/mypookie-letter-photo.png",caption:"One more page",note:"The real gift will hold your photos, words and inside jokes.",arrow:"Curve left",animation:"Soft zoom"}])};
+    const choices=byId.get("thisorthat");if(choices)choices.config={...(choices.config||{}),thisOrThatRounds:JSON.stringify([{prompt:"Pick your ideal surprise",left:"A midnight drive",right:"A cosy movie"},{prompt:"Choose the happy ending",left:"Dessert first",right:"One more adventure"},{prompt:"What makes a gift special?",left:"The memory",right:"The person"}]),compatibilityEnabled:"false"};
+    const wheel=byId.get("wheel");if(wheel)wheel.config={...(wheel.config||{}),prizes:"Movie night\nSweet treat\nYour choice\nA long hug\nMystery date",spins:"1",resultMode:"Random"};
+    const scratch=byId.get("scratch");if(scratch)scratch.config={...(scratch.config||{}),revealText:"Now imagine this made just for them ♡",revealDetail:"Build yours in a few beautiful steps"};
+    setSelected(demo);
+    setSelectedBundleId(null);
+    setName("You");
+    setSenderName("mypookie.");
+    setPreviewOrigin("welcome");
     setPreviewStep(0);
     setOpened(false);
     setCompletedSteps([]);
@@ -321,6 +346,7 @@ export default function Home() {
         ambience,
         blocksJson: JSON.stringify({ version: 3, blocks: selected, soundtrack, bundleId:selectedBundleId }),
         scheduledAt: revealAt ? new Date(revealAt).toISOString() : null,
+        compatibilityPin: compatibilityPin || null,
       };
       const response = await fetch(`${api}/api/gifts${giftId ? `/${giftId}` : ""}`, {
         method: giftId ? "PUT" : "POST",
@@ -450,7 +476,7 @@ export default function Home() {
             <p>Build a little world of messages, memories, games and surprises—personalized by you, opened by them.</p>
             <div className="hero-actions">
               <button className="primary" onClick={() => setScreen("catalog")}>Create a gift <span>→</span></button>
-              <button className="text-button" onClick={() => {const featured=catalogBundles.find(bundle=>bundle.recipientType==="Lover")||bundles[0];chooseBundle(featured.ids,featured.id)}}><span className="play">▶</span> Preview an experience</button>
+              <button className="text-button" onClick={launchDemoGift}><span className="play">▶</span> Experience a sample gift</button>
             </div>
             <div className="social-proof"><div className="faces"><b>😊</b><b>🥰</b><b>🤍</b><b>✨</b></div><span><strong>4,800+ moments</strong><br/>made unforgettable</span></div>
           </div>
@@ -528,7 +554,7 @@ export default function Home() {
   }
 
   if (screen === "checkout") {
-    return <>{signInPopup}<CheckoutPage blocks={selected} senderName={senderName.trim()||"Someone special"} name={name} occasion={occasion} subtotal={subtotal} revealAt={revealAt} onRevealAt={setRevealAt} onBack={() => setScreen("builder")} onQuote={quoteCoupon} onCreateOrder={createPaymentOrder} onVerifyPayment={verifyPayment} onDemoComplete={completeDemoPayment}/></>;
+    return <>{signInPopup}<CheckoutPage blocks={selected} senderName={senderName.trim()||"Someone special"} name={name} occasion={occasion} subtotal={subtotal} revealAt={revealAt} onRevealAt={setRevealAt} compatibilityPin={compatibilityPin} onCompatibilityPin={setCompatibilityPin} onBack={() => setScreen("builder")} onQuote={quoteCoupon} onCreateOrder={createPaymentOrder} onVerifyPayment={verifyPayment} onDemoComplete={completeDemoPayment}/></>;
   }
 
   if (screen === "preview") {
@@ -547,7 +573,7 @@ export default function Home() {
     return (
       <main className={`recipient-preview theme-${theme.toLowerCase().replaceAll(" ","-")}`}>
         {showEffect && <div className={`recipient-effect-overlay effect-${(effectConfig.intensity||"Lush").toLowerCase()}`} aria-hidden="true">{Array.from({length:28},(_,index)=><i key={index} style={{left:`${(index*37)%100}%`,animationDelay:`${(index%9)*-.32}s`}}>{(effectSymbols[effectConfig.effect]||effectSymbols["Rose garden"])[index%3]}</i>)}</div>}
-        <button className="exit-preview" onClick={() => setScreen("builder")}>← Back to builder</button>
+        <button className="exit-preview" onClick={() => setScreen(previewOrigin)}>← {previewOrigin==="welcome"?"Back to home":"Back to builder"}</button>
         <GiftSoundtrack settings={soundtrack} blocks={selected} step={previewStep} />
         <WinningTray items={wonItems} open={winsOpen} onToggle={()=>setWinsOpen(value=>!value)} />
         <div className="recipient-experience-shell">

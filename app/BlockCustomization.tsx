@@ -123,7 +123,7 @@ export function BlockCustomization({ block, giftId, onMessage, onConfig }: { blo
 }
 
 type QuizQuestion = { id: string; question: string; options: { text: string; image: string }[]; correctIndex: number; interaction: "floating" | "normal" };
-type MemoryItem = { id: string; image: string; caption: string; note?:string; arrow?:string; animation?:string };
+type MemoryItem = { id: string; image: string; images?:string[]; layout?:string; caption: string; note?:string; arrow?:string; animation?:string };
 type TreasureClue = { clue: string; hint: string; answer: string; photo?: string; caption?: string };
 
 function safeParse<T>(value: string | undefined, fallback: T): T {
@@ -198,15 +198,35 @@ function QuizEditor({ config, onConfig }: { config: Record<string,string>; onCon
   </CustomizationSection>;
 }
 
-type ThisOrThatRound = { prompt:string; left:string; right:string };
+type ThisOrThatRound = { prompt:string; left:string; right:string; senderPick?:string };
 
 function ThisOrThatEditor({config,onConfig}:{config:Record<string,string>;onConfig:(key:string,value:string)=>void}){
   const rounds=safeParse<ThisOrThatRound[]>(config.thisOrThatRounds,[{prompt:"Our perfect evening",left:"Movie night",right:"Long drive"}]).slice(0,7);
+  const [aiState,setAiState]=useState<"idle"|"loading"|"error">("idle");
+  const [tone,setTone]=useState(config.thisOrThatTone||"Romantic");
+  const [count,setCount]=useState(Math.min(7,Math.max(3,Number(config.thisOrThatCount)||5)));
   const update=(next:ThisOrThatRound[])=>onConfig("thisOrThatRounds",JSON.stringify(next.slice(0,7)));
   const patch=(index:number,key:keyof ThisOrThatRound,value:string)=>update(rounds.map((round,roundIndex)=>roundIndex===index?{...round,[key]:value}:round));
-  return <CustomizationSection title="This or that" hint="Up to 7 quick, playful choices">
-    <div className="choice-round-editor">{rounds.map((round,index)=><article key={index}><header><strong>Choice {index+1}</strong><button disabled={rounds.length===1} onClick={()=>update(rounds.filter((_,roundIndex)=>roundIndex!==index))}>Remove</button></header><label className="field">Prompt<input maxLength={65} value={round.prompt} onChange={event=>patch(index,"prompt",event.target.value)}/></label><div><label className="field">Left choice<input maxLength={35} value={round.left} onChange={event=>patch(index,"left",event.target.value)}/></label><label className="field">Right choice<input maxLength={35} value={round.right} onChange={event=>patch(index,"right",event.target.value)}/></label></div></article>)}</div>
-    <button className="add-collection-item" disabled={rounds.length>=7} onClick={()=>update([...rounds,{prompt:"",left:"",right:""}])}>＋ Add another choice</button>
+  async function fetchAi(){
+    setAiState("loading");
+    onConfig("thisOrThatTone",tone);
+    onConfig("thisOrThatCount",String(count));
+    try{
+      const api=process.env.NEXT_PUBLIC_API_URL||"https://backend-production-22bd.up.railway.app";
+      const response=await fetch(`${api}/api/ai/playful-prompts`,{method:"POST",headers:{"Content-Type":"application/json",...(await authHeaders())},body:JSON.stringify({gameType:"thisorthat",relationship:"two people who care about each other",tone,count})});
+      if(!response.ok)throw new Error();
+      const data=await response.json();
+      const generated:ThisOrThatRound[]=(data.items||[]).slice(0,count).map((item:{prompt?:string;options?:string[]})=>({prompt:item.prompt||"Choose quickly",left:item.options?.[0]||"This",right:item.options?.[1]||"That",senderPick:""}));
+      if(generated.length<3)throw new Error();
+      update(generated);
+      setAiState("idle");
+    }catch{setAiState("error")}
+  }
+  return <CustomizationSection title="This or that" hint="AI choices, sender picks and an optional private match report">
+    <div className="this-or-that-ai"><div><label className="field">Question mood<select value={tone} onChange={event=>setTone(event.target.value)}><option>Romantic</option><option>Playful</option><option>Deep</option><option>Flirty</option><option>Friends</option></select></label><label className="field">Questions<select value={count} onChange={event=>setCount(Number(event.target.value))}>{[3,4,5,6,7].map(value=><option key={value}>{value}</option>)}</select></label></div><button onClick={()=>void fetchAi()} disabled={aiState==="loading"}>{aiState==="loading"?"Creating choices…":"✦ Fetch AI choices"}</button>{aiState==="error"&&<small>AI could not create choices right now. Try again.</small>}</div>
+    <div className="choice-round-editor">{rounds.map((round,index)=><article key={index}><header><strong>Choice {index+1}</strong><button disabled={rounds.length<=3} onClick={()=>update(rounds.filter((_,roundIndex)=>roundIndex!==index))}>Remove</button></header><label className="field">Prompt<input maxLength={65} value={round.prompt} onChange={event=>patch(index,"prompt",event.target.value)}/></label><div><label className="field">Left choice<input maxLength={35} value={round.left} onChange={event=>patch(index,"left",event.target.value)}/></label><label className="field">Right choice<input maxLength={35} value={round.right} onChange={event=>patch(index,"right",event.target.value)}/></label></div><fieldset className="sender-pick"><legend>What would you pick?</legend><button className={round.senderPick==="left"?"active":""} onClick={()=>patch(index,"senderPick","left")}>{round.left||"Left"}</button><button className={round.senderPick==="right"?"active":""} onClick={()=>patch(index,"senderPick","right")}>{round.right||"Right"}</button></fieldset></article>)}</div>
+    <button className="add-collection-item" disabled={rounds.length>=7} onClick={()=>update([...rounds,{prompt:"",left:"",right:"",senderPick:""}])}>＋ Add another choice</button>
+    <label className="compatibility-toggle"><input type="checkbox" checked={config.compatibilityEnabled==="true"} onChange={event=>onConfig("compatibilityEnabled",String(event.target.checked))}/><span/><div><strong>Create a compatibility report</strong><small>After the recipient answers, the report is available on the shared link with the private PIN you set at checkout.</small></div></label>
   </CustomizationSection>;
 }
 
@@ -270,6 +290,7 @@ function CalendarEditor({config,onConfig}:{config:Record<string,string>;onConfig
 function MemoryEditor({ config, onConfig }: { config: Record<string,string>; onConfig:(key:string,value:string)=>void }) {
   const items=safeParse<MemoryItem[]>(config.memoryItems,[]);
   async function add(files:FileList|null){if(!files)return;const added=await Promise.all(Array.from(files).slice(0,12).map(async(file,index)=>({id:`memory-${Date.now()}-${index}`,image:await imageToDataUrl(file),caption:file.name.replace(/\.[^.]+$/,""),note:"",arrow:"Curve right",animation:"Polaroid pop"})));onConfig("memoryItems",JSON.stringify([...items,...added].slice(0,20)))}
+  async function addCollage(files:FileList|null){if(!files)return;const chosen=Array.from(files).slice(0,4);if(chosen.length<2)return;const images=await Promise.all(chosen.map(imageToDataUrl));const item:MemoryItem={id:`collage-${Date.now()}`,image:images[0],images,layout:images.length===2?"Two-photo collage":images.length===3?"Three-photo collage":"Four-photo grid",caption:"A collage of us",note:"",arrow:"Curve right",animation:"Polaroid pop"};onConfig("memoryItems",JSON.stringify([...items,item].slice(0,20)))}
   async function cover(files:FileList|null){const file=files?.[0];if(file)onConfig("coverImage",await imageToDataUrl(file))}
   function patch(index:number,key:keyof MemoryItem,value:string){onConfig("memoryItems",JSON.stringify(items.map((item,i)=>i===index?{...item,[key]:value}:item)))}
   return <CustomizationSection title="Scrapbook album" hint="Design every page with photos, words, arrows and motion">
@@ -278,7 +299,8 @@ function MemoryEditor({ config, onConfig }: { config: Record<string,string>; onC
     <label className="field">Cover caption<input maxLength={65} value={config.coverCaption||"Our little book of us"} onChange={event=>onConfig("coverCaption",event.target.value)}/></label>
     <label className="field">Album style<select value={config.albumStyle||"Blush scrapbook"} onChange={event=>onConfig("albumStyle",event.target.value)}><option>Blush scrapbook</option><option>Retro travel album</option><option>Midnight love story</option><option>Playful sticker book</option></select></label>
     <UploadBox label="Add memory photos" note="Select several photos at once" accept="image/*" multiple onFiles={add}/>
-    <div className="memory-item-editor scrapbook-editor">{items.map((item,index)=><article key={item.id}><img src={item.image} alt="Uploaded memory"/><div className="scrapbook-page-fields"><label>Photo caption<input maxLength={65} value={item.caption} onChange={event=>patch(index,"caption",event.target.value)}/></label><label>Handwritten text<textarea rows={2} maxLength={100} value={item.note||""} onChange={event=>patch(index,"note",event.target.value)} placeholder="Add a date, joke or tiny memory…"/></label><div><label>Curved arrow<select value={item.arrow||"Curve right"} onChange={event=>patch(index,"arrow",event.target.value)}><option>Curve right</option><option>Curve left</option><option>Loop around</option><option>None</option></select></label><label>Page animation<select value={item.animation||"Polaroid pop"} onChange={event=>patch(index,"animation",event.target.value)}><option>Polaroid pop</option><option>Soft zoom</option><option>Film slide</option><option>Sparkle reveal</option></select></label></div></div><button onClick={()=>onConfig("memoryItems",JSON.stringify(items.filter((_,i)=>i!==index)))}>×</button></article>)}</div>
+    <UploadBox label="Create a collage page" note="Choose 2–4 photos for one album page" accept="image/*" multiple onFiles={addCollage}/>
+    <div className="memory-item-editor scrapbook-editor">{items.map((item,index)=><article key={item.id}>{item.images&&item.images.length>1?<div className={`editor-collage collage-${item.images.length}`}>{item.images.map((image,imageIndex)=><img src={image} alt={`Collage photo ${imageIndex+1}`} key={imageIndex}/>)}</div>:<img src={item.image} alt="Uploaded memory"/>}<div className="scrapbook-page-fields">{item.images&&item.images.length>1&&<label>Collage layout<select value={item.layout||"Four-photo grid"} onChange={event=>patch(index,"layout",event.target.value)}><option>Two-photo collage</option><option>Three-photo collage</option><option>Four-photo grid</option></select></label>}<label>Photo caption<input maxLength={65} value={item.caption} onChange={event=>patch(index,"caption",event.target.value)}/></label><label>Handwritten text<textarea rows={2} maxLength={140} value={item.note||""} onChange={event=>patch(index,"note",event.target.value)} placeholder="Add a date, joke or tiny memory…"/></label><div><label>Curved arrow<select value={item.arrow||"Curve right"} onChange={event=>patch(index,"arrow",event.target.value)}><option>Curve right</option><option>Curve left</option><option>Loop around</option><option>None</option></select></label><label>Page animation<select value={item.animation||"Polaroid pop"} onChange={event=>patch(index,"animation",event.target.value)}><option>Polaroid pop</option><option>Soft zoom</option><option>Film slide</option><option>Sparkle reveal</option></select></label></div></div><button onClick={()=>onConfig("memoryItems",JSON.stringify(items.filter((_,i)=>i!==index)))}>×</button></article>)}</div>
     {items.length===0&&<div className="collection-empty">Your uploaded pages will appear here.</div>}
   </CustomizationSection>;
 }
@@ -389,6 +411,8 @@ function VoiceRecorder({ audioName, onConfig }: { audioName?: string; onConfig: 
 function VideoRecorder({videoName,videoUrl,onConfig}:{videoName?:string;videoUrl?:string;onConfig:(key:string,value:string)=>void}){
   const [status,setStatus]=useState<"idle"|"recording"|"ready"|"error">("idle");
   const [seconds,setSeconds]=useState(0);
+  const livePreview=useRef<HTMLVideoElement|null>(null);
+  const elapsed=useRef(0);
   const recorder=useRef<MediaRecorder|null>(null);
   const chunks=useRef<Blob[]>([]);
   const timer=useRef<number|null>(null);
@@ -404,21 +428,24 @@ function VideoRecorder({videoName,videoUrl,onConfig}:{videoName?:string;videoUrl
   async function start(){
     try{
       const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user"},audio:true});
+      if(livePreview.current){livePreview.current.srcObject=stream;await livePreview.current.play().catch(()=>{})}
       const mediaRecorder=new MediaRecorder(stream);
       chunks.current=[];
       mediaRecorder.ondataavailable=event=>event.data.size&&chunks.current.push(event.data);
       mediaRecorder.onstop=async()=>{
         const blob=new Blob(chunks.current,{type:mediaRecorder.mimeType||"video/webm"});
         onConfig("videoUrl",await blobToDataUrl(blob));
-        onConfig("videoName",`Recorded video note · ${seconds||1}s`);
+        onConfig("videoName",`Recorded video note · ${Math.max(elapsed.current,1)}s`);
+        if(livePreview.current)livePreview.current.srcObject=null;
         stream.getTracks().forEach(track=>track.stop());
         setStatus("ready");
       };
       recorder.current=mediaRecorder;
       mediaRecorder.start();
+      elapsed.current=0;
       setSeconds(0);
       setStatus("recording");
-      timer.current=window.setInterval(()=>setSeconds(value=>{if(value>=29)window.setTimeout(stop,0);return value+1}),1000);
+      timer.current=window.setInterval(()=>setSeconds(value=>{const next=value+1;elapsed.current=next;if(next>=30)window.setTimeout(stop,0);return next}),1000);
     }catch{setStatus("error")}
   }
 
@@ -430,9 +457,21 @@ function VideoRecorder({videoName,videoUrl,onConfig}:{videoName?:string;videoUrl
     setStatus("ready");
   }
 
+  function retake(){
+    stop();
+    recorder.current?.stream.getTracks().forEach(track=>track.stop());
+    if(livePreview.current)livePreview.current.srcObject=null;
+    onConfig("videoUrl","");
+    onConfig("videoName","");
+    setSeconds(0);
+    elapsed.current=0;
+    setStatus("idle");
+  }
+
   return <div className="video-recorder">
-    {videoUrl&&<video className="video-preview-mini" src={videoUrl} controls playsInline/>}
+    {status==="recording"?<div className="camera-viewfinder"><video ref={livePreview} muted autoPlay playsInline/><span>● REC</span><b>{seconds}s / 30s</b></div>:videoUrl&&<video className="video-preview-mini" src={videoUrl} controls playsInline/>}
     {status==="recording"?<button className="record recording" onClick={stop}>■ Stop video <span>{seconds}s · maximum 30 seconds</span></button>:<button className="record" onClick={start}>● Record video note <span>{videoName||"Camera + microphone · up to 30 seconds"}</span></button>}
+    {videoUrl&&status!=="recording"&&<button className="retake-video" onClick={retake}>↻ Retake video</button>}
     <label className="audio-upload">or upload a video<input type="file" accept="video/*" onChange={event=>upload(event.target.files)}/></label>
     {status==="error"&&<p>Camera access failed or the video is over 30 MB. Try a smaller upload.</p>}
   </div>;

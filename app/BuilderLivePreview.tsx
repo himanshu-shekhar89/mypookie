@@ -90,7 +90,7 @@ export function BuilderLivePreview({ block, name, senderName, theme, ambience, g
         {block.id === "video" && <VideoNotePlay config={config} onComplete={onComplete} />}
         {block.id === "flowers" && <EGiftPreview config={config} onComplete={onComplete} />}
         {block.id === "quiz" && <QuizPlay config={config} onComplete={onComplete} onReward={onReward} />}
-        {block.id === "thisorthat" && <ThisOrThatPlay config={config} onComplete={onComplete} onReward={onReward} />}
+        {block.id === "thisorthat" && <ThisOrThatPlay config={config} giftId={giftId} blockInstanceId={block.instanceId||block.id} recipientName={name} onComplete={onComplete} onReward={onReward} />}
         {block.id === "emoji" && <EmojiDecoderPlay config={config} onComplete={onComplete} onReward={onReward} />}
         {block.id === "heartcatch" && <HeartCatchPlay config={config} onComplete={onComplete} onReward={onReward} />}
         {["wouldrather","neverhave","truthdare","tapheart","matchpair","countdownus","constellation","growthring","movie","song","alwaysyou","excuse","roast","fortune","mysterybox","playlist","countdowninvite","groupboard"].includes(block.id) && <TinyBlockPreview id={block.id} blockInstanceId={block.instanceId} config={config} giftId={giftId} recipientName={name} senderName={senderName} onComplete={onComplete} onReward={onReward} />}
@@ -109,9 +109,9 @@ export function BuilderLivePreview({ block, name, senderName, theme, ambience, g
 }
 
 type QuizQuestion = { id:string; question:string; options:{text:string;image:string}[]; correctIndex:number; interaction:"floating"|"normal" };
-type MemoryItem = { id:string; image:string; caption:string; note?:string; arrow?:string; animation?:string };
+type MemoryItem = { id:string; image:string; images?:string[]; layout?:string; caption:string; note?:string; arrow?:string; animation?:string };
 type TreasureClue = { clue:string; hint:string; answer:string; photo?:string; caption?:string };
-type ThisOrThatRound = { prompt:string; left:string; right:string };
+type ThisOrThatRound = { prompt:string; left:string; right:string; senderPick?:string };
 
 function parseJson<T>(value:string|undefined,fallback:T):T{try{return value?JSON.parse(value) as T:fallback}catch{return fallback}}
 
@@ -136,13 +136,17 @@ function VideoNotePlay({config,onComplete}:{config:Record<string,string>;onCompl
   return <div className={`video-note-player video-effect-${effect}`}>{config.videoUrl?<><div className="video-screen"><video src={config.videoUrl} controls playsInline onPlay={()=>{if(!started){setStarted(true);playSound("reveal")}}} onEnded={onComplete}/>{config.videoEffect==="Retro cam"&&<><span className="retro-rec">● REC</span><span className="retro-date">MYPOOKIE · 1998</span><i className="retro-scan"/></>}</div><strong>{config.videoCaption||"A little face-to-face moment, just for you."}</strong><small>Watch to the end to continue</small></>:<div className="video-note-empty"><span>▶</span><strong>Your video note will appear here</strong><small>Record or upload it in the customizer.</small></div>}</div>;
 }
 
-function ThisOrThatPlay({config,onComplete,onReward}:{config:Record<string,string>;onComplete?:()=>void;onReward?:(reward:string)=>void}){
+function ThisOrThatPlay({config,giftId,blockInstanceId,recipientName,onComplete,onReward}:{config:Record<string,string>;giftId?:string;blockInstanceId:string;recipientName:string;onComplete?:()=>void;onReward?:(reward:string)=>void}){
   const rounds=parseJson<ThisOrThatRound[]>(config.thisOrThatRounds,[{prompt:"Our perfect evening",left:"Movie night",right:"Long drive"}]);
   const [index,setIndex]=useState(0);
   const [choices,setChoices]=useState<string[]>([]);
   if(index>=rounds.length)return <div className="this-or-that-finish"><span>♡</span><strong>Your little favourites</strong>{choices.map((choice,choiceIndex)=><small key={choiceIndex}>{rounds[choiceIndex]?.prompt}: <b>{choice}</b></small>)}</div>;
   const round=rounds[index];
-  function choose(value:string){playSound("tile");const next=[...choices,value];setChoices(next);if(index===rounds.length-1){playSound("win");onReward?.(`This or that: ${value}`);onComplete?.()}setIndex(current=>current+1)}
+  async function saveChoices(next:string[]){
+    if(!giftId||config.compatibilityEnabled!=="true")return;
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL||"https://backend-production-22bd.up.railway.app"}/api/public/gifts/${giftId}/responses`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({blockId:blockInstanceId,responseType:"THIS_OR_THAT",contributorName:recipientName||"Recipient",responseText:JSON.stringify({choices:next}),photoUrls:[]})}).catch(()=>{});
+  }
+  function choose(value:string){playSound("tile");const next=[...choices,value];setChoices(next);if(index===rounds.length-1){void saveChoices(next);playSound("win");onReward?.(`This or that: ${value}`);onComplete?.()}setIndex(current=>current+1)}
   return <div className="this-or-that-play"><div className="quiz-dots">{rounds.map((_,dot)=><i key={dot} className={dot<index?"done":dot===index?"current":""}/>)}</div><small>QUICK CHOICE {index+1}</small><strong>{round.prompt}</strong><div><button onClick={()=>choose(round.left)}>{round.left}</button><span>OR</span><button onClick={()=>choose(round.right)}>{round.right}</button></div></div>;
 }
 
@@ -174,21 +178,40 @@ function QuizPlay({config,onComplete,onReward}:{config:Record<string,string>;onC
   function floatFromCursor(event:React.PointerEvent<HTMLDivElement>){
     if(question.interaction!=="floating")return;
     const pointer={x:event.clientX,y:event.clientY};
-    const next:Record<number,{x:number;y:number}>={};
-    event.currentTarget.querySelectorAll<HTMLButtonElement>("button[data-option]").forEach(button=>{
+    const stage=event.currentTarget.getBoundingClientRect();
+    setOffsets(current=>{
+      const next={...current};
+      const buttons=Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>("button[data-option]"));
+      buttons.forEach(button=>{
       const optionIndex=Number(button.dataset.option);
-      if(optionIndex===question.correctIndex){next[optionIndex]={x:0,y:0};return}
+      if(optionIndex===question.correctIndex)return;
       const rect=button.getBoundingClientRect();
       const dx=rect.left+rect.width/2-pointer.x;
       const dy=rect.top+rect.height/2-pointer.y;
       const distance=Math.max(Math.hypot(dx,dy),1);
-      if(distance<125){
+      if(distance<190){
         if(!dodged.current.has(optionIndex)){dodged.current.add(optionIndex);playSound("incorrect")}
-        const drift=Math.min(11,3+(125-distance)*.1);
-        next[optionIndex]={x:dx/distance*drift,y:dy/distance*drift};
-      }else{next[optionIndex]={x:0,y:0};dodged.current.delete(optionIndex)}
+        const previous=current[optionIndex]||{x:0,y:0};
+        const jump=Math.min(105,38+(190-distance)*.42);
+        let x=previous.x+dx/distance*jump;
+        let y=previous.y+dy/distance*jump;
+        x=Math.min(Math.max(x,stage.left+10-rect.left),stage.right-10-rect.right);
+        y=Math.min(Math.max(y,stage.top+10-rect.top),stage.bottom-10-rect.bottom);
+        const candidate={left:rect.left+(x-previous.x),right:rect.right+(x-previous.x),top:rect.top+(y-previous.y),bottom:rect.bottom+(y-previous.y)};
+        const overlaps=buttons.some(otherButton=>{
+          if(otherButton===button)return false;
+          const other=otherButton.getBoundingClientRect();
+          return candidate.left<other.right+12&&candidate.right>other.left-12&&candidate.top<other.bottom+12&&candidate.bottom>other.top-12;
+        });
+        if(overlaps){
+          y=Math.min(Math.max(previous.y+(dy>=0?1:-1)*jump,stage.top+10-rect.top),stage.bottom-10-rect.bottom);
+          x=Math.min(Math.max(previous.x+(dx>=0?1:-1)*jump*.55,stage.left+10-rect.left),stage.right-10-rect.right);
+        }
+        next[optionIndex]={x,y};
+      }
+      });
+      return next;
     });
-    setOffsets(next);
   }
   function answer(optionIndex:number){
     if(question.interaction==="floating"&&optionIndex!==question.correctIndex){
@@ -204,7 +227,7 @@ function QuizPlay({config,onComplete,onReward}:{config:Record<string,string>;onC
     window.setTimeout(()=>{if(index<questions.length-1){const nextIndex=index+1;setIndex(nextIndex);setFeedback("");setOffsets({});dodged.current.clear();setOrder(questions[nextIndex].options.map((_,optionPosition)=>optionPosition))}else{setIndex(questions.length);playSound("win");onReward?.(`Quiz score: ${finalScore}/${questions.length}`);onComplete?.()}},700);
   }
   const visibleOrder=[...order.filter(optionIndex=>optionIndex<question.options.length),...question.options.map((_,optionIndex)=>optionIndex).filter(optionIndex=>!order.includes(optionIndex))];
-  return <div className="advanced-quiz"><div className="quiz-dots">{questions.map((_,dot)=><i key={dot} className={dot<index?"done":dot===index?"current":""}/>)}</div><strong>{question.question}</strong><div className="runaway-stage" onPointerMove={floatFromCursor} onPointerLeave={()=>{setOffsets({});dodged.current.clear()}}>{visibleOrder.map(optionIndex=>{const option=question.options[optionIndex];const offset=offsets[optionIndex]||{x:0,y:0};return <button data-option={optionIndex} key={optionIndex} className={optionIndex===question.correctIndex?"desired":""} style={{transform:`translate(${offset.x}px,${offset.y}px)`}} onClick={()=>answer(optionIndex)}>{option.image&&<img src={option.image} alt=""/>}<span>{option.text||`Option ${optionIndex+1}`}</span></button>})}</div><output>{feedback||`${index+1} of ${questions.length} · ${question.interaction==="floating"?"wrong answers float away from the cursor":"normal scoring"}`}</output></div>;
+  return <div className="advanced-quiz"><div className="quiz-dots">{questions.map((_,dot)=><i key={dot} className={dot<index?"done":dot===index?"current":""}/>)}</div><strong>{question.question}</strong><div className="runaway-stage" onPointerMove={floatFromCursor}>{visibleOrder.map(optionIndex=>{const option=question.options[optionIndex];const offset=offsets[optionIndex]||{x:0,y:0};const wrongFloat=question.interaction==="floating"&&optionIndex!==question.correctIndex;return <button data-option={optionIndex} key={optionIndex} className={`${optionIndex===question.correctIndex?"desired":""} ${wrongFloat?"float-away-wrong":""}`} style={{transform:`translate(${offset.x}px,${offset.y}px)`}} onClick={()=>answer(optionIndex)}>{option.image&&<img src={option.image} alt=""/>}<span>{option.text||`Option ${optionIndex+1}`}</span></button>})}</div><output>{feedback||`${index+1} of ${questions.length} · ${question.interaction==="floating"?"wrong answers escape before the cursor reaches them":"normal scoring"}`}</output></div>;
 }
 
 function SlotMachinePlay({config,onComplete,onReward}:{config:Record<string,string>;onComplete?:()=>void;onReward?:(reward:string)=>void}){
@@ -287,7 +310,8 @@ function MemoryBook({config,onComplete}:{config:Record<string,string>;onComplete
   const current=pages[page];
   const style=(config.albumStyle||"Blush scrapbook").toLowerCase().replaceAll(" ","-");
   const animation=(current.animation||"Polaroid pop").toLowerCase().replaceAll(" ","-");
-  return <div className={`memory-book scrapbook-album album-${style}`}><div className={`memory-page scrapbook-page page-${animation} ${turning?"turning":""}`}><div className="album-corner-tape left"/><div className="album-corner-tape right"/><img src={current.image} alt={page===0?"Memory album cover":"Uploaded memory"}/><div className="scrapbook-copy"><small>{page===0?"OUR MEMORY ALBUM":`MEMORY ${page} OF ${items.length}`}</small><strong>{current.caption}</strong>{current.note&&<p>{current.note}</p>}</div>{page>0&&current.arrow!=="None"&&<span className={`scrapbook-arrow arrow-${(current.arrow||"Curve right").toLowerCase().replaceAll(" ","-")}`}>↝</span>}<div className="album-stickers" aria-hidden="true"><i>♡</i><b>✦</b><em>together</em></div></div><div className="book-controls"><button onClick={()=>turn(-1)}>←</button><span>{page+1}/{pages.length} · turn the album page</span><button onClick={()=>turn(1)}>→</button></div></div>;
+  const pageImages=current.images?.length?current.images:[current.image];
+  return <div className={`memory-book scrapbook-album album-${style}`}><div className={`memory-page scrapbook-page page-${animation} ${turning?"turning":""}`}><div className="album-corner-tape left"/><div className="album-corner-tape right"/>{pageImages.length>1?<div className={`memory-collage collage-${pageImages.length} layout-${(current.layout||"Four-photo grid").toLowerCase().replaceAll(" ","-")}`}>{pageImages.map((image,index)=><img src={image} alt={`Memory collage ${index+1}`} key={index}/>)}</div>:<img src={current.image} alt={page===0?"Memory album cover":"Uploaded memory"}/>}<div className="scrapbook-copy"><small>{page===0?"OUR MEMORY ALBUM":`MEMORY ${page} OF ${items.length}`}</small><strong>{current.caption}</strong>{current.note&&<p>{current.note}</p>}</div>{page>0&&current.arrow!=="None"&&<span className={`scrapbook-arrow arrow-${(current.arrow||"Curve right").toLowerCase().replaceAll(" ","-")}`}>↝</span>}<div className="album-stickers" aria-hidden="true"><i>♡</i><b>✦</b><em>together</em></div></div><div className="book-controls"><button onClick={()=>turn(-1)}>←</button><span>{page+1}/{pages.length} · turn the album page</span><button onClick={()=>turn(1)}>→</button></div></div>;
 }
 
 function TreasurePlay({config,onComplete,onReward}:{config:Record<string,string>;onComplete?:()=>void;onReward?:(reward:string)=>void}){

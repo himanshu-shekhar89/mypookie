@@ -2,15 +2,18 @@ package com.mypookie.api.service;
 import com.fasterxml.jackson.databind.*; import com.mypookie.api.dto.GiftRequest; import com.mypookie.api.model.*;
 import com.mypookie.api.repository.*; import lombok.RequiredArgsConstructor; import org.springframework.stereotype.Service;
 import java.time.Instant; import java.util.*; import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 @Service @RequiredArgsConstructor
 public class GiftService {
  private final GiftRepository gifts; private final ActivityTypeRepository activities; private final BundleRepository bundles; private final GiftSecretService secrets; private final ObjectMapper json;
+ private static final BCryptPasswordEncoder PINS=new BCryptPasswordEncoder(12);
  @Transactional
  public Gift save(String senderId,String id,GiftRequest r){
   Gift g=id==null?new Gift():gifts.findById(id).orElseThrow();
   if(id==null){g.setId(UUID.randomUUID().toString());g.setSenderId(senderId);g.setStatus("DRAFT");}
   if(!g.getSenderId().equals(senderId))throw new SecurityException("Not your gift");
   g.setTitle(r.title());g.setSenderName(r.senderName());g.setRecipientName(r.recipientName());g.setRecipientType(r.recipientType());g.setOccasion(r.occasion());g.setTheme(r.theme());g.setAmbience(r.ambience());g.setBlocksJson(secrets.sanitizeForStorage(r.blocksJson()));g.setScheduledAt(r.scheduledAt());g.setTotalPaise(calculate(r.blocksJson()));g.setUpdatedAt(Instant.now());
+  if(r.compatibilityPin()!=null&&!r.compatibilityPin().isBlank())g.setCompatibilityPinHash(PINS.encode(r.compatibilityPin()));
   Gift saved=gifts.saveAndFlush(g);secrets.sync(saved.getId(),r.blocksJson());return saved;
  }
  private int calculate(String blocksJson){
