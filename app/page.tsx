@@ -59,18 +59,32 @@ const activities: Block[] = [
   { id: "groupboard", icon: "☷", name: "Group Message Board", description: "Short notes assembled into one shared card", price: 69, color: "blue", category: "Plans & together", message: "A whole group of people wanted to say this." },
 ];
 
-const bundles = [
-  { id: "romantic", badge: "Most loved", name: "Romantic surprise", copy: "A slow, heartfelt story made for your person.", ids: ["letter", "voice", "memory", "quiz", "flowers", "gift"], price: 249, tone: "romantic" },
-  { id: "birthday", badge: "Playful", name: "Birthday adventure", copy: "Games, surprises and one very happy ending.", ids: ["letter", "puzzle", "quiz", "wheel", "scratch", "gift"], price: 279, tone: "birthday" },
-  { id: "friend", badge: "Good chaos", name: "Best friend forever", copy: "Shared lore, silly questions and real appreciation.", ids: ["voice", "memory", "quiz", "puzzle", "gift"], price: 219, tone: "friend" },
+const recipients = ["Lover", "Friend", "Parents", "Sibling", "Other"] as const;
+type Recipient = typeof recipients[number];
+type BundlePreset = {id:string;badge:string;name:string;copy:string;ids:string[];price:number;tone:string;recipientType:Recipient};
+
+const bundles:BundlePreset[] = [
+  { id:"romantic",badge:"Most loved",name:"Romantic surprise",copy:"A slow, heartfelt story made for your person.",ids:["letter","voice","memory","quiz","flowers","gift"],price:249,tone:"romantic",recipientType:"Lover" },
+  { id:"lover-date",badge:"Date night",name:"Our perfect date",copy:"A playful invitation that ends with a real plan together.",ids:["playlist","countdowninvite","wheel","gift","flowers"],price:169,tone:"date",recipientType:"Lover" },
+  { id:"lover-distance",badge:"Across miles",name:"Closer to you",copy:"Voice, video and little moments for when distance feels too big.",ids:["video","playlist","countdownus","calendar","letter"],price:229,tone:"distance",recipientType:"Lover" },
+  { id:"friend",badge:"Bestie pick",name:"Best friend forever",copy:"Shared lore, silly questions and real appreciation.",ids:["voice","memory","quiz","puzzle","gift"],price:219,tone:"friend",recipientType:"Friend" },
+  { id:"friend-chaos",badge:"Good chaos",name:"Certified chaos",copy:"Confessions, roulette and ridiculous surprises made for best friends.",ids:["wouldrather","neverhave","truthdare","slots","fortune"],price:179,tone:"chaos",recipientType:"Friend" },
+  { id:"friend-birthday",badge:"Big energy",name:"Bestie birthday blast",copy:"Photos, games and group wishes for their loudest birthday yet.",ids:["video","memory","puzzle","tapheart","groupboard","flowers"],price:289,tone:"birthday",recipientType:"Friend" },
+  { id:"parents-thanks",badge:"From the heart",name:"Everything you gave me",copy:"A warm thank-you told through words, memories and one thoughtful gift.",ids:["letter","voice","memory","flowers","gift"],price:179,tone:"gratitude",recipientType:"Parents" },
+  { id:"parents-memory",badge:"Family favourite",name:"Our family album",copy:"A beautiful family story with photos, milestones and music.",ids:["video","memory","puzzle","growthring","playlist"],price:249,tone:"family",recipientType:"Parents" },
+  { id:"parents-celebrate",badge:"Together",name:"Celebrate Mom & Dad",copy:"Messages from everyone, a glowing reveal and a plan to celebrate.",ids:["groupboard","video","flowers","gift","countdowninvite"],price:199,tone:"celebration",recipientType:"Parents" },
+  { id:"sibling-bestie",badge:"Built-in bestie",name:"Partners since forever",copy:"Childhood memories, inside jokes and the appreciation you rarely say.",ids:["voice","memory","quiz","matchpair","gift"],price:219,tone:"sibling",recipientType:"Sibling" },
+  { id:"sibling-nostalgia",badge:"Throwback",name:"Back to our childhood",copy:"Retro photos, puzzles, decoded memories and your shared soundtrack.",ids:["memory","puzzle","emoji","roast","playlist"],price:209,tone:"nostalgia",recipientType:"Sibling" },
+  { id:"sibling-roast",badge:"Playful",name:"Roast, reveal, repeat",copy:"A loving dose of sibling rivalry with games and mystery prizes.",ids:["neverhave","truthdare","roast","slots","mysterybox"],price:179,tone:"roast",recipientType:"Sibling" },
+  { id:"birthday",badge:"Birthday ready",name:"Birthday spotlight",copy:"Games, surprises and one very happy ending for anyone you adore.",ids:["letter","puzzle","quiz","wheel","scratch","gift"],price:229,tone:"birthday",recipientType:"Other" },
+  { id:"other-appreciation",badge:"For anyone",name:"You matter to me",copy:"A thoughtful all-purpose bundle for mentors, cousins and special people.",ids:["letter","voice","memory","groupboard","flowers"],price:219,tone:"appreciation",recipientType:"Other" },
+  { id:"other-celebration",badge:"Big reveal",name:"The celebration box",copy:"A lively mix of video, games, reveals and a final gift.",ids:["video","wheel","slots","scratch","flowers","gift"],price:229,tone:"celebration",recipientType:"Other" },
 ];
 
 type CatalogResponse = {
   activities: Array<{id:string;name:string;description:string;pricePaise:number;active:boolean}>;
-  bundles: Array<{id:string;name:string;description:string;pricePaise:number;activityIds:string;active:boolean}>;
+  bundles: Array<{id:string;name:string;description:string;pricePaise:number;activityIds:string;recipientType:Recipient;active:boolean}>;
 };
-
-const recipients = ["Lover", "Friend", "Parents", "Sibling", "Other"];
 
 const blockDefaults: Record<string, Record<string, string>> = {
   letter: { signoff: "— sent with love", animation: "Lift and unfold" },
@@ -118,7 +132,7 @@ export default function Home() {
   const publicGiftToken=urlParams?.get("gift")||null;
   const adminMode=urlParams?.get("admin")==="true";
   const [screen, setScreen] = useState<"welcome" | "catalog" | "builder" | "preview" | "checkout">("welcome");
-  const [recipient, setRecipient] = useState("Lover");
+  const [recipient, setRecipient] = useState<Recipient>("Lover");
   const [name, setName] = useState("Ananya");
   const [occasion, setOccasion] = useState("Just because");
   const [selected, setSelected] = useState<Block[]>([]);
@@ -148,6 +162,7 @@ export default function Home() {
 
   const subtotal = useMemo(() => selectedBundleId ? (catalogBundles.find(bundle=>bundle.id===selectedBundleId)?.price ?? selected.reduce((sum,item)=>sum+item.price,0)) : selected.reduce((sum,item)=>sum+item.price,0), [selected,selectedBundleId,catalogBundles]);
   const activeBlock = selected[active];
+  const visibleBundles=catalogBundles.filter(bundle=>bundle.recipientType===recipient);
 
   useEffect(() => {
     const updateClock = () => setCurrentTime(new Intl.DateTimeFormat([], { hour: "numeric", minute: "2-digit" }).format(new Date()));
@@ -171,7 +186,7 @@ export default function Home() {
         const managed=catalog.bundles.find(item=>item.id===bundle.id)!;
         let ids=bundle.ids;
         try{const parsed=JSON.parse(managed.activityIds);if(Array.isArray(parsed))ids=parsed.filter(value=>typeof value==="string")}catch{}
-        return {...bundle,name:managed.name,copy:managed.description,price:managed.pricePaise/100,ids};
+        return {...bundle,name:managed.name,copy:managed.description,price:managed.pricePaise/100,ids,recipientType:managed.recipientType};
       }));
     }).catch(()=>{});
     return()=>controller.abort();
@@ -378,7 +393,7 @@ export default function Home() {
             <p>Build a little world of messages, memories, games and surprises—personalized by you, opened by them.</p>
             <div className="hero-actions">
               <button className="primary" onClick={() => setScreen("catalog")}>Create a gift <span>→</span></button>
-              <button className="text-button" onClick={() => chooseBundle(catalogBundles[0]?.ids||bundles[0].ids,catalogBundles[0]?.id||bundles[0].id)}><span className="play">▶</span> Preview an experience</button>
+              <button className="text-button" onClick={() => {const featured=catalogBundles.find(bundle=>bundle.recipientType==="Lover")||bundles[0];chooseBundle(featured.ids,featured.id)}}><span className="play">▶</span> Preview an experience</button>
             </div>
             <div className="social-proof"><div className="faces"><b>😊</b><b>🥰</b><b>🤍</b><b>✨</b></div><span><strong>4,800+ moments</strong><br/>made unforgettable</span></div>
           </div>
@@ -448,8 +463,8 @@ export default function Home() {
           <div className="quick-fields"><label>Their name<input value={name} onChange={e => setName(e.target.value)} /></label><label>Occasion<select value={occasion} onChange={e => setOccasion(e.target.value)}><option>Just because</option><option>Birthday</option><option>Anniversary</option><option>I’m sorry</option><option>Congratulations</option></select></label></div>
         </section>
         <section className="creation-choice">
-          <div className="choice-heading"><div><div className="section-kicker">CHOOSE YOUR WAY</div><h2>Start with a story or make your own</h2></div><button className="scratch-link" onClick={() => {setSelected([]);setSelectedBundleId(null);setScreen("builder")}}>Build from scratch <span>→</span></button></div>
-          <div className="bundle-grid">{catalogBundles.map((b, index) => <article className={`bundle bundle-${index}`} key={b.id}><div className="bundle-art"><span>{index === 0 ? "♡" : index === 1 ? "✦" : "☺"}</span><div className="bundle-pages"><i/><i/><i/></div></div><div className="bundle-content"><small>{b.badge}</small><h3>{b.name}</h3><p>{b.copy}</p><div className="bundle-includes">{b.ids.slice(0,4).map(id => <span key={id}>{catalogActivities.find(a => a.id === id)?.icon}</span>)}<b>+{b.ids.length-4}</b></div><div className="bundle-bottom"><strong>₹{b.price}</strong><button onClick={() => chooseBundle(b.ids,b.id)}>Choose bundle →</button></div><em>Everything can be changed</em></div></article>)}</div>
+          <div className="choice-heading"><div><div className="section-kicker">CHOSEN FOR {recipient.toUpperCase()}</div><h2>{recipient==="Lover"?"Made for the two of you":recipient==="Friend"?"For the friend who knows everything":recipient==="Parents"?"Stories made for family":recipient==="Sibling"?"For your original partner in chaos":"A beautiful fit for anyone special"}</h2><p>Each bundle has a different mood and can still be completely customized.</p></div><button className="scratch-link" onClick={() => {setSelected([]);setSelectedBundleId(null);setScreen("builder")}}>Build from scratch <span>→</span></button></div>
+          <div className="bundle-grid">{visibleBundles.map((b, index) => <article className={`bundle bundle-${index}`} key={b.id}><div className="bundle-art"><span>{index === 0 ? (recipient==="Parents"?"⌂":"♡") : index === 1 ? "✦" : recipient==="Friend"||recipient==="Sibling" ? "☺" : "♢"}</span><div className="bundle-pages"><i/><i/><i/></div></div><div className="bundle-content"><div className="bundle-audience"><small>{b.badge}</small><span>For {b.recipientType.toLowerCase()}</span></div><h3>{b.name}</h3><p>{b.copy}</p><div className="bundle-includes">{b.ids.slice(0,4).map(id => <span key={id}>{catalogActivities.find(a => a.id === id)?.icon}</span>)}<b>+{b.ids.length-4}</b></div><div className="bundle-bottom"><strong>₹{b.price}</strong><button onClick={() => chooseBundle(b.ids,b.id)}>Choose bundle →</button></div><em>Everything can be changed</em></div></article>)}</div>
         </section>
       </main>
     );

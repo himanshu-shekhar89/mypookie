@@ -67,11 +67,11 @@ public class AdminController {
  }
 
  @GetMapping("/bundles")
- public List<Bundle> bundles(){return bundles.findAll().stream().sorted(Comparator.comparing(Bundle::getName)).toList();}
+ public List<Bundle> bundles(){return bundles.findAll().stream().sorted(Comparator.comparing(Bundle::getRecipientType).thenComparing(Bundle::getName)).toList();}
 
  @PutMapping("/bundles/{id}")
  public Bundle updateBundle(@PathVariable String id,@Valid @RequestBody BundleUpdate request){
-  var bundle=bundles.findById(id).orElseThrow();bundle.setName(request.name());bundle.setDescription(request.description());bundle.setPricePaise(request.pricePaise());bundle.setActivityIds(request.activityIds());bundle.setActive(request.active());return bundles.save(bundle);
+  var bundle=bundles.findById(id).orElseThrow();bundle.setName(request.name());bundle.setDescription(request.description());bundle.setPricePaise(request.pricePaise());bundle.setActivityIds(request.activityIds());bundle.setRecipientType(request.recipientType());bundle.setActive(request.active());return bundles.save(bundle);
  }
 
  @GetMapping("/gifts")
@@ -99,6 +99,6 @@ public class AdminController {
  }
 
  public record ActivityUpdate(@jakarta.validation.constraints.NotBlank String name,@jakarta.validation.constraints.NotBlank String description,@jakarta.validation.constraints.PositiveOrZero int pricePaise,boolean active){}
- public record BundleUpdate(@jakarta.validation.constraints.NotBlank String name,@jakarta.validation.constraints.NotBlank String description,@jakarta.validation.constraints.PositiveOrZero int pricePaise,@jakarta.validation.constraints.NotBlank String activityIds,boolean active){}
+ public record BundleUpdate(@jakarta.validation.constraints.NotBlank String name,@jakarta.validation.constraints.NotBlank String description,@jakarta.validation.constraints.PositiveOrZero int pricePaise,@jakarta.validation.constraints.NotBlank String activityIds,@jakarta.validation.constraints.Pattern(regexp="Lover|Friend|Parents|Sibling|Other") String recipientType,boolean active){}
  public record RoleUpdate(String role){}
 }
