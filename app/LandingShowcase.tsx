@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { playSound } from "./soundFx";
 
 const prizes = ["Movie night", "Breakfast", "A long hug", "Mystery date", "Your choice", "Sweet treat"];
 const slotIcons = ["🎁", "🌸", "🍫", "🎟️", "⭐", "🧸"];
@@ -44,6 +45,7 @@ export function LandingShowcase() {
 
   function spinWheel() {
     if (wheelSpinning) return;
+    playSound("wheel");
     setWheelSpinning(true);
     setWheelPrize("Spinning…");
     const winningIndex = Math.floor(Math.random() * prizes.length);
@@ -55,12 +57,14 @@ export function LandingShowcase() {
     });
     window.setTimeout(() => {
       setWheelPrize(`You won: ${prizes[winningIndex]} ♡`);
+      playSound("win");
       setWheelSpinning(false);
     }, 3200);
   }
 
   function pullLever() {
     if (slotSpinning) return;
+    playSound("lever");
     setSlotSpinning(true);
     setSlotPrize("Rolling…");
     const timer = window.setInterval(() => {
@@ -71,16 +75,19 @@ export function LandingShowcase() {
       const result = Array.from({ length: 3 }, () => slotIcons[Math.floor(Math.random() * slotIcons.length)]);
       setSlotSymbols(result);
       setSlotPrize(result.every(symbol => symbol === result[0]) ? "Jackpot: mystery date unlocked!" : `You found ${result.join(" ")} — one sweet surprise!`);
+      playSound(result.every(symbol => symbol === result[0]) ? "win" : "reveal");
       setSlotSpinning(false);
     }, 2100);
   }
 
   function pickTile(index: number) {
     if (picked === null) {
+      playSound("tile");
       setPicked(index);
       return;
     }
     if (picked === index) {
+      playSound("tile");
       setPicked(null);
       return;
     }
@@ -89,15 +96,15 @@ export function LandingShowcase() {
     const nextRow = Math.floor(index / 3);
     const nextCol = index % 3;
     if (Math.abs(firstRow - nextRow) + Math.abs(firstCol - nextCol) !== 1) {
+      playSound("incorrect");
       setPuzzleHint("Only neighboring pieces can swap");
       setPicked(null);
       return;
     }
-    setPuzzle(current => {
-      const next = [...current];
-      [next[picked], next[index]] = [next[index], next[picked]];
-      return next;
-    });
+    const next=[...puzzle];
+    [next[picked],next[index]]=[next[index],next[picked]];
+    setPuzzle(next);
+    playSound(next.every((tile,tileIndex)=>tile===tileIndex)?"win":"tile");
     setPuzzleHint("Nice move — keep going!");
     setPicked(null);
     setMoves(value => value + 1);
@@ -107,6 +114,7 @@ export function LandingShowcase() {
 
   function scratch(event: React.PointerEvent<HTMLCanvasElement>) {
     if (!scratching.current && event.type === "pointermove") return;
+    playSound("scratch");
     const canvas = scratchRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -163,11 +171,11 @@ export function LandingShowcase() {
 
         <article className="play-card letter-card">
           <CardTitle number="04" eyebrow="A NOTE FOR YOU" title="Open the letter" />
-          <button className={`letter-demo ${letterOpen ? "opened" : ""}`} onClick={() => setLetterOpen(value => !value)} aria-label="Open animated letter">
-            <div className="letter-sheet"><p>you’re my favourite<br/>notification.</p><span>— sent with love</span></div>
-            <div className="envelope-back" />
-            <div className="envelope-front" />
-            <div className="envelope-flap" />
+          <button className={`letter-demo ${letterOpen ? "opened" : ""}`} onClick={() => {playSound(letterOpen?"page":"envelope");setLetterOpen(value => !value)}} aria-label={letterOpen?"Close animated letter":"Open animated letter"}>
+            <div className="demo-letter-sheet"><p>you’re my favourite<br/>notification.</p><span>— sent with love</span></div>
+            <div className="demo-envelope-back" />
+            <div className="demo-envelope-front" />
+            <div className="demo-envelope-flap" />
             <b>♡</b>
           </button>
           <output>{letterOpen ? "Tap again to tuck it away" : "Tap the wax seal to open"}</output>

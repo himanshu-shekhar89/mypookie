@@ -23,6 +23,26 @@ public class OrderController {
  private final RazorpayService razorpay;
  private final CouponService couponService;
 
+ @GetMapping
+ public List<OrderHistoryResponse> mine(@AuthenticationPrincipal FirebaseAuthenticationFilter.UserPrincipal principal){
+  var user=users.resolve(principal);
+  return orders.findBySenderIdOrderByCreatedAtDesc(user.getId()).stream().map(order->{
+   var gift=gifts.findById(order.getGiftId()).orElse(null);
+   return new OrderHistoryResponse(
+    order.getId(),
+    order.getGiftId(),
+    gift==null?"Interactive gift":gift.getTitle(),
+    gift==null?"Someone special":gift.getRecipientName(),
+    order.getAmountPaise(),
+    order.getCurrency(),
+    order.getCouponCode(),
+    order.getStatus(),
+    order.getCreatedAt(),
+    gift==null?null:gift.getShareToken()
+   );
+  }).toList();
+ }
+
  @PostMapping("/quote")
  public Map<String,Object> quote(@AuthenticationPrincipal FirebaseAuthenticationFilter.UserPrincipal principal,@Valid @RequestBody OrderRequest request){
   var user=users.resolve(principal);

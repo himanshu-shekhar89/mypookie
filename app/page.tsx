@@ -9,7 +9,9 @@ import { GroupContributionPage } from "./GroupContributionPage";
 import { CheckoutPage, type PaymentOrder, type RazorpayResult } from "./CheckoutPage";
 import { PublicGiftExperience } from "./PublicGiftExperience";
 import { AdminPanel } from "./AdminPanel";
-import { authHeaders, signInWithFirebase, watchFirebaseAuth } from "./authClient";
+import { AccountMenu, type AccountProfile } from "./AccountMenu";
+import { authHeaders, signInWithFirebase, signOutFirebase, watchFirebaseAuth } from "./authClient";
+import { playSound } from "./soundFx";
 
 type Block = {
   instanceId?: string;
@@ -172,6 +174,7 @@ export default function Home() {
   const [builderPreviewNonce,setBuilderPreviewNonce]=useState(0);
   const [revealAt,setRevealAt]=useState("");
   const [signedIn,setSignedIn]=useState(false);
+  const [accountProfile,setAccountProfile]=useState<AccountProfile|null>(null);
   const [authError,setAuthError]=useState("");
   const [authOpen,setAuthOpen]=useState(false);
   const [afterAuth,setAfterAuth]=useState<"save"|"checkout"|null>(null);
@@ -193,7 +196,14 @@ export default function Home() {
     return () => window.clearInterval(timer);
   }, []);
 
-  useEffect(()=>watchFirebaseAuth(user=>setSignedIn(Boolean(user))),[]);
+  useEffect(()=>watchFirebaseAuth(user=>{
+    setSignedIn(Boolean(user));
+    setAccountProfile(user?{
+      email:user.email||"",
+      displayName:user.displayName||"",
+      photoURL:user.photoURL||"",
+    }:null);
+  }),[]);
 
   useEffect(()=>{
     const controller=new AbortController();
@@ -354,6 +364,14 @@ export default function Home() {
     }
   }
 
+  async function logout(){
+    await signOutFirebase();
+    setSignedIn(false);
+    setAccountProfile(null);
+    setGiftId(null);
+    setSaveState("idle");
+  }
+
   async function createPaymentOrder(coupon:string):Promise<PaymentOrder|null>{
     const id=await saveDraft();
     if(!id)return null;
@@ -400,6 +418,7 @@ export default function Home() {
   }
 
   function celebrateOccasion(type: string) {
+    playSound("celebration");
     setOccasionFx(null);
     window.requestAnimationFrame(() => setOccasionFx(type));
     window.setTimeout(() => setOccasionFx(null), 3200);
@@ -422,7 +441,7 @@ export default function Home() {
         <nav className="nav">
           <button className="brand" onClick={() => setScreen("welcome")}><span className="brand-heart">♥</span> mypookie.</button>
           <div className="nav-links"><a href="#how">How it works</a><a href="#ideas">Gift ideas</a><a href="#pricing">Pricing</a></div>
-          <button className="signin" onClick={() => requestSignIn(null)}>{signedIn ? "Signed in ✓" : "Continue with Google"} <span>→</span></button>
+          <AccountMenu signedIn={signedIn} profile={accountProfile} isAdmin={ROOT_ADMIN_EMAILS.has(accountProfile?.email.trim().toLowerCase()||"")} onSignIn={()=>requestSignIn(null)} onLogout={logout} onCreate={()=>setScreen("catalog")} onAdmin={()=>window.location.assign(`${window.location.origin}/?admin=true`)}/>
         </nav>
         <section className="hero">
           <div className="hero-copy">
@@ -444,9 +463,9 @@ export default function Home() {
                 <div className="mini-petals">✿　·　✿</div>
                 <small>A LITTLE SOMETHING FOR</small>
                 <h3>Ananya</h3>
-                <div className="phone-envelope" role="button" tabIndex={0} onClick={() => heroStage === "closed" && setHeroStage("open")} onKeyDown={event => { if ((event.key === "Enter" || event.key === " ") && heroStage === "closed") setHeroStage("open"); }}>
+                <div className="phone-envelope" role="button" tabIndex={0} onClick={() => {if(heroStage==="closed"){playSound("envelope");setHeroStage("open")}}} onKeyDown={event => { if ((event.key === "Enter" || event.key === " ") && heroStage === "closed") {playSound("envelope");setHeroStage("open")} }}>
                   <div className="phone-card-wrap">
-                    <button className="phone-letter-card" onClick={event => { event.stopPropagation(); if (heroStage === "open") setHeroStage("flipped"); else if (heroStage === "flipped") setHeroStage("open"); }} aria-label={heroStage === "flipped" ? "Show letter message" : "Flip letter to reveal photo"}>
+                    <button className="phone-letter-card" onClick={event => { event.stopPropagation(); playSound("page"); if (heroStage === "open") setHeroStage("flipped"); else if (heroStage === "flipped") setHeroStage("open"); }} aria-label={heroStage === "flipped" ? "Show letter message" : "Flip letter to reveal photo"}>
                       <span className="phone-letter-front">You make every day<br/>brighter ♡<small>tap the letter</small></span>
                       <span className="phone-letter-back"><img src="/mypookie-letter-photo.png" alt="A happy memory at the fair" /><small>one of my favourite memories</small></span>
                     </button>
@@ -456,7 +475,7 @@ export default function Home() {
                   <div className="phone-envelope-flap" />
                   <b className="phone-wax">♥</b>
                 </div>
-                <button className="phone-open-action" onClick={() => setHeroStage(heroStage === "closed" ? "open" : "closed")}>{heroStage === "closed" ? "Open your surprise" : "Close surprise"}</button>
+                <button className="phone-open-action" onClick={() => {playSound(heroStage==="closed"?"envelope":"page");setHeroStage(heroStage === "closed" ? "open" : "closed")}}>{heroStage === "closed" ? "Open your surprise" : "Close surprise"}</button>
               </div>
             </div>
             <div className="float-card card-memory"><span>⌁</span><div><small>MEMORY LANE</small><strong>Our first adventure</strong></div></div>
@@ -491,7 +510,7 @@ export default function Home() {
     return (
       <main className="product-page">
         {signInPopup}
-        <header className="app-header"><button className="brand" onClick={() => setScreen("welcome")}><span className="brand-heart">♥</span> mypookie.</button><div className="progress"><i className="done"/><i/><i/><span>Start</span></div><button className="avatar" onClick={() => !signedIn && requestSignIn(null)}>{signedIn ? "H" : "♡"}</button></header>
+        <header className="app-header"><button className="brand" onClick={() => setScreen("welcome")}><span className="brand-heart">♥</span> mypookie.</button><div className="progress"><i className="done"/><i/><i/><span>Start</span></div><AccountMenu compact signedIn={signedIn} profile={accountProfile} isAdmin={ROOT_ADMIN_EMAILS.has(accountProfile?.email.trim().toLowerCase()||"")} onSignIn={()=>requestSignIn(null)} onLogout={logout} onCreate={()=>{setSelected([]);setSelectedBundleId(null);setScreen("builder")}} onAdmin={()=>window.location.assign(`${window.location.origin}/?admin=true`)}/></header>
         <section className="catalog-intro">
           <button className="back" onClick={() => setScreen("welcome")}>← Back</button>
           <div className="section-kicker">LET’S MAKE SOMETHING BEAUTIFUL</div>
