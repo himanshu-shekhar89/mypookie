@@ -561,7 +561,11 @@ export default function Home() {
     return (
       <main className="product-page">
         {signInPopup}
-        <header className="app-header"><button className="brand" onClick={() => setScreen("welcome")}><span className="brand-heart">♥</span> mypookie.</button><div className="progress"><i className="done"/><i/><i/><span>Start</span></div><AccountMenu compact signedIn={signedIn} profile={accountProfile} isAdmin={ROOT_ADMIN_EMAILS.has(accountProfile?.email.trim().toLowerCase()||"")} onSignIn={()=>requestSignIn(null)} onLogout={logout} onCreate={()=>{setSelected([]);setSelectedBundleId(null);setScreen("builder")}} onAdmin={()=>window.location.assign(`${window.location.origin}/?admin=true`)}/></header>
+        <header className="nav catalog-nav">
+          <button className="brand" onClick={() => setScreen("welcome")}><span className="brand-heart">♥</span> mypookie.</button>
+          <div className="nav-links"><a href="/#how">How it works</a><a href="/#ideas">Gift ideas</a><a href="/#pricing">Pricing</a></div>
+          <AccountMenu signedIn={signedIn} profile={accountProfile} isAdmin={ROOT_ADMIN_EMAILS.has(accountProfile?.email.trim().toLowerCase()||"")} onSignIn={()=>requestSignIn(null)} onLogout={logout} onCreate={()=>{setSelected([]);setSelectedBundleId(null);setScreen("builder")}} onAdmin={()=>window.location.assign(`${window.location.origin}/?admin=true`)}/>
+        </header>
         <section className="catalog-intro">
           <button className="back" onClick={() => setScreen("welcome")}>← Back</button>
           <div className="section-kicker">LET’S MAKE SOMETHING BEAUTIFUL</div>

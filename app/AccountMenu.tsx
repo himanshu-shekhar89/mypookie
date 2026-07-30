@@ -91,7 +91,7 @@ export function AccountMenu({
   return <div className={`account-menu ${compact?"compact":""}`} ref={root}>
     <button className={compact?"avatar account-trigger":"signin account-trigger"} onClick={()=>void toggle()} aria-haspopup="menu" aria-expanded={open}>
       {profile?.photoURL?<img src={profile.photoURL} alt=""/>:<b>{signedIn?initial:"♡"}</b>}
-      {!compact&&<><span>{signedIn?label:"Continue with Google"}</span><i>{signedIn?"⌄":"→"}</i></>}
+      {!compact&&<><span>{signedIn?label:"Hop in"}</span><i>{signedIn?"⌄":"→"}</i></>}
     </button>
     {open&&<section className={`account-popover ${showOrders?"show-orders":""}`} role="menu">
       <header>
