@@ -6,11 +6,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class AiControllerPromptRulesTest {
     @Test
+    void playfulResultsHaveStrictCardLengthGuidance() {
+        assertThat(AiController.playfulLengthRules())
+            .contains("prompt must be at most 12 words")
+            .contains("option at most 7 words")
+            .contains("Never add explanations");
+    }
+
+    @Test
     void neverHaveIeverHasItsOwnStatementContract() {
         String rules = AiController.activityRulesFor("neverhave");
 
         assertThat(rules)
             .contains("Never Have I Ever statement")
+            .contains("at most 9 words")
             .contains("options array must be empty")
             .contains("Never use the words \"truth\" or \"dare\"");
     }

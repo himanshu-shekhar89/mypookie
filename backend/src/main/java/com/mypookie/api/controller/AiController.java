@@ -38,7 +38,7 @@ public class AiController {
             Tone: %s. Avoid sexual, invasive, cruel, or embarrassing content.
             Return JSON only with this exact shape:
             {"questions":[{"question":"...","options":["...","...","...","..."],"correctIndex":0,"interaction":"floating"}]}
-            Every question must have exactly four concise options. correctIndex must be 0-3.
+            Every question must have exactly four concise options. Limit each question to 14 words and each option to 5 words. correctIndex must be 0-3.
             Mix romantic and funny prompts. interaction must be either "floating" or "normal".
             """.formatted(relationship, tone);
 
@@ -81,10 +81,11 @@ public class AiController {
             Keep them personal-feeling but never assume private facts. "Sexy" means consenting adults only and must remain playful, flirty and non-explicit. Avoid graphic sexual content, invasive, cruel, unsafe, coercive, or embarrassing content.
             Return JSON only in this exact shape:
             {"items":[{"prompt":"...","options":["...","...","...","..."]}]}
+            %s
             Follow this activity-specific contract exactly; it overrides generic game patterns:
             %s
             Do not borrow wording, formats, or mechanics from Truth or Dare unless this activity is explicitly Truth or Dare.
-            """.formatted(count, gameType, relationship, tone, activityRules);
+            """.formatted(count, gameType, relationship, tone, playfulLengthRules(), activityRules);
         return generate(prompt, "You design warm, safe and playful interactive gift activities.", "items");
     }
 
@@ -110,21 +111,28 @@ public class AiController {
             Return JSON only with exactly:
             {"title":"...","subtitle":"...","senderRole":"...","recipientRole":"...","tagline":"...","genre":"..."}
             Keep every value concise, specific to the supplied answers, warm, and suitable for all ages.
+            Title and genre: at most 5 words. Roles: at most 8 words each. Subtitle and tagline: at most 12 words each.
             """.formatted(mode,sender,recipient,preference,questions,senderAnswers,recipientAnswers);
         return generate(prompt, "You are a perceptive, wholesome creative director who turns relationship answers into original entertainment concepts.", null);
     }
 
     private boolean configured(){return apiKey!=null&&!apiKey.isBlank();}
+    static String playfulLengthRules(){
+        return """
+            Keep card copy punchy: every prompt must be at most 12 words and every option at most 7 words.
+            Use one short sentence or phrase only. Never add explanations, introductions, labels, numbering, or repeated context.
+            """;
+    }
     static String activityRulesFor(String gameType){
         String key=(gameType==null?"":gameType.toLowerCase()).replaceAll("[^a-z]","");
         return switch(key){
             case "neverhave", "neverhaveiever" -> """
                 Every prompt must be a grammatically complete Never Have I Ever statement that naturally follows the words "Never have I ever…".
-                Write a light confession such as "re-read our old chats at midnight". Do not write a question, dare, command, scenario, or question mark.
+                Write a light confession of at most 9 words, such as "re-read our old chats at midnight". Do not write a question, dare, command, scenario, or question mark.
                 Never use the words "truth" or "dare". The options array must be empty because the interface supplies "I haven't" and "I have".
                 """;
             case "wouldrather" -> """
-                Create a playful either/or dilemma. Put a short card theme in prompt and exactly two distinct, equally appealing choices in options.
+                Create a playful either/or dilemma. Put a card theme of at most 6 words in prompt and exactly two distinct, equally appealing choices in options.
                 Do not write truth questions, dares, confessions, yes/no questions, or more than two options.
                 """;
             case "thisorthat" -> """

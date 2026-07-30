@@ -10,6 +10,11 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "mypookie. — A gift they experience",
     description: "Build a beautiful interactive gift from messages, memories, tiny games and surprises.",
+    icons: {
+      icon: [{ url: "/mypookie-heart.svg", type: "image/svg+xml" }],
+      shortcut: "/mypookie-heart.svg",
+      apple: "/mypookie-heart.svg",
+    },
     openGraph: { title:"mypookie. — A gift they experience", description:"Build a little world of messages, memories, tiny games and surprises.", images:[{url:image,width:1200,height:630,alt:"mypookie. interactive gift studio"}] },
     twitter: { card:"summary_large_image", title:"mypookie. — A gift they experience", description:"Build a little world of messages, memories, tiny games and surprises.", images:[image] },
   };
