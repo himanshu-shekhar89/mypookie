@@ -121,7 +121,7 @@ const blockDefaults: Record<string, Record<string, string>> = {
   wheel: { prizes: "Breakfast in bed\nMovie night\nMystery date\nA long hug\nSweet treat", spins: "1", resultMode: "Random", plannedResults: "Breakfast in bed", revealAnimation: "Confetti burst" },
   slots: { prizes: "Movie night\nBreakfast date\nA long hug\nSweet treat", pulls: "3", resultMode: "Random", plannedResults: "", revealAnimation: "Sparkle shower" },
   puzzle: { imageUrl: "/mypookie-puzzle-picnic.png", imageName: "", difficulty: "3 × 3 · Sweet and simple", successMessage: "You put this memory back together." },
-  memory: { memoryItems: "[]", coverImage: "/mypookie-letter-photo.png", coverCaption: "Our little album of us", albumStyle: "Blush scrapbook" },
+  memory: { memoryItems: "[]", coverImage: "/mypookie-letter-photo.png", coverCaption: "Our little album of us", albumStyle: "Blush scrapbook", extraPages: "false" },
   scratch: { revealText: "A candlelit dinner ♡", revealDetail: "Friday · 8:00 PM", coating: "Lilac shimmer" },
   treasure: { treasureClues: JSON.stringify([{ clue: "Start where we first said hello.", hint: "Think about our first conversation.", answer: "cafe", photo: "", caption: "" }, { clue: "Find the place in our favourite photo.", hint: "It was outdoors.", answer: "picnic", photo: "", caption: "" }]), finalSurprise: "A mystery date for us" },
   excuse: { excuses: "My coffee tastes better when you are here\nThe cat has requested your immediate presence\nI need expert help choosing dessert\nThere is an emergency hug shortage", excuseRounds: JSON.stringify([{id:"excuse-1",situation:"We both need an excuse to meet tonight.",senderExcuse:"There is an emergency hug shortage and only you can fix it."},{id:"excuse-2",situation:"We want to escape a boring plan together.",senderExcuse:"Our imaginary cat has scheduled a very important family meeting."}]) },
@@ -187,7 +187,11 @@ export default function Home() {
   const [catalogActivities,setCatalogActivities]=useState<Block[]>(activities);
   const [catalogBundles,setCatalogBundles]=useState(bundles);
 
-  const subtotal = useMemo(() => selectedBundleId ? (catalogBundles.find(bundle=>bundle.id===selectedBundleId)?.price ?? selected.reduce((sum,item)=>sum+item.price,0)) : selected.reduce((sum,item)=>sum+item.price,0), [selected,selectedBundleId,catalogBundles]);
+  const subtotal = useMemo(() => {
+    const base=selectedBundleId ? (catalogBundles.find(bundle=>bundle.id===selectedBundleId)?.price ?? selected.reduce((sum,item)=>sum+item.price,0)) : selected.reduce((sum,item)=>sum+item.price,0);
+    const addOns=selected.filter(item=>item.id==="memory"&&item.config?.extraPages==="true").length*20;
+    return base+addOns;
+  }, [selected,selectedBundleId,catalogBundles]);
   const activeBlock = selected[active];
   const visibleBundles=catalogBundles.filter(bundle=>bundle.recipientType===recipient);
 
@@ -528,6 +532,7 @@ export default function Home() {
             <article><b>03</b><span>✦</span><h3>Send a little magic</h3><p>Preview, schedule and share one beautiful private link.</p></article>
           </div>
         </section>
+        <footer className="site-footer"><a className="brand" href="/"><span className="brand-heart">♥</span> mypookie.</a><p>Private little worlds, made for the people who matter.</p><div><a href="/terms">Terms & Conditions</a><a href="/privacy">Privacy Policy</a><a href="/refund-policy">Refund / Cancellation</a><a href="/contact">Contact Us</a></div><small>© 2026 mypookie. · Personalized digital purchases are non-refundable except where required by law or covered by our refund policy.</small></footer>
       </main>
     );
   }
@@ -608,7 +613,6 @@ export default function Home() {
         <section className="live-editor">
           <div className="live-editor-head"><div><div className="section-kicker">LIVE RECIPIENT PREVIEW</div><h2>{activeBlock ? activeBlock.name : "Choose a block to begin"}</h2><p>{activeBlock ? "Play with it here. Changes from the right appear instantly." : "Select any activity from the library and its real interaction will appear here."}</p></div>{activeBlock&&<div className="live-preview-controls"><button onClick={()=>setBuilderPreviewNonce(value=>value+1)} aria-label={`Restart ${activeBlock.name}`}>↻ Restart activity</button><span className="live-badge"><i /> Interactive</span></div>}</div>
           {activeBlock ? <BuilderLivePreview key={`${activeBlock.instanceId||activeBlock.id}-${builderPreviewNonce}`} block={activeBlock} name={name} senderName={senderName.trim()||"Someone special"} theme={theme} ambience={ambience} giftId={giftId||undefined} /> : <div className="empty-live-preview"><div className="empty-live-orbit"><span>✦</span><i>♡</i><b>✿</b></div><h3>Your live preview will appear here</h3><p>Try the letter, wheel, puzzle, quiz and every other block before sending it.</p><button onClick={() => selectActivity(catalogActivities[0]||activities[0])}>Start with a personal letter →</button></div>}
-          {selected.length > 0 && <div className="journey-rail"><div className="journey-rail-head"><div><small>GIFT SEQUENCE</small><strong>{selected.length} moments for {name}</strong></div><span>Tap a block to edit it</span></div><div className="journey-chips">{selected.map((item,index)=><div className={`journey-chip ${active===index?"active":""}`} key={item.instanceId||`${item.id}-${index}`}><button className="journey-select" onClick={()=>setActive(index)}><i className={item.color}>{item.icon}</i><span><small>{index+1}</small>{item.name}</span></button><div><button onClick={()=>move(index,-1)} disabled={index===0} aria-label={`Move ${item.name} earlier`}>←</button><button onClick={()=>move(index,1)} disabled={index===selected.length-1} aria-label={`Move ${item.name} later`}>→</button></div></div>)}</div></div>}
         </section>
         <aside className="customizer">
           <div className="customizer-head"><div className="section-kicker">CUSTOMIZE</div><span>{selected.length ? `${active+1} / ${selected.length}` : "0 / 0"}</span></div>
@@ -623,7 +627,7 @@ export default function Home() {
           </>}
         </aside>
       </div>
-      <footer className="checkout-bar"><div><small>YOUR GIFT</small><strong>{selected.length} moments for {name}</strong></div><div className="price"><span>Live total</span><strong>₹{subtotal}</strong></div><button disabled={!selected.length} onClick={() => signedIn ? setScreen("checkout") : requestSignIn("checkout")}>Checkout <span>→</span></button></footer>
+      <footer className="checkout-bar sequence-checkout-bar"><div className="ribbon-title"><small>YOUR GIFT</small><strong>{selected.length} moments for {name}</strong></div><div className="ribbon-sequence" aria-label="Scrollable gift sequence">{selected.map((item,index)=><div className={`ribbon-moment ${active===index?"active":""}`} key={item.instanceId||`${item.id}-${index}`}><button onClick={()=>setActive(index)}><i className={item.color}>{item.icon}</i><span><small>{index+1}</small>{item.name}</span></button><div><button onClick={()=>move(index,-1)} disabled={index===0} aria-label={`Move ${item.name} earlier`}>←</button><button onClick={()=>move(index,1)} disabled={index===selected.length-1} aria-label={`Move ${item.name} later`}>→</button></div></div>)}</div><div className="ribbon-checkout"><div className="price"><span>Live total</span><strong>₹{subtotal}</strong></div><button disabled={!selected.length} onClick={() => signedIn ? setScreen("checkout") : requestSignIn("checkout")}>Checkout <span>→</span></button></div></footer>
     </main>
   );
 }

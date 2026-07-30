@@ -34,7 +34,17 @@ async function imageToDataUrl(file: File): Promise<string> {
     canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
     canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
     canvas.getContext("2d")?.drawImage(image, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL("image/jpeg", .82);
+    const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error("Could not prepare image")), "image/jpeg", .82));
+    try {
+      const body = new FormData();
+      body.append("file", blob, `${file.name.replace(/\.[^.]+$/, "") || "gift-photo"}.jpg`);
+      const api = process.env.NEXT_PUBLIC_API_URL || "https://backend-production-22bd.up.railway.app";
+      const response = await fetch(`${api}/api/media/image`, { method: "POST", headers: await authHeaders(), body });
+      if (!response.ok) throw new Error("Upload failed");
+      return String((await response.json()).url);
+    } catch {
+      return blobToDataUrl(blob);
+    }
   } finally {
     URL.revokeObjectURL(source);
   }
@@ -288,18 +298,24 @@ function CalendarEditor({config,onConfig}:{config:Record<string,string>;onConfig
 }
 
 function MemoryEditor({ config, onConfig }: { config: Record<string,string>; onConfig:(key:string,value:string)=>void }) {
-  const items=safeParse<MemoryItem[]>(config.memoryItems,[]);
-  async function add(files:FileList|null){if(!files)return;const added=await Promise.all(Array.from(files).slice(0,12).map(async(file,index)=>({id:`memory-${Date.now()}-${index}`,image:await imageToDataUrl(file),caption:file.name.replace(/\.[^.]+$/,""),note:"",arrow:"Curve right",animation:"Polaroid pop"})));onConfig("memoryItems",JSON.stringify([...items,...added].slice(0,20)))}
-  async function addCollage(files:FileList|null){if(!files)return;const chosen=Array.from(files).slice(0,4);if(chosen.length<2)return;const images=await Promise.all(chosen.map(imageToDataUrl));const item:MemoryItem={id:`collage-${Date.now()}`,image:images[0],images,layout:images.length===2?"Two-photo collage":images.length===3?"Three-photo collage":"Four-photo grid",caption:"A collage of us",note:"",arrow:"Curve right",animation:"Polaroid pop"};onConfig("memoryItems",JSON.stringify([...items,item].slice(0,20)))}
+  const storedItems=safeParse<MemoryItem[]>(config.memoryItems,[]);
+  const upgraded=config.extraPages==="true";
+  const maxPages=upgraded?12:7;
+  const items=storedItems.slice(0,maxPages);
+  const remaining=Math.max(0,maxPages-items.length);
+  async function add(files:FileList|null){if(!files||remaining===0)return;const added=await Promise.all(Array.from(files).slice(0,remaining).map(async(file,index)=>({id:`memory-${Date.now()}-${index}`,image:await imageToDataUrl(file),caption:file.name.replace(/\.[^.]+$/,""),note:"",arrow:"Curve right",animation:"Polaroid pop"})));onConfig("memoryItems",JSON.stringify([...items,...added].slice(0,maxPages)))}
+  async function addCollage(files:FileList|null){if(!files||remaining===0)return;const chosen=Array.from(files).slice(0,4);if(chosen.length<2)return;const images=await Promise.all(chosen.map(imageToDataUrl));const item:MemoryItem={id:`collage-${Date.now()}`,image:images[0],images,layout:images.length===2?"Two-photo collage":images.length===3?"Three-photo collage":"Four-photo grid",caption:"A collage of us",note:"",arrow:"Curve right",animation:"Polaroid pop"};onConfig("memoryItems",JSON.stringify([...items,item].slice(0,maxPages)))}
   async function cover(files:FileList|null){const file=files?.[0];if(file)onConfig("coverImage",await imageToDataUrl(file))}
   function patch(index:number,key:keyof MemoryItem,value:string){onConfig("memoryItems",JSON.stringify(items.map((item,i)=>i===index?{...item,[key]:value}:item)))}
   return <CustomizationSection title="Scrapbook album" hint="Design every page with photos, words, arrows and motion">
     <div className="memory-cover-note"><img src={config.coverImage||"/mypookie-letter-photo.png"} alt="Memory book cover"/><div><strong>Your cover</strong><span>Shown first when the memory lane opens.</span></div></div>
     <UploadBox label="Customize cover photo" note="The complete photo will stay visible" accept="image/*" onFiles={cover}/>
     <label className="field">Cover caption<input maxLength={65} value={config.coverCaption||"Our little book of us"} onChange={event=>onConfig("coverCaption",event.target.value)}/></label>
-    <label className="field">Album style<select value={config.albumStyle||"Blush scrapbook"} onChange={event=>onConfig("albumStyle",event.target.value)}><option>Blush scrapbook</option><option>Retro travel album</option><option>Midnight love story</option><option>Playful sticker book</option></select></label>
-    <UploadBox label="Add memory photos" note="Select several photos at once" accept="image/*" multiple onFiles={add}/>
-    <UploadBox label="Create a collage page" note="Choose 2–4 photos for one album page" accept="image/*" multiple onFiles={addCollage}/>
+    <label className="field">Album style<select value={config.albumStyle||"Blush scrapbook"} onChange={event=>onConfig("albumStyle",event.target.value)}><option>Blush scrapbook</option><option>Retro travel album</option><option>Midnight love story</option><option>Playful sticker book</option><option>Pressed flower journal</option><option>Luxury leather album</option><option>Minimal linen book</option><option>Celestial night</option><option>Vintage botanical</option></select></label>
+    <div className="album-page-meter"><div><strong>{items.length} / {maxPages} album pages</strong><span>The cover is separate and free.</span></div><b>{remaining} left</b></div>
+    <label className="album-upgrade"><input type="checkbox" checked={upgraded} onChange={event=>{onConfig("extraPages",String(event.target.checked));if(!event.target.checked&&items.length>7)onConfig("memoryItems",JSON.stringify(items.slice(0,7)))}}/><span>＋5</span><div><strong>Add five more album pages</strong><small>Increase the limit from 7 to 12 pages.</small></div><b>₹20</b></label>
+    <div className={remaining===0?"upload-disabled":""}><UploadBox label="Add memory photos" note={remaining?`Each photo becomes a page · ${remaining} available`:"Page limit reached"} accept="image/*" multiple onFiles={add}/></div>
+    <div className={remaining===0?"upload-disabled":""}><UploadBox label="Create a collage page" note="Choose 2–4 photos · counts as one page" accept="image/*" multiple onFiles={addCollage}/></div>
     <div className="memory-item-editor scrapbook-editor">{items.map((item,index)=><article key={item.id}>{item.images&&item.images.length>1?<div className={`editor-collage collage-${item.images.length}`}>{item.images.map((image,imageIndex)=><img src={image} alt={`Collage photo ${imageIndex+1}`} key={imageIndex}/>)}</div>:<img src={item.image} alt="Uploaded memory"/>}<div className="scrapbook-page-fields">{item.images&&item.images.length>1&&<label>Collage layout<select value={item.layout||"Four-photo grid"} onChange={event=>patch(index,"layout",event.target.value)}><option>Two-photo collage</option><option>Three-photo collage</option><option>Four-photo grid</option></select></label>}<label>Photo caption<input maxLength={65} value={item.caption} onChange={event=>patch(index,"caption",event.target.value)}/></label><label>Handwritten text<textarea rows={2} maxLength={140} value={item.note||""} onChange={event=>patch(index,"note",event.target.value)} placeholder="Add a date, joke or tiny memory…"/></label><div><label>Curved arrow<select value={item.arrow||"Curve right"} onChange={event=>patch(index,"arrow",event.target.value)}><option>Curve right</option><option>Curve left</option><option>Loop around</option><option>None</option></select></label><label>Page animation<select value={item.animation||"Polaroid pop"} onChange={event=>patch(index,"animation",event.target.value)}><option>Polaroid pop</option><option>Soft zoom</option><option>Film slide</option><option>Sparkle reveal</option></select></label></div></div><button onClick={()=>onConfig("memoryItems",JSON.stringify(items.filter((_,i)=>i!==index)))}>×</button></article>)}</div>
     {items.length===0&&<div className="collection-empty">Your uploaded pages will appear here.</div>}
   </CustomizationSection>;
@@ -353,7 +369,7 @@ function UploadBox({ label, note, accept, multiple, onFiles }: { label: string; 
 }
 
 function VoiceRecorder({ audioName, onConfig }: { audioName?: string; onConfig: (key: string, value: string) => void }) {
-  const [status, setStatus] = useState<"idle"|"recording"|"ready"|"error">("idle");
+  const [status, setStatus] = useState<"idle"|"recording"|"uploading"|"ready"|"error">("idle");
   const [seconds, setSeconds] = useState(0);
   const recorder = useRef<MediaRecorder | null>(null);
   const chunks = useRef<Blob[]>([]);
@@ -367,18 +383,18 @@ function VoiceRecorder({ audioName, onConfig }: { audioName?: string; onConfig: 
   async function start() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      const mimeTypes = ["audio/mp4;codecs=mp4a.40.2", "audio/webm;codecs=opus", "audio/webm"];
+      const mimeType = mimeTypes.find(type => globalThis.MediaRecorder?.isTypeSupported(type));
+      const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       chunks.current = [];
       mediaRecorder.ondataavailable = event => event.data.size && chunks.current.push(event.data);
       mediaRecorder.onstop = async () => {
         const blob = new Blob(chunks.current, { type: mediaRecorder.mimeType || "audio/webm" });
-        onConfig("audioUrl", await blobToDataUrl(blob));
-        onConfig("audioName", `Recorded voice note · ${seconds || 1}s`);
         stream.getTracks().forEach(track=>track.stop());
-        setStatus("ready");
+        await storeAudio(blob, `voice-note-${Date.now()}.${blob.type.includes("mp4") ? "m4a" : "webm"}`, `Recorded voice note · ${seconds || 1}s`);
       };
       recorder.current = mediaRecorder;
-      mediaRecorder.start();
+      mediaRecorder.start(250);
       setSeconds(0);
       setStatus("recording");
       timer.current = window.setInterval(()=>setSeconds(value=>value+1),1000);
@@ -396,28 +412,50 @@ function VoiceRecorder({ audioName, onConfig }: { audioName?: string; onConfig: 
   async function upload(files: FileList | null) {
     const file = files?.[0];
     if (!file) return;
-    onConfig("audioUrl", await blobToDataUrl(file));
-    onConfig("audioName", file.name);
-    setStatus("ready");
+    if (file.size > 15 * 1024 * 1024) { setStatus("error"); return; }
+    await storeAudio(file, file.name, file.name);
+  }
+
+  async function storeAudio(blob: Blob, filename: string, label: string) {
+    setStatus("uploading");
+    try {
+      const body = new FormData();
+      body.append("file", blob, filename);
+      const api = process.env.NEXT_PUBLIC_API_URL || "https://backend-production-22bd.up.railway.app";
+      const response = await fetch(`${api}/api/media/audio`, { method: "POST", headers: await authHeaders(), body });
+      if (!response.ok) throw new Error("Upload failed");
+      const stored = await response.json();
+      onConfig("audioUrl", String(stored.url));
+      onConfig("audioName", label);
+      setStatus("ready");
+    } catch {
+      onConfig("audioUrl", await blobToDataUrl(blob));
+      onConfig("audioName", label);
+      setStatus("error");
+    }
   }
 
   return <div className="voice-recorder">
-    {status==="recording"?<button className="record recording" onClick={stop}>■ Stop recording <span>{seconds}s recorded</span></button>:<button className="record" onClick={start}>● Record voice note <span>{audioName || "Tap to allow microphone access"}</span></button>}
+    {status==="recording"?<button className="record recording" onClick={stop}>■ Stop recording <span>{seconds}s recorded</span></button>:<button className="record" onClick={start} disabled={status==="uploading"}>{status==="uploading"?"Saving securely…":"● Record voice note"} <span>{audioName || "Tap to allow microphone access"}</span></button>}
     <label className="audio-upload">or upload audio<input type="file" accept="audio/*" onChange={event=>upload(event.target.files)} /></label>
-    {status==="error"&&<p>Microphone permission was not available. Upload an audio file instead.</p>}
+    {status==="error"&&<p>The note can play in this draft, but secure cloud saving needs you to be signed in. You can record again after signing in.</p>}
   </div>;
 }
 
 function VideoRecorder({videoName,videoUrl,onConfig}:{videoName?:string;videoUrl?:string;onConfig:(key:string,value:string)=>void}){
-  const [status,setStatus]=useState<"idle"|"recording"|"ready"|"error">("idle");
+  const [status,setStatus]=useState<"idle"|"recording"|"uploading"|"ready"|"error">("idle");
   const [seconds,setSeconds]=useState(0);
+  const [localPreview,setLocalPreview]=useState("");
+  const [errorMessage,setErrorMessage]=useState("");
   const livePreview=useRef<HTMLVideoElement|null>(null);
   const elapsed=useRef(0);
   const recorder=useRef<MediaRecorder|null>(null);
   const chunks=useRef<Blob[]>([]);
+  const lastBlob=useRef<Blob|null>(null);
   const timer=useRef<number|null>(null);
 
   useEffect(()=>()=>{if(timer.current)window.clearInterval(timer.current);recorder.current?.stream.getTracks().forEach(track=>track.stop())},[]);
+  useEffect(()=>()=>{if(localPreview)URL.revokeObjectURL(localPreview)},[localPreview]);
 
   function stop(){
     if(recorder.current?.state==="recording")recorder.current.stop();
@@ -427,34 +465,59 @@ function VideoRecorder({videoName,videoUrl,onConfig}:{videoName?:string;videoUrl
 
   async function start(){
     try{
+      setErrorMessage("");
       const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user"},audio:true});
       if(livePreview.current){livePreview.current.srcObject=stream;await livePreview.current.play().catch(()=>{})}
-      const mediaRecorder=new MediaRecorder(stream);
+      const mimeTypes=["video/mp4;codecs=h264,aac","video/webm;codecs=vp8,opus","video/webm"];
+      const mimeType=mimeTypes.find(type=>globalThis.MediaRecorder?.isTypeSupported(type));
+      const mediaRecorder=new MediaRecorder(stream,mimeType?{mimeType}:undefined);
       chunks.current=[];
       mediaRecorder.ondataavailable=event=>event.data.size&&chunks.current.push(event.data);
       mediaRecorder.onstop=async()=>{
         const blob=new Blob(chunks.current,{type:mediaRecorder.mimeType||"video/webm"});
-        onConfig("videoUrl",await blobToDataUrl(blob));
+        lastBlob.current=blob;
+        const preview=URL.createObjectURL(blob);
+        setLocalPreview(current=>{if(current)URL.revokeObjectURL(current);return preview});
         onConfig("videoName",`Recorded video note · ${Math.max(elapsed.current,1)}s`);
         if(livePreview.current)livePreview.current.srcObject=null;
         stream.getTracks().forEach(track=>track.stop());
-        setStatus("ready");
+        await storeVideo(blob,`video-note-${Date.now()}.${blob.type.includes("mp4")?"mp4":"webm"}`);
       };
       recorder.current=mediaRecorder;
-      mediaRecorder.start();
+      mediaRecorder.start(250);
       elapsed.current=0;
       setSeconds(0);
       setStatus("recording");
       timer.current=window.setInterval(()=>setSeconds(value=>{const next=value+1;elapsed.current=next;if(next>=30)window.setTimeout(stop,0);return next}),1000);
-    }catch{setStatus("error")}
+    }catch{setErrorMessage("Camera or microphone permission was not available.");setStatus("error")}
+  }
+
+  async function storeVideo(blob:Blob,name:string){
+    setStatus("uploading");
+    try{
+      const body=new FormData();body.append("file",blob,name);
+      const api=process.env.NEXT_PUBLIC_API_URL||"https://backend-production-22bd.up.railway.app";
+      const response=await fetch(`${api}/api/media/video`,{method:"POST",headers:await authHeaders(),body});
+      if(!response.ok)throw new Error();
+      const stored=await response.json();
+      onConfig("videoUrl",stored.url);
+      onConfig("videoName",stored.name||name);
+      setStatus("ready");
+    }catch{
+      onConfig("videoUrl",await blobToDataUrl(blob));
+      setErrorMessage("The video plays locally, but secure cloud upload needs you to be signed in. Sign in and tap “Save video securely”.");
+      setStatus("error");
+    }
   }
 
   async function upload(files:FileList|null){
     const file=files?.[0];if(!file)return;
-    if(file.size>30*1024*1024){setStatus("error");return}
-    onConfig("videoUrl",await blobToDataUrl(file));
+    if(file.size>30*1024*1024){setErrorMessage("Video notes must be 30 MB or smaller.");setStatus("error");return}
+    lastBlob.current=file;
+    const preview=URL.createObjectURL(file);
+    setLocalPreview(current=>{if(current)URL.revokeObjectURL(current);return preview});
     onConfig("videoName",file.name);
-    setStatus("ready");
+    await storeVideo(file,file.name);
   }
 
   function retake(){
@@ -463,16 +526,21 @@ function VideoRecorder({videoName,videoUrl,onConfig}:{videoName?:string;videoUrl
     if(livePreview.current)livePreview.current.srcObject=null;
     onConfig("videoUrl","");
     onConfig("videoName","");
+    if(localPreview)URL.revokeObjectURL(localPreview);
+    setLocalPreview("");
+    lastBlob.current=null;
+    setErrorMessage("");
     setSeconds(0);
     elapsed.current=0;
     setStatus("idle");
   }
 
   return <div className="video-recorder">
-    {status==="recording"?<div className="camera-viewfinder"><video ref={livePreview} muted autoPlay playsInline/><span>● REC</span><b>{seconds}s / 30s</b></div>:videoUrl&&<video className="video-preview-mini" src={videoUrl} controls playsInline/>}
-    {status==="recording"?<button className="record recording" onClick={stop}>■ Stop video <span>{seconds}s · maximum 30 seconds</span></button>:<button className="record" onClick={start}>● Record video note <span>{videoName||"Camera + microphone · up to 30 seconds"}</span></button>}
+    {status==="recording"?<div className="camera-viewfinder"><video ref={livePreview} muted autoPlay playsInline/><span>● REC</span><b>{seconds}s / 30s</b></div>:(localPreview||videoUrl)&&<video className="video-preview-mini" src={localPreview||videoUrl} controls playsInline preload="metadata"/>}
+    {status==="recording"?<button className="record recording" onClick={stop}>■ Stop video <span>{seconds}s · maximum 30 seconds</span></button>:<button className="record" onClick={start} disabled={status==="uploading"}>{status==="uploading"?"Uploading securely…":"● Record video note"} <span>{videoName||"Camera + microphone · up to 30 seconds"}</span></button>}
     {videoUrl&&status!=="recording"&&<button className="retake-video" onClick={retake}>↻ Retake video</button>}
+    {status==="error"&&lastBlob.current&&<button className="retake-video" onClick={()=>void storeVideo(lastBlob.current!,videoName||`video-note-${Date.now()}.webm`)}>Save video securely</button>}
     <label className="audio-upload">or upload a video<input type="file" accept="video/*" onChange={event=>upload(event.target.files)}/></label>
-    {status==="error"&&<p>Camera access failed or the video is over 30 MB. Try a smaller upload.</p>}
+    {errorMessage&&<p>{errorMessage}</p>}
   </div>;
 }

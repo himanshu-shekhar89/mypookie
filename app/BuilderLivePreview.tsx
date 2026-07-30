@@ -132,8 +132,9 @@ function EGiftPreview({config,onComplete}:{config:Record<string,string>;onComple
 
 function VideoNotePlay({config,onComplete}:{config:Record<string,string>;onComplete?:()=>void}){
   const [started,setStarted]=useState(false);
+  const [failed,setFailed]=useState(false);
   const effect=(config.videoEffect||"Retro cam").toLowerCase().replaceAll(" ","-").replace("&","and");
-  return <div className={`video-note-player video-effect-${effect}`}>{config.videoUrl?<><div className="video-screen"><video src={config.videoUrl} controls playsInline onPlay={()=>{if(!started){setStarted(true);playSound("reveal")}}} onEnded={onComplete}/>{config.videoEffect==="Retro cam"&&<><span className="retro-rec">● REC</span><span className="retro-date">MYPOOKIE · 1998</span><i className="retro-scan"/></>}</div><strong>{config.videoCaption||"A little face-to-face moment, just for you."}</strong><small>Watch to the end to continue</small></>:<div className="video-note-empty"><span>▶</span><strong>Your video note will appear here</strong><small>Record or upload it in the customizer.</small></div>}</div>;
+  return <div className={`video-note-player video-effect-${effect}`}>{config.videoUrl?<><div className="video-screen"><video key={config.videoUrl} src={config.videoUrl} controls playsInline preload="metadata" onLoadedMetadata={()=>setFailed(false)} onError={()=>setFailed(true)} onPlay={()=>{if(!started){setStarted(true);playSound("reveal")}}} onEnded={onComplete}/>{config.videoEffect==="Retro cam"&&<><span className="retro-rec">● REC</span><span className="retro-date">MYPOOKIE · 1998</span><i className="retro-scan"/></>}</div>{failed&&<p className="video-playback-error">This recording format cannot play in this browser. Retake it in the video editor or upload an MP4/WebM file.</p>}<strong>{config.videoCaption||"A little face-to-face moment, just for you."}</strong><small>Watch to the end to continue</small></>:<div className="video-note-empty"><span>▶</span><strong>Your video note will appear here</strong><small>Record or upload it in the customizer.</small></div>}</div>;
 }
 
 function ThisOrThatPlay({config,giftId,blockInstanceId,recipientName,onComplete,onReward}:{config:Record<string,string>;giftId?:string;blockInstanceId:string;recipientName:string;onComplete?:()=>void;onReward?:(reward:string)=>void}){
@@ -301,7 +302,7 @@ function PhotoPuzzlePlay({config,onComplete,onReward}:{config:Record<string,stri
 }
 
 function MemoryBook({config,onComplete}:{config:Record<string,string>;onComplete?:()=>void}){
-  const items=parseJson<MemoryItem[]>(config.memoryItems,[]);
+  const items=parseJson<MemoryItem[]>(config.memoryItems,[]).slice(0,config.extraPages==="true"?12:7);
   const pages=[{id:"cover",image:config.coverImage||"/mypookie-letter-photo.png",caption:config.coverCaption||"Our little book of us"},...items];
   const [page,setPage]=useState(0);
   const [turning,setTurning]=useState(false);

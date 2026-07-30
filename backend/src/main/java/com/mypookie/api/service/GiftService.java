@@ -23,18 +23,27 @@ public class GiftService {
    if(!blocks.isArray())throw new IllegalArgumentException("Missing blocks");
    List<String> ids=new ArrayList<>();
    blocks.forEach(n->ids.add(n.path("id").asText()));
+   int addOns=0;
+   for(JsonNode block:blocks)if("memory".equals(block.path("id").asText())){
+    boolean upgraded="true".equalsIgnoreCase(block.path("config").path("extraPages").asText());
+    if(upgraded)addOns+=2000;
+    String storedPages=block.path("config").path("memoryItems").asText("[]");
+    JsonNode pages=json.readTree(storedPages.isBlank()?"[]":storedPages);
+    if(!pages.isArray()||pages.size()>(upgraded?12:7))throw new IllegalArgumentException("Memory Lane page limit exceeded");
+    for(JsonNode page:pages)if(page.path("images").isArray()&&page.path("images").size()>4)throw new IllegalArgumentException("A collage can contain at most four photos");
+   }
    String bundleId=root.path("bundleId").asText("");
    if(!bundleId.isBlank()){
     var bundle=bundles.findById(bundleId).filter(Bundle::isActive).orElse(null);
     if(bundle!=null){
      var configured=json.readTree(bundle.getActivityIds());
      List<String> bundleIds=new ArrayList<>();configured.forEach(node->bundleIds.add(node.asText()));
-     if(bundleIds.size()==ids.size()&&new HashSet<>(bundleIds).equals(new HashSet<>(ids)))return bundle.getPricePaise();
+     if(bundleIds.size()==ids.size()&&new HashSet<>(bundleIds).equals(new HashSet<>(ids)))return bundle.getPricePaise()+addOns;
     }
    }
    Map<String,Integer> prices=new HashMap<>();activities.findAllById(new HashSet<>(ids)).forEach(activity->prices.put(activity.getId(),activity.getPricePaise()));
    if(prices.size()!=new HashSet<>(ids).size())throw new IllegalArgumentException("Unknown block");
-   return ids.stream().mapToInt(prices::get).sum();
+   return ids.stream().mapToInt(prices::get).sum()+addOns;
   }
   catch(Exception e){throw new IllegalArgumentException("Invalid blocks JSON");}
  }

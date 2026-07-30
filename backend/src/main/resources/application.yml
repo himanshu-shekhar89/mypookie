@@ -1,6 +1,10 @@
 spring:
   application:
     name: mypookie-api
+  servlet:
+    multipart:
+      max-file-size: 35MB
+      max-request-size: 36MB
   datasource:
     url: ${DATABASE_URL:jdbc:h2:mem:mypookie;MODE=MySQL;DB_CLOSE_DELAY=-1}
     username: ${DATABASE_USERNAME:sa}
