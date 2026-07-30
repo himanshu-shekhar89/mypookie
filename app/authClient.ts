@@ -11,6 +11,8 @@ type AuthResult={user:FirebaseUser};
 type FirebaseAuth={
   currentUser:FirebaseUser|null;
   signInWithPopup:(provider:unknown)=>Promise<AuthResult>;
+  signInWithEmailAndPassword:(email:string,password:string)=>Promise<AuthResult>;
+  createUserWithEmailAndPassword:(email:string,password:string)=>Promise<AuthResult>;
   signOut:()=>Promise<void>;
   onAuthStateChanged:(callback:(user:FirebaseUser|null)=>void)=>()=>void;
 };
@@ -61,6 +63,15 @@ export async function signInWithFirebase(provider:"google"|"apple"="google"){
   const auth=await firebaseAuth();
   const selected=provider==="apple"?new window.firebase!.auth.OAuthProvider("apple.com"):new window.firebase!.auth.GoogleAuthProvider();
   return (await auth.signInWithPopup(selected)).user;
+}
+
+export async function authenticateWithEmail(email:string,password:string,mode:"login"|"signup"){
+  const auth=await firebaseAuth();
+  const normalizedEmail=email.trim().toLowerCase();
+  const result=mode==="signup"
+    ?await auth.createUserWithEmailAndPassword(normalizedEmail,password)
+    :await auth.signInWithEmailAndPassword(normalizedEmail,password);
+  return result.user;
 }
 
 export async function signOutFirebase(){const auth=await firebaseAuth();await auth.signOut()}

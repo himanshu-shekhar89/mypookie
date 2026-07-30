@@ -10,7 +10,7 @@ import { CheckoutPage, type PaymentOrder, type RazorpayResult } from "./Checkout
 import { PublicGiftExperience } from "./PublicGiftExperience";
 import { AdminPanel } from "./AdminPanel";
 import { AccountMenu, type AccountProfile } from "./AccountMenu";
-import { authHeaders, signInWithFirebase, signOutFirebase, watchFirebaseAuth } from "./authClient";
+import { authenticateWithEmail, authHeaders, signInWithFirebase, signOutFirebase, watchFirebaseAuth } from "./authClient";
 import { playSound } from "./soundFx";
 
 type Block = {
@@ -373,24 +373,44 @@ export default function Home() {
     setAuthOpen(true);
   }
 
+  async function completeSignIn(user:{email:string|null}){
+    const api=process.env.NEXT_PUBLIC_API_URL||"https://backend-production-22bd.up.railway.app";
+    const response=await fetch(`${api}/api/auth/session`,{method:"POST",headers:await authHeaders()});
+    if(!response.ok)throw new Error("Session could not be created");
+    setSignedIn(true);
+    setAuthOpen(false);
+    const email=user.email?.trim().toLowerCase();
+    if(email&&ROOT_ADMIN_EMAILS.has(email)){
+      window.location.assign(`${window.location.origin}/?admin=true`);
+      return;
+    }
+    if(afterAuth==="save")window.setTimeout(()=>void saveDraft(),0);
+    if(afterAuth==="checkout")window.setTimeout(()=>setScreen("checkout"),0);
+    setAfterAuth(null);
+  }
+
   async function finishSignIn(provider:"google"|"apple"){
     setAuthError("");
     try{
       const user=await signInWithFirebase(provider);
-      const api=process.env.NEXT_PUBLIC_API_URL||"https://backend-production-22bd.up.railway.app";
-      await fetch(`${api}/api/auth/session`,{method:"POST",headers:await authHeaders()});
-      setSignedIn(Boolean(user));
-      setAuthOpen(false);
-      const email=user?.email?.trim().toLowerCase();
-      if(provider==="google"&&email&&ROOT_ADMIN_EMAILS.has(email)){
-        window.location.assign(`${window.location.origin}/?admin=true`);
-        return;
-      }
-      if(afterAuth==="save")window.setTimeout(()=>void saveDraft(),0);
-      if(afterAuth==="checkout")window.setTimeout(()=>setScreen("checkout"),0);
-      setAfterAuth(null);
+      await completeSignIn(user);
     }catch{
       setAuthError(provider==="apple"?"Apple sign-in needs the Apple Developer credentials to be enabled. Please use Google for now.":"Google sign-in did not finish. Please allow the popup and try again.");
+    }
+  }
+
+  async function finishEmailAuth(mode:"login"|"signup",email:string,password:string){
+    setAuthError("");
+    try{
+      const user=await authenticateWithEmail(email,password,mode);
+      await completeSignIn(user);
+    }catch(error){
+      const code=(error as {code?:string}).code||"";
+      if(code.includes("email-already-in-use"))setAuthError("That email already has an account. Choose Log in instead.");
+      else if(code.includes("invalid-email"))setAuthError("Enter a valid email address.");
+      else if(code.includes("weak-password"))setAuthError("Use a password with at least 8 characters.");
+      else if(code.includes("invalid-credential")||code.includes("wrong-password")||code.includes("user-not-found"))setAuthError("The email or password is incorrect.");
+      else setAuthError(mode==="signup"?"The account could not be created. Please try again.":"Email login did not finish. Please try again.");
     }
   }
 
@@ -460,7 +480,7 @@ export default function Home() {
   if(contributionGiftId)return <GroupContributionPage inviteToken={contributionGiftId}/>;
   if(publicGiftToken)return <PublicGiftExperience token={publicGiftToken}/>;
 
-  const signInPopup=authOpen?<SignInPopup onClose={()=>setAuthOpen(false)} onSignIn={finishSignIn} error={authError}/>:null;
+  const signInPopup=authOpen?<SignInPopup onClose={()=>setAuthOpen(false)} onSignIn={finishSignIn} onEmailAuth={finishEmailAuth} error={authError}/>:null;
 
   if (screen === "welcome") {
     return (
@@ -632,16 +652,36 @@ export default function Home() {
   );
 }
 
-function SignInPopup({onClose,onSignIn,error}:{onClose:()=>void;onSignIn:(provider:"google"|"apple")=>Promise<void>;error:string}){
+function SignInPopup({onClose,onSignIn,onEmailAuth,error}:{onClose:()=>void;onSignIn:(provider:"google"|"apple")=>Promise<void>;onEmailAuth:(mode:"login"|"signup",email:string,password:string)=>Promise<void>;error:string}){
+  const [mode,setMode]=useState<"login"|"signup">("login");
+  const [email,setEmail]=useState("");
+  const [password,setPassword]=useState("");
+  const [busy,setBusy]=useState(false);
+  async function submit(event:React.FormEvent<HTMLFormElement>){
+    event.preventDefault();
+    if(!email.trim()||password.length<8)return;
+    setBusy(true);
+    try{await onEmailAuth(mode,email,password)}finally{setBusy(false)}
+  }
   return <div className="signin-modal-backdrop" role="presentation" onMouseDown={event=>event.target===event.currentTarget&&onClose()}>
     <section className="signin-modal" role="dialog" aria-modal="true" aria-labelledby="signin-title">
       <button className="signin-modal-close" onClick={onClose} aria-label="Close sign in">×</button>
       <div className="signin-modal-brand"><span>♥</span> mypookie.</div>
       <span className="signin-modal-heart">♡</span>
       <small>KEEP EVERY LITTLE DETAIL SAFE</small>
-      <h2 id="signin-title">Sign in to keep creating.</h2>
+      <h2 id="signin-title">{mode==="login"?"Sign in to keep creating.":"Create your mypookie. account."}</h2>
       <p>Save drafts, return from any device, track recipient answers and see every group contribution in one place.</p>
       <div className="signin-benefits"><span>✓ Drafts stay saved</span><span>✓ Responses are tracked</span><span>✓ Private links stay manageable</span></div>
+      <div className="email-auth-tabs" role="tablist" aria-label="Email authentication">
+        <button className={mode==="login"?"active":""} onClick={()=>setMode("login")} role="tab" aria-selected={mode==="login"}>Log in</button>
+        <button className={mode==="signup"?"active":""} onClick={()=>setMode("signup")} role="tab" aria-selected={mode==="signup"}>Sign up</button>
+      </div>
+      <form className="email-auth-form" onSubmit={submit}>
+        <label>Email address<input type="email" value={email} onChange={event=>setEmail(event.target.value)} autoComplete="email" placeholder="you@example.com" required/></label>
+        <label>Password<input type="password" minLength={8} value={password} onChange={event=>setPassword(event.target.value)} autoComplete={mode==="login"?"current-password":"new-password"} placeholder="At least 8 characters" required/></label>
+        <button type="submit" disabled={busy||!email.trim()||password.length<8}>{busy?"Please wait…":mode==="login"?"Log in with email":"Create account"}</button>
+      </form>
+      <div className="signin-divider"><span>or continue with</span></div>
       <button className="provider-button google" onClick={()=>void onSignIn("google")}><b>G</b> Continue with Google</button>
       <button className="provider-button apple" onClick={()=>void onSignIn("apple")}><b>●</b> Continue with Apple</button>
       {error&&<output className="signin-error">{error}</output>}
