@@ -209,7 +209,7 @@ function QuizEditor({ config, onConfig }: { config: Record<string,string>; onCon
         <button className="remove-option" onClick={()=>removeOption(qIndex,oIndex)} disabled={question.options.length<=2} title="Remove this option">×</button>
       </div>)}</div>
       <button className="add-option" disabled={question.options.length>=4} onClick={()=>patchQuestion(qIndex,{options:[...question.options,{text:"",image:""}]})}>＋ Add option <span>{question.options.length}/4</span></button>
-      <label className="field">This question’s interaction<select value={question.interaction} onChange={event=>patchQuestion(qIndex,{interaction:event.target.value as "floating"|"normal"})}><option value="floating">Wrong answers run away</option><option value="normal">Normal answers + score</option></select></label>
+      <label className="field">This question’s interaction<select value={question.interaction} onChange={event=>patchQuestion(qIndex,{interaction:event.target.value as "floating"|"normal"})}><option value="floating">Wrong answers disappear</option><option value="normal">Normal answers + score</option></select></label>
     </article>)}</div>
     <button className="add-collection-item" disabled={questions.length>=7} onClick={()=>update([...questions,{id:`q-${Date.now()}`,question:"",options:Array.from({length:4},()=>({text:"",image:""})),correctIndex:0,interaction:"normal"}])}>＋ Add another question</button>
   </CustomizationSection>;

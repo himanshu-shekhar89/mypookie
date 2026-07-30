@@ -178,50 +178,41 @@ function QuizPlay({config,onComplete,onReward}:{config:Record<string,string>;onC
   const [score,setScore]=useState(0);
   const [feedback,setFeedback]=useState("");
   const [order,setOrder]=useState(()=>questions[0]?.options.map((_,optionIndex)=>optionIndex) || []);
-  const [offsets,setOffsets]=useState<Record<number,{x:number;y:number}>>({});
-  const dodged=useRef<Set<number>>(new Set());
-  if(index>=questions.length)return <div className="quiz-finished"><b>{score}/{questions.length}</b><strong>You know this story beautifully ♡</strong><button onClick={()=>{setIndex(0);setScore(0);setFeedback("");setOrder(questions[0]?.options.map((_,optionIndex)=>optionIndex)||[])}}>Play again</button></div>;
   const question=questions[index];
+  const [hiddenOptions,setHiddenOptions]=useState<Set<number>>(()=>new Set());
+  const hiddenOptionsRef=useRef<Set<number>>(new Set());
+  useEffect(()=>{
+    hiddenOptionsRef.current=new Set();
+    setHiddenOptions(new Set());
+    setFeedback("");
+  },[index,question?.id,question?.interaction]);
+  if(index>=questions.length)return <div className="quiz-finished"><b>{score}/{questions.length}</b><strong>You know this story beautifully ♡</strong><button onClick={()=>{hiddenOptionsRef.current=new Set();setHiddenOptions(new Set());setIndex(0);setScore(0);setFeedback("");setOrder(questions[0]?.options.map((_,optionIndex)=>optionIndex)||[])}}>Play again</button></div>;
   if(!question)return <div className="quiz-finished">Add a question on the right.</div>;
-  function floatFromCursor(event:React.PointerEvent<HTMLDivElement>){
+  function hideFromCursor(event:React.PointerEvent<HTMLDivElement>){
     if(question.interaction!=="floating")return;
     const pointer={x:event.clientX,y:event.clientY};
     const stageElement=event.currentTarget;
-    const stage=stageElement.getBoundingClientRect();
     const buttons=Array.from(stageElement.querySelectorAll<HTMLButtonElement>("button[data-option]")).map(button=>({
-      button,
       optionIndex:Number(button.dataset.option),
       rect:button.getBoundingClientRect()
     }));
-    setOffsets(current=>{
-      const next={...current};
-      buttons.forEach(({button,optionIndex,rect})=>{
+    const next=new Set(hiddenOptionsRef.current);
+    let changed=false;
+    buttons.forEach(({optionIndex,rect})=>{
       if(optionIndex===question.correctIndex)return;
-      const dx=rect.left+rect.width/2-pointer.x;
-      const dy=rect.top+rect.height/2-pointer.y;
-      const distance=Math.max(Math.hypot(dx,dy),1);
-      if(distance<190){
-        if(!dodged.current.has(optionIndex)){dodged.current.add(optionIndex);playSound("incorrect")}
-        const previous=current[optionIndex]||{x:0,y:0};
-        const jump=Math.min(105,38+(190-distance)*.42);
-        let x=previous.x+dx/distance*jump;
-        let y=previous.y+dy/distance*jump;
-        x=Math.min(Math.max(x,stage.left+10-rect.left),stage.right-10-rect.right);
-        y=Math.min(Math.max(y,stage.top+10-rect.top),stage.bottom-10-rect.bottom);
-        const candidate={left:rect.left+(x-previous.x),right:rect.right+(x-previous.x),top:rect.top+(y-previous.y),bottom:rect.bottom+(y-previous.y)};
-        const overlaps=buttons.some(({button:otherButton,rect:other})=>{
-          if(otherButton===button)return false;
-          return candidate.left<other.right+12&&candidate.right>other.left-12&&candidate.top<other.bottom+12&&candidate.bottom>other.top-12;
-        });
-        if(overlaps){
-          y=Math.min(Math.max(previous.y+(dy>=0?1:-1)*jump,stage.top+10-rect.top),stage.bottom-10-rect.bottom);
-          x=Math.min(Math.max(previous.x+(dx>=0?1:-1)*jump*.55,stage.left+10-rect.left),stage.right-10-rect.right);
-        }
-        next[optionIndex]={x,y};
+      const nearestX=Math.max(rect.left,Math.min(pointer.x,rect.right));
+      const nearestY=Math.max(rect.top,Math.min(pointer.y,rect.bottom));
+      if(Math.hypot(pointer.x-nearestX,pointer.y-nearestY)<64&&!next.has(optionIndex)){
+        next.add(optionIndex);
+        changed=true;
       }
-      });
-      return next;
     });
+    if(changed){
+      hiddenOptionsRef.current=next;
+      setHiddenOptions(next);
+      setFeedback("Oops — that answer disappeared ✦");
+      playSound("incorrect");
+    }
   }
   function answer(optionIndex:number){
     if(question.interaction==="floating"&&optionIndex!==question.correctIndex){
@@ -234,10 +225,10 @@ function QuizPlay({config,onComplete,onReward}:{config:Record<string,string>;onC
     setFeedback(correct?"Perfect — you got it! ♡":"Not quite, but that was cute.");
     if(correct)setScore(value=>value+1);
     const finalScore=score+(correct?1:0);
-    window.setTimeout(()=>{if(index<questions.length-1){const nextIndex=index+1;setIndex(nextIndex);setFeedback("");setOffsets({});dodged.current.clear();setOrder(questions[nextIndex].options.map((_,optionPosition)=>optionPosition))}else{setIndex(questions.length);playSound("win");onReward?.(`Quiz score: ${finalScore}/${questions.length}`);onComplete?.()}},700);
+    window.setTimeout(()=>{if(index<questions.length-1){const nextIndex=index+1;hiddenOptionsRef.current=new Set();setHiddenOptions(new Set());setIndex(nextIndex);setFeedback("");setOrder(questions[nextIndex].options.map((_,optionPosition)=>optionPosition))}else{setIndex(questions.length);playSound("win");onReward?.(`Quiz score: ${finalScore}/${questions.length}`);onComplete?.()}},700);
   }
   const visibleOrder=[...order.filter(optionIndex=>optionIndex<question.options.length),...question.options.map((_,optionIndex)=>optionIndex).filter(optionIndex=>!order.includes(optionIndex))];
-  return <div className="advanced-quiz"><div className="quiz-dots">{questions.map((_,dot)=><i key={dot} className={dot<index?"done":dot===index?"current":""}/>)}</div><strong>{question.question}</strong><div className="runaway-stage" onPointerMove={floatFromCursor}>{visibleOrder.map(optionIndex=>{const option=question.options[optionIndex];const offset=offsets[optionIndex]||{x:0,y:0};const wrongFloat=question.interaction==="floating"&&optionIndex!==question.correctIndex;return <button data-option={optionIndex} key={optionIndex} className={`${optionIndex===question.correctIndex?"desired":""} ${wrongFloat?"float-away-wrong":""}`} style={{transform:`translate(${offset.x}px,${offset.y}px)`}} onClick={()=>answer(optionIndex)}>{option.image&&<img src={option.image} alt=""/>}<span>{option.text||`Option ${optionIndex+1}`}</span></button>})}</div><output>{feedback||`${index+1} of ${questions.length} · ${question.interaction==="floating"?"wrong answers escape before the cursor reaches them":"normal scoring"}`}</output></div>;
+  return <div className="advanced-quiz"><div className="quiz-dots">{questions.map((_,dot)=><i key={dot} className={dot<index?"done":dot===index?"current":""}/>)}</div><strong>{question.question}</strong><div className="runaway-stage" onPointerMove={hideFromCursor}>{visibleOrder.map(optionIndex=>{const option=question.options[optionIndex];const wrongFloat=question.interaction==="floating"&&optionIndex!==question.correctIndex;const hidden=question.interaction==="floating"&&hiddenOptions.has(optionIndex);return <button data-option={optionIndex} key={optionIndex} className={`${optionIndex===question.correctIndex?"desired":""} ${wrongFloat?"vanishing-wrong":""} ${hidden?"quiz-option-hidden":""}`} onClick={()=>answer(optionIndex)}>{option.image&&<img src={option.image} alt=""/>}<span>{option.text||`Option ${optionIndex+1}`}</span></button>})}</div><output>{feedback||`${index+1} of ${questions.length} · ${question.interaction==="floating"?"wrong answers disappear when the cursor gets close":"normal scoring"}`}</output></div>;
 }
 
 function SlotMachinePlay({config,onComplete,onReward}:{config:Record<string,string>;onComplete?:()=>void;onReward?:(reward:string)=>void}){

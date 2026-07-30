@@ -34,7 +34,7 @@ const activities: Block[] = [
   { id: "video", icon: "▶", name: "Video note", description: "Upload and style a beautiful gallery video", price: 59, color: "rose", category: "Messages & media", message: "A little face-to-face moment, just for you." },
   { id: "memory", icon: "⌁", name: "Memory lane", description: "Photos, dates and little stories", price: 79, color: "rose", category: "Memories", message: "Every chapter with you is my favourite." },
   { id: "puzzle", icon: "▦", name: "Photo puzzle", description: "Turn a memory into a 3×3 or 4×4", price: 59, color: "mint", category: "Memories", message: "Put this favourite memory back together." },
-  { id: "quiz", icon: "?", name: "Playful quiz", description: "Normal or floating wrong answers", price: 49, color: "blue", category: "Playful games", message: "How well do you know us?" },
+  { id: "quiz", icon: "?", name: "Playful quiz", description: "Normal scoring or disappearing wrong answers", price: 49, color: "blue", category: "Playful games", message: "How well do you know us?" },
   { id: "thisorthat", icon: "↔", name: "This or that", description: "Fast little choices about your story", price: 39, color: "violet", category: "Playful games", message: "No overthinking—choose your favourite." },
   { id: "emoji", icon: "☺", name: "Emoji decoder", description: "Guess the memory hidden in symbols", price: 39, color: "amber", category: "Playful games", message: "Can you decode this little memory?" },
   { id: "wouldrather", icon: "⇄", name: "Would You Rather", description: "Swipe through sender-written either/or cards", price: 39, color: "violet", category: "Playful games", message: "Choose quickly—your picks tell a story." },
