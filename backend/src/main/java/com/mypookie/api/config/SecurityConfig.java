@@ -15,5 +15,5 @@ public class SecurityConfig {
    .authorizeHttpRequests(a->a.requestMatchers("/error","/api/health","/api/catalog/**","/api/public/**","/api/ai/**").permitAll().requestMatchers("/api/admin/**").hasRole("ADMIN").anyRequest().authenticated())
    .addFilterBefore(firebaseFilter, UsernamePasswordAuthenticationFilter.class).build();
  }
- @Bean CorsConfigurationSource cors(){var c=new CorsConfiguration();c.setAllowedOriginPatterns(List.of(frontendUrl,"https://*.chatgpt.site","http://localhost:*"));c.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));c.setAllowedHeaders(List.of("*"));c.setAllowCredentials(true);var s=new UrlBasedCorsConfigurationSource();s.registerCorsConfiguration("/**",c);return s;}
+ @Bean CorsConfigurationSource cors(){var c=new CorsConfiguration();c.setAllowedOriginPatterns(List.of(frontendUrl,"https://mypookie.store","https://*.mypookie.store","https://*.chatgpt.site","http://localhost:*"));c.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));c.setAllowedHeaders(List.of("*"));c.setAllowCredentials(true);var s=new UrlBasedCorsConfigurationSource();s.registerCorsConfiguration("/**",c);return s;}
 }
