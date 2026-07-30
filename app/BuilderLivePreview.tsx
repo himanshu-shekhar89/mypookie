@@ -5,6 +5,7 @@ import { playSound } from "./soundFx";
 import { TinyBlockPreview } from "./TinyBlockPreview";
 
 type PreviewBlock = {
+  instanceId?:string;
   id: string;
   icon: string;
   name: string;
@@ -15,8 +16,9 @@ type PreviewBlock = {
 
 const wheelPrizes = ["Movie night", "Breakfast", "A long hug", "Mystery date", "Your choice", "Sweet treat"];
 
-export function BuilderLivePreview({ block, name, theme, ambience, giftId, onInteract, onComplete, onReward }: { block: PreviewBlock; name: string; theme: string; ambience: string; giftId?:string; onInteract?: () => void; onComplete?: () => void; onReward?: (reward:string) => void }) {
+export function BuilderLivePreview({ block, name, senderName, theme, ambience, giftId, onInteract, onComplete, onReward }: { block: PreviewBlock; name: string; senderName?:string; theme: string; ambience: string; giftId?:string; onInteract?: () => void; onComplete?: () => void; onReward?: (reward:string) => void }) {
   const [opened, setOpened] = useState(false);
+  const [letterStage,setLetterStage]=useState<"closed"|"burst"|"revealed">("closed");
   const [wheelRotation, setWheelRotation] = useState(0);
   const [wheelResult, setWheelResult] = useState("Tap spin to test it");
   const [spinning, setSpinning] = useState(false);
@@ -54,6 +56,18 @@ export function BuilderLivePreview({ block, name, theme, ambience, giftId, onInt
     }, 2600);
   }
 
+  function openLetter(){
+    if(letterStage!=="closed")return;
+    playSound("envelope");
+    setOpened(true);
+    setLetterStage("burst");
+    window.setTimeout(()=>setLetterStage("revealed"),900);
+    window.setTimeout(()=>onComplete?.(),1250);
+  }
+  function resetLetter(){setOpened(false);setLetterStage("closed")}
+  const letterEffect=(config.animation||"Flower burst").toLowerCase().replaceAll(" ","-");
+  const letterSymbols=config.animation==="Heart burst"?["♥","♡","♥"]:config.animation==="Golden sparkles"?["✦","✧","⋆"]:config.animation==="Classic unfold"?["·","✦","·"]:["✿","❀","❁"];
+
   return (
     <div className={`builder-live-card live-theme-${theme.toLowerCase().replaceAll(" ", "-")}`}>
       {ambience === "Petals" && <div className="live-ambience petals" aria-hidden="true"><i>✿</i><i>·</i><i>✿</i><i>·</i><i>✿</i></div>}
@@ -63,7 +77,7 @@ export function BuilderLivePreview({ block, name, theme, ambience, giftId, onInt
       <h3>{block.name}</h3>
       {block.id !== "letter" && block.id !== "voice" && block.id !== "video" && <p>{block.message}</p>}
       <div className="live-interaction" onClickCapture={onInteract} onPointerDownCapture={onInteract}>
-        {block.id === "letter" && <button className={`live-letter ${opened ? "opened" : ""}`} onClick={() => {if(!opened){playSound("envelope");onComplete?.()}setOpened(value => !value)}}><span>{block.message.slice(0, 100)}<small>{config.signoff || "— sent with love"}</small></span><i/><b>♥</b></button>}
+        {block.id === "letter" && <div className={`letter-reveal-scene effect-${letterEffect} stage-${letterStage}`}><div className="letter-particles" aria-hidden="true">{Array.from({length:22},(_,index)=><i key={index} style={{"--angle":`${index*16.36}deg`,"--distance":`${70+(index%5)*18}px`,"--delay":`${(index%4)*.05}s`} as React.CSSProperties}>{letterSymbols[index%letterSymbols.length]}</i>)}</div><button className={`live-letter ${opened ? "opened" : ""} ${letterStage==="revealed"?"message-ready":""}`} onClick={letterStage==="closed"?openLetter:resetLetter}><span>{block.message.slice(0, 100)}<small>{config.signoff || "— sent with love"}</small></span><i/><b>♥</b></button><small className="letter-effect-caption">{letterStage==="closed"?"Tap the sealed envelope":letterStage==="burst"?"A little magic is unfolding…":"Tap to close and replay"}</small></div>}
         {block.id === "voice" && <VoicePreview audioUrl={config.audioUrl} onComplete={onComplete} />}
         {block.id === "video" && <VideoNotePlay config={config} onComplete={onComplete} />}
         {block.id === "flowers" && <EGiftPreview config={config} onComplete={onComplete} />}
@@ -71,7 +85,7 @@ export function BuilderLivePreview({ block, name, theme, ambience, giftId, onInt
         {block.id === "thisorthat" && <ThisOrThatPlay config={config} onComplete={onComplete} onReward={onReward} />}
         {block.id === "emoji" && <EmojiDecoderPlay config={config} onComplete={onComplete} onReward={onReward} />}
         {block.id === "heartcatch" && <HeartCatchPlay config={config} onComplete={onComplete} onReward={onReward} />}
-        {["wouldrather","neverhave","truthdare","tapheart","matchpair","countdownus","constellation","growthring","movie","alwaysyou","excuse","roast","fortune","mysterybox","playlist","countdowninvite","groupboard"].includes(block.id) && <TinyBlockPreview id={block.id} config={config} giftId={giftId} recipientName={name} onComplete={onComplete} onReward={onReward} />}
+        {["wouldrather","neverhave","truthdare","tapheart","matchpair","countdownus","constellation","growthring","movie","song","alwaysyou","excuse","roast","fortune","mysterybox","playlist","countdowninvite","groupboard"].includes(block.id) && <TinyBlockPreview id={block.id} blockInstanceId={block.instanceId} config={config} giftId={giftId} recipientName={name} senderName={senderName} onComplete={onComplete} onReward={onReward} />}
         {block.id === "wheel" && <div className="live-wheel-scene"><div className="live-wheel-shell"><i className="live-wheel-pointer"/><div className="live-wheel" style={{transform:`rotate(${wheelRotation}deg)`,background:wheelGradient}}>{wheelOptions.map((prize,index)=><span key={`${prize}-${index}`} style={{transform:`rotate(${index*wheelSlice+wheelSlice/2}deg) translateY(-82px)`}}>{prize}</span>)}<b>♡</b></div></div><button onClick={spinWheel} disabled={spinning||wheelSpinCount>=(Number(config.spins)||1)}>{spinning?"Spinning…":wheelSpinCount>=(Number(config.spins)||1)?"No spins left":"Spin the wheel"}</button><output>{wheelResult} · {Math.max((Number(config.spins)||1)-wheelSpinCount,0)} left</output></div>}
         {block.id === "slots" && <SlotMachinePlay config={config} onComplete={onComplete} onReward={onReward} />}
         {block.id === "puzzle" && <PhotoPuzzlePlay key={`${config.difficulty}-${config.imageUrl}`} config={config} onComplete={onComplete} onReward={onReward} />}
@@ -87,7 +101,7 @@ export function BuilderLivePreview({ block, name, theme, ambience, giftId, onInt
 }
 
 type QuizQuestion = { id:string; question:string; options:{text:string;image:string}[]; correctIndex:number; interaction:"floating"|"normal" };
-type MemoryItem = { id:string; image:string; caption:string };
+type MemoryItem = { id:string; image:string; caption:string; note?:string; arrow?:string; animation?:string };
 type TreasureClue = { clue:string; hint:string; answer:string; photo?:string; caption?:string };
 type ThisOrThatRound = { prompt:string; left:string; right:string };
 
@@ -263,7 +277,9 @@ function MemoryBook({config,onComplete}:{config:Record<string,string>;onComplete
   const viewed=useRef<Set<number>>(new Set([0]));
   function turn(direction:number){if(turning)return;playSound("page");setTurning(true);window.setTimeout(()=>{const nextPage=(page+direction+pages.length)%pages.length;setPage(nextPage);viewed.current.add(nextPage);if(viewed.current.size>=pages.length)onComplete?.();setTurning(false)},360)}
   const current=pages[page];
-  return <div className="memory-book"><div className={`memory-page ${turning?"turning":""}`}><div className="spiral-binding" aria-hidden="true">{Array.from({length:10},(_,index)=><i key={index}/>)}</div><div className="book-spine"/><img src={current.image} alt={page===0?"Memory book cover":"Uploaded memory"}/><div><small>{page===0?"MEMORY LANE":`PAGE ${page} OF ${items.length}`}</small><strong>{current.caption}</strong></div></div><div className="book-controls"><button onClick={()=>turn(-1)}>←</button><span>{page+1}/{pages.length} · turn the page</span><button onClick={()=>turn(1)}>→</button></div></div>;
+  const style=(config.albumStyle||"Blush scrapbook").toLowerCase().replaceAll(" ","-");
+  const animation=(current.animation||"Polaroid pop").toLowerCase().replaceAll(" ","-");
+  return <div className={`memory-book scrapbook-album album-${style}`}><div className={`memory-page scrapbook-page page-${animation} ${turning?"turning":""}`}><div className="album-corner-tape left"/><div className="album-corner-tape right"/><img src={current.image} alt={page===0?"Memory album cover":"Uploaded memory"}/><div className="scrapbook-copy"><small>{page===0?"OUR MEMORY ALBUM":`MEMORY ${page} OF ${items.length}`}</small><strong>{current.caption}</strong>{current.note&&<p>{current.note}</p>}</div>{page>0&&current.arrow!=="None"&&<span className={`scrapbook-arrow arrow-${(current.arrow||"Curve right").toLowerCase().replaceAll(" ","-")}`}>↝</span>}<div className="album-stickers" aria-hidden="true"><i>♡</i><b>✦</b><em>together</em></div></div><div className="book-controls"><button onClick={()=>turn(-1)}>←</button><span>{page+1}/{pages.length} · turn the album page</span><button onClick={()=>turn(1)}>→</button></div></div>;
 }
 
 function TreasurePlay({config,onComplete,onReward}:{config:Record<string,string>;onComplete?:()=>void;onReward?:(reward:string)=>void}){

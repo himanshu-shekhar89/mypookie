@@ -12,7 +12,8 @@ type Gift={id:string;title:string;recipientName:string;occasion:string;status:st
 type Order={id:string;giftId:string;amountPaise:number;discountPaise:number;couponCode:string|null;status:string;providerOrderId:string;createdAt:string};
 type User={id:string;email:string;displayName:string;role:string;createdAt:string};
 type Tab="overview"|"coupons"|"activities"|"bundles"|"gifts"|"orders"|"users"|"settings";
-const emptyCoupon={code:"",discountType:"PERCENT" as const,discountValue:10,maxDiscountPaise:"",minOrderPaise:"0",usageLimit:"",expiresAt:"",active:true};
+type CouponForm={code:string;discountType:"PERCENT"|"FIXED";discountValue:number;maxDiscountPaise:string;minOrderPaise:string;usageLimit:string;expiresAt:string;active:boolean};
+const emptyCoupon:CouponForm={code:"",discountType:"PERCENT",discountValue:10,maxDiscountPaise:"",minOrderPaise:"0",usageLimit:"",expiresAt:"",active:true};
 
 async function request<T>(path:string,options:RequestInit={}):Promise<T>{
   const auth=await authHeaders("local-admin");

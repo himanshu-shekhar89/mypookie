@@ -3,6 +3,7 @@ import jakarta.persistence.*; import lombok.*; import java.time.Instant;
 @Entity @Table(name="gift") @Getter @Setter @NoArgsConstructor
 public class Gift {
  @Id private String id; @Column(name="sender_id",nullable=false) private String senderId;
+ @Column(name="sender_name",nullable=false,length=80) private String senderName;
  @Column(nullable=false) private String title; @Column(name="recipient_name",nullable=false) private String recipientName;
  @Column(name="recipient_type",nullable=false) private String recipientType; @Column(nullable=false) private String occasion;
  @Column(nullable=false) private String theme; @Column(nullable=false) private String ambience;

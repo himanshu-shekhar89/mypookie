@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import { LandingShowcase } from "./LandingShowcase";
 import { BuilderLivePreview } from "./BuilderLivePreview";
 import { BlockCustomization } from "./BlockCustomization";
+import { PlayfulAiAssistant } from "./PlayfulAiAssistant";
 import { GroupContributionPage } from "./GroupContributionPage";
 import { CheckoutPage, type PaymentOrder, type RazorpayResult } from "./CheckoutPage";
 import { PublicGiftExperience } from "./PublicGiftExperience";
@@ -11,6 +12,7 @@ import { AdminPanel } from "./AdminPanel";
 import { authHeaders, signInWithFirebase, watchFirebaseAuth } from "./authClient";
 
 type Block = {
+  instanceId?: string;
   id: string;
   icon: string;
   name: string;
@@ -50,6 +52,7 @@ const activities: Block[] = [
   { id: "constellation", icon: "✧", name: "Constellation Map", description: "A personal star chart with one named star", price: 49, color: "blue", category: "Sentimental stories", message: "Somewhere in this sky, one star is yours." },
   { id: "growthring", icon: "◌", name: "Growth Ring", description: "Relationship milestones drawn as tree rings", price: 49, color: "green", category: "Sentimental stories", message: "Every ring holds another chapter of us." },
   { id: "movie", icon: "▰", name: "If We Were a Movie", description: "A cinematic poster and sender-written tagline", price: 49, color: "red", category: "Sentimental stories", message: "The greatest story ever accidentally made." },
+  { id: "song", icon: "♪", name: "If We Were a Song", description: "Answer together and reveal the song of your bond", price: 49, color: "violet", category: "Sentimental stories", message: "Somehow, every chapter of us has a melody." },
   { id: "alwaysyou", icon: "✓", name: "The Answer Was Always You", description: "A joke quiz where every answer is right", price: 29, color: "pink", category: "Sentimental stories", message: "A very serious quiz with one obvious conclusion." },
   { id: "flowers", icon: "✦", name: "Celebration scene", description: "Elegant full-screen light, petals and sparkles", price: 29, color: "pink", category: "Celebrations & gifts", message: "A beautiful celebration, just for you." },
   { id: "calendar", icon: "▣", name: "Unlock calendar", description: "7, 14 or 30 days of moments", price: 99, color: "purple", category: "Celebrations & gifts", message: "A little something, one day at a time." },
@@ -87,7 +90,7 @@ type CatalogResponse = {
 };
 
 const blockDefaults: Record<string, Record<string, string>> = {
-  letter: { signoff: "— sent with love", animation: "Lift and unfold" },
+  letter: { signoff: "— sent with love", animation: "Flower burst" },
   voice: { audioName: "", playbackStyle: "Classic waveform" },
   video: { videoName: "", videoUrl: "", videoEffect: "Retro cam", videoCaption: "I wanted to tell you this face to face." },
   flowers: { effect: "Rose garden", timing: "Entire show", intensity: "Lush", effectNote: "This whole moment is blooming for you." },
@@ -102,7 +105,7 @@ const blockDefaults: Record<string, Record<string, string>> = {
   wheel: { prizes: "Breakfast in bed\nMovie night\nMystery date\nA long hug\nSweet treat", spins: "1", resultMode: "Random", plannedResults: "Breakfast in bed", revealAnimation: "Confetti burst" },
   slots: { prizes: "Movie night\nBreakfast date\nA long hug\nSweet treat", pulls: "3", resultMode: "Random", plannedResults: "", revealAnimation: "Sparkle shower" },
   puzzle: { imageUrl: "/mypookie-puzzle-picnic.png", imageName: "", difficulty: "3 × 3 · Sweet and simple", successMessage: "You put this memory back together." },
-  memory: { memoryItems: "[]", coverImage: "/mypookie-letter-photo.png", coverCaption: "Our little book of us" },
+  memory: { memoryItems: "[]", coverImage: "/mypookie-letter-photo.png", coverCaption: "Our little album of us", albumStyle: "Blush scrapbook" },
   scratch: { revealText: "A candlelit dinner ♡", revealDetail: "Friday · 8:00 PM", coating: "Lilac shimmer" },
   treasure: { treasureClues: JSON.stringify([{ clue: "Start where we first said hello.", hint: "Think about our first conversation.", answer: "cafe", photo: "", caption: "" }, { clue: "Find the place in our favourite photo.", hint: "It was outdoors.", answer: "picnic", photo: "", caption: "" }]), finalSurprise: "A mystery date for us" },
   excuse: { excuses: "My coffee tastes better when you are here\nThe cat has requested your immediate presence\nI need expert help choosing dessert\nThere is an emergency hug shortage" },
@@ -111,8 +114,9 @@ const blockDefaults: Record<string, Record<string, string>> = {
   mysterybox: { surprises: "Breakfast date\nA long drive\nYour favourite dessert\nOne wish granted", boxMode: "Random" },
   countdownus: { sinceDate: "2024-02-14T18:30", counterLabel: "Since our story began" },
   constellation: { starName: "Ananya's Star", starMessage: "Even in a sky full of light, I would find you.", skyStyle: "Midnight rose" },
-  growthring: { milestones: JSON.stringify([{year:"2023",label:"We met"},{year:"2024",label:"Our first adventure"},{year:"2025",label:"A thousand little memories"}]) },
-  movie: { genre: "Romantic comedy", movieTitle: "Us, Somehow", tagline: "Two people. Too many inside jokes. One beautiful story.", starring: "Ananya & Himanshu", posterTemplate: "Golden musical", posterImage: "" },
+  growthring: { growthSenderMemories: JSON.stringify(["The day our story really began","The adventure we still laugh about","The moment I knew this bond was special"]) },
+  movie: { genre: "Romantic comedy", movieTitle: "Us, Somehow", tagline: "Two people. Too many inside jokes. One beautiful story.", starring: "Ananya & Himanshu", posterTemplate: "Golden musical", posterImage: "", bondQuestions: "[]", senderBondAnswers: "[]" },
+  song: { songStyle: "Dreamy acoustic", bondQuestions: "[]", senderBondAnswers: "[]" },
   alwaysyou: { question: "Who makes every ordinary day better?", answers: "You\nStill you\nObviously you\nThe person reading this" },
   calendar: { days: "7", unlockRule: "One per day", startDate: "", calendarNotes: JSON.stringify(["A reason I adore you","A favourite memory","A tiny promise","A photo that makes me smile","Your song of the day","A little challenge","Your final surprise"]) },
   gift: { brand: "Custom gift", code: "POOKIE-LOVE-24", value: "₹1,000", giftMessage: "Choose something that makes you smile.", interaction: "Flip to reveal", showCode: "true", showValue: "true", showNote: "true" },
@@ -122,7 +126,8 @@ const blockDefaults: Record<string, Record<string, string>> = {
 };
 
 function createBlock(item: Block): Block {
-  return { ...item, config: { ...(blockDefaults[item.id] || {}) } };
+  const instanceId=globalThis.crypto?.randomUUID?.()||`${item.id}-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+  return { ...item, instanceId, config: { ...(blockDefaults[item.id] || {}) } };
 }
 
 export default function Home() {
@@ -134,6 +139,7 @@ export default function Home() {
   const [screen, setScreen] = useState<"welcome" | "catalog" | "builder" | "preview" | "checkout">("welcome");
   const [recipient, setRecipient] = useState<Recipient>("Lover");
   const [name, setName] = useState("Ananya");
+  const [senderName,setSenderName]=useState("");
   const [occasion, setOccasion] = useState("Just because");
   const [selected, setSelected] = useState<Block[]>([]);
   const [selectedBundleId,setSelectedBundleId]=useState<string|null>(null);
@@ -239,6 +245,16 @@ export default function Home() {
     setActive(current => Math.max(0, Math.min(current, selected.length - 2)));
   }
 
+  function duplicateActiveBlock() {
+    if (!activeBlock) return;
+    const duplicate=createBlock({...activeBlock,config:{...(activeBlock.config||{})}});
+    duplicate.message=activeBlock.message;
+    duplicate.config={...(activeBlock.config||{})};
+    setSelected(current=>[...current.slice(0,active+1),duplicate,...current.slice(active+1)]);
+    setSelectedBundleId(null);
+    setActive(active+1);
+  }
+
   function move(index: number, direction: number) {
     const next = index + direction;
     if (next < 0 || next >= selected.length) return;
@@ -271,12 +287,13 @@ export default function Home() {
       const api = process.env.NEXT_PUBLIC_API_URL || "https://backend-production-22bd.up.railway.app";
       const body = {
         title: `${occasion} for ${name}`,
+        senderName: senderName.trim() || "Someone special",
         recipientName: name,
         recipientType: recipient,
         occasion,
         theme,
         ambience,
-        blocksJson: JSON.stringify({ version: 2, blocks: selected, soundtrack, bundleId:selectedBundleId }),
+        blocksJson: JSON.stringify({ version: 3, blocks: selected, soundtrack, bundleId:selectedBundleId }),
         scheduledAt: revealAt ? new Date(revealAt).toISOString() : null,
       };
       const response = await fetch(`${api}/api/gifts${giftId ? `/${giftId}` : ""}`, {
@@ -460,7 +477,7 @@ export default function Home() {
           <h1>Who is this little world for?</h1>
           <p>We’ll personalize the ideas, wording and themes around your relationship.</p>
           <div className="recipient-row">{recipients.map(r => <button key={r} className={recipient === r ? "active" : ""} onClick={() => setRecipient(r)}><span>{r === "Lover" ? "♡" : r === "Friend" ? "☺" : r === "Parents" ? "⌂" : r === "Sibling" ? "✦" : "+"}</span>{r}</button>)}</div>
-          <div className="quick-fields"><label>Their name<input value={name} onChange={e => setName(e.target.value)} /></label><label>Occasion<select value={occasion} onChange={e => setOccasion(e.target.value)}><option>Just because</option><option>Birthday</option><option>Anniversary</option><option>I’m sorry</option><option>Congratulations</option></select></label></div>
+          <div className="quick-fields three-fields"><label>Your name<input maxLength={80} value={senderName} onChange={e => setSenderName(e.target.value)} placeholder="Who is sending this?" /></label><label>Their name<input maxLength={80} value={name} onChange={e => setName(e.target.value)} /></label><label>Occasion<select value={occasion} onChange={e => setOccasion(e.target.value)}><option>Just because</option><option>Birthday</option><option>Anniversary</option><option>I’m sorry</option><option>Congratulations</option></select></label></div>
         </section>
         <section className="creation-choice">
           <div className="choice-heading"><div><div className="section-kicker">CHOSEN FOR {recipient.toUpperCase()}</div><h2>{recipient==="Lover"?"Made for the two of you":recipient==="Friend"?"For the friend who knows everything":recipient==="Parents"?"Stories made for family":recipient==="Sibling"?"For your original partner in chaos":"A beautiful fit for anyone special"}</h2><p>Each bundle has a different mood and can still be completely customized.</p></div><button className="scratch-link" onClick={() => {setSelected([]);setSelectedBundleId(null);setScreen("builder")}}>Build from scratch <span>→</span></button></div>
@@ -471,7 +488,7 @@ export default function Home() {
   }
 
   if (screen === "checkout") {
-    return <>{signInPopup}<CheckoutPage blocks={selected} name={name} occasion={occasion} subtotal={subtotal} revealAt={revealAt} onRevealAt={setRevealAt} onBack={() => setScreen("builder")} onQuote={quoteCoupon} onCreateOrder={createPaymentOrder} onVerifyPayment={verifyPayment} onDemoComplete={completeDemoPayment}/></>;
+    return <>{signInPopup}<CheckoutPage blocks={selected} senderName={senderName.trim()||"Someone special"} name={name} occasion={occasion} subtotal={subtotal} revealAt={revealAt} onRevealAt={setRevealAt} onBack={() => setScreen("builder")} onQuote={quoteCoupon} onCreateOrder={createPaymentOrder} onVerifyPayment={verifyPayment} onDemoComplete={completeDemoPayment}/></>;
   }
 
   if (screen === "preview") {
@@ -495,7 +512,7 @@ export default function Home() {
         <WinningTray items={wonItems} open={winsOpen} onToggle={()=>setWinsOpen(value=>!value)} />
         <div className="recipient-experience-shell">
           <div className="preview-count">{previewStep + 1} of {selected.length}</div>
-          {!item ? <div className="preview-empty"><div className="big-symbol">♡</div><h1>Your gift needs a little magic</h1><p>Add an activity in the builder to begin.</p></div> : <BuilderLivePreview key={`${item.id}-${previewStep}`} block={item} name={name} theme={theme} ambience={ambience} giftId={giftId||undefined} onInteract={()=>setOpened(true)} onComplete={completeMoment} onReward={addReward} />}
+          {!item ? <div className="preview-empty"><div className="big-symbol">♡</div><h1>Your gift needs a little magic</h1><p>Add an activity in the builder to begin.</p></div> : <BuilderLivePreview key={`${item.instanceId||item.id}-${previewStep}`} block={item} name={name} senderName={senderName.trim()||"Someone special"} theme={theme} ambience={ambience} giftId={giftId||undefined} onInteract={()=>setOpened(true)} onComplete={completeMoment} onReward={addReward} />}
           {item && <div className="recipient-progress-gate"><button className="primary recipient-next" disabled={!currentComplete} onClick={() => { if (previewStep < selected.length-1) {setPreviewStep(previewStep+1);setOpened(false)} else {setPreviewStep(0);setOpened(false);setCompletedSteps([]);setWonItems([])} }}>{previewStep < selected.length-1 ? "Continue to the next moment" : "Experience it again"} <span>→</span></button>{!currentComplete&&<small>Complete this moment to unlock the next one</small>}{currentComplete&&<small className="ready">Moment complete ✓</small>}</div>}
         </div>
       </main>
@@ -523,19 +540,20 @@ export default function Home() {
         </aside>
         <section className="live-editor">
           <div className="live-editor-head"><div><div className="section-kicker">LIVE RECIPIENT PREVIEW</div><h2>{activeBlock ? activeBlock.name : "Choose a block to begin"}</h2><p>{activeBlock ? "Play with it here. Changes from the right appear instantly." : "Select any activity from the library and its real interaction will appear here."}</p></div>{activeBlock && <span className="live-badge"><i /> Interactive</span>}</div>
-          {activeBlock ? <BuilderLivePreview key={activeBlock.id} block={activeBlock} name={name} theme={theme} ambience={ambience} giftId={giftId||undefined} /> : <div className="empty-live-preview"><div className="empty-live-orbit"><span>✦</span><i>♡</i><b>✿</b></div><h3>Your live preview will appear here</h3><p>Try the letter, wheel, puzzle, quiz and every other block before sending it.</p><button onClick={() => selectActivity(catalogActivities[0]||activities[0])}>Start with a personal letter →</button></div>}
-          {selected.length > 0 && <div className="journey-rail"><div className="journey-rail-head"><div><small>GIFT SEQUENCE</small><strong>{selected.length} moments for {name}</strong></div><span>Tap a block to edit it</span></div><div className="journey-chips">{selected.map((item,index)=><div className={`journey-chip ${active===index?"active":""}`} key={item.id}><button className="journey-select" onClick={()=>setActive(index)}><i className={item.color}>{item.icon}</i><span><small>{index+1}</small>{item.name}</span></button><div><button onClick={()=>move(index,-1)} disabled={index===0} aria-label={`Move ${item.name} earlier`}>←</button><button onClick={()=>move(index,1)} disabled={index===selected.length-1} aria-label={`Move ${item.name} later`}>→</button></div></div>)}</div></div>}
+          {activeBlock ? <BuilderLivePreview key={activeBlock.instanceId||activeBlock.id} block={activeBlock} name={name} senderName={senderName.trim()||"Someone special"} theme={theme} ambience={ambience} giftId={giftId||undefined} /> : <div className="empty-live-preview"><div className="empty-live-orbit"><span>✦</span><i>♡</i><b>✿</b></div><h3>Your live preview will appear here</h3><p>Try the letter, wheel, puzzle, quiz and every other block before sending it.</p><button onClick={() => selectActivity(catalogActivities[0]||activities[0])}>Start with a personal letter →</button></div>}
+          {selected.length > 0 && <div className="journey-rail"><div className="journey-rail-head"><div><small>GIFT SEQUENCE</small><strong>{selected.length} moments for {name}</strong></div><span>Tap a block to edit it</span></div><div className="journey-chips">{selected.map((item,index)=><div className={`journey-chip ${active===index?"active":""}`} key={item.instanceId||`${item.id}-${index}`}><button className="journey-select" onClick={()=>setActive(index)}><i className={item.color}>{item.icon}</i><span><small>{index+1}</small>{item.name}</span></button><div><button onClick={()=>move(index,-1)} disabled={index===0} aria-label={`Move ${item.name} earlier`}>←</button><button onClick={()=>move(index,1)} disabled={index===selected.length-1} aria-label={`Move ${item.name} later`}>→</button></div></div>)}</div></div>}
         </section>
         <aside className="customizer">
           <div className="customizer-head"><div className="section-kicker">CUSTOMIZE</div><span>{selected.length ? `${active+1} / ${selected.length}` : "0 / 0"}</span></div>
           {!activeBlock ? <div className="custom-empty"><span>✎</span><h3>Select an activity</h3><p>Choose a moment to personalize its words, behaviour and style.</p></div> : <>
             <div className="current-block"><i className={activeBlock.color}>{activeBlock.icon}</i><div><small>MOMENT {active+1}</small><h2>{activeBlock.name}</h2></div></div>
-            <BlockCustomization key={activeBlock.id} block={activeBlock} giftId={giftId||undefined} onMessage={updateMessage} onConfig={updateBlockConfig} />
+            <BlockCustomization key={activeBlock.instanceId||activeBlock.id} block={activeBlock} giftId={giftId||undefined} onMessage={updateMessage} onConfig={updateBlockConfig} />
+            <PlayfulAiAssistant id={activeBlock.id} relationship={`${senderName.trim()||"the sender"} and ${name||"the recipient"} are ${recipient.toLowerCase()}s celebrating ${occasion.toLowerCase()}`} config={activeBlock.config||{}} onConfig={updateBlockConfig}/>
             <SoundtrackEditor settings={soundtrack} blocks={selected} onChange={patch=>setSoundtrack(current=>({...current,...patch}))} />
             <div className="style-row"><label className="field">Theme<select value={theme} onChange={e=>setTheme(e.target.value)}><option>Blush romance</option><option>Golden celebration</option><option>Midnight magic</option></select></label><label className="field">Ambience<select value={ambience} onChange={e=>setAmbience(e.target.value)}><option>Petals</option><option>Soft sparkles</option><option>None</option></select></label></div>
             <div className="customizer-live-note"><i /> You’re editing the live preview</div>
             <div className="next-row"><button disabled={active===0} onClick={()=>setActive(active-1)}>←</button><button onClick={()=>setActive(Math.min(active+1,selected.length-1))}>{active===selected.length-1?"Finish customization":"Save & customize next"} <span>→</span></button></div>
-            <button className="remove-block" onClick={removeActiveBlock}>Remove this block</button>
+            <div className="block-instance-actions"><button className="duplicate-block" onClick={duplicateActiveBlock}>＋ Repeat this block</button><button className="remove-block" onClick={removeActiveBlock}>Remove this block</button></div>
           </>}
         </aside>
       </div>

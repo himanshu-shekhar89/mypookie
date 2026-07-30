@@ -24,3 +24,4 @@ app:
     key-secret: ${RAZORPAY_KEY_SECRET:}
   groq:
     api-key: ${GROQ_API_KEY:}
+  gift-secret-key: ${GIFT_SECRET_KEY:}

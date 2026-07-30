@@ -5,6 +5,7 @@ import { authHeaders } from "./authClient";
 import { TinyBlockCustomization } from "./TinyBlockCustomization";
 
 type CustomBlock = {
+  instanceId?: string;
   id: string;
   message: string;
   config?: Record<string, string>;
@@ -52,7 +53,7 @@ export function BlockCustomization({ block, giftId, onMessage, onConfig }: { blo
   if (block.id === "letter") return <CustomizationSection title="Letter content" hint="Written inside the animated letter">
     <label className="field">Letter message<textarea rows={4} maxLength={100} value={block.message.slice(0,100)} onChange={event=>onMessage(event.target.value)} placeholder="Write a short, meaningful note…" /><small>{Math.min(block.message.length,100)}/100</small></label>
     <label className="field">Sign-off<input maxLength={40} value={config.signoff || ""} onChange={event=>onConfig("signoff",event.target.value)} placeholder="— sent with love" /></label>
-    <label className="field">Opening animation<select value={config.animation} onChange={event=>onConfig("animation",event.target.value)}><option>Lift and unfold</option><option>Wax seal pop</option><option>Soft fade</option></select></label>
+    <label className="field">When the envelope opens<select value={config.animation||"Flower burst"} onChange={event=>onConfig("animation",event.target.value)}><option>Flower burst</option><option>Heart burst</option><option>Petal shower</option><option>Golden sparkles</option><option>Classic unfold</option></select><small>The message appears after the selected animation.</small></label>
   </CustomizationSection>;
 
   if (block.id === "voice") return <CustomizationSection title="Voice note" hint="Only the recording is delivered">
@@ -105,13 +106,13 @@ export function BlockCustomization({ block, giftId, onMessage, onConfig }: { blo
 
   if (block.id === "calendar") return <CalendarEditor config={config} onConfig={onConfig} />;
 
-  if (["wouldrather","neverhave","truthdare","tapheart","matchpair","countdownus","constellation","growthring","movie","alwaysyou","excuse","roast","fortune","mysterybox","playlist","countdowninvite","groupboard"].includes(block.id)) return <TinyBlockCustomization id={block.id} config={config} giftId={giftId} onConfig={onConfig} />;
+  if (["wouldrather","neverhave","truthdare","tapheart","matchpair","countdownus","constellation","growthring","movie","song","alwaysyou","excuse","roast","fortune","mysterybox","playlist","countdowninvite","groupboard"].includes(block.id)) return <TinyBlockCustomization id={block.id} instanceId={block.instanceId} config={config} giftId={giftId} onConfig={onConfig} />;
 
   return <GiftCardEditor config={config} onConfig={onConfig} />;
 }
 
 type QuizQuestion = { id: string; question: string; options: { text: string; image: string }[]; correctIndex: number; interaction: "floating" | "normal" };
-type MemoryItem = { id: string; image: string; caption: string };
+type MemoryItem = { id: string; image: string; caption: string; note?:string; arrow?:string; animation?:string };
 type TreasureClue = { clue: string; hint: string; answer: string; photo?: string; caption?: string };
 
 function safeParse<T>(value: string | undefined, fallback: T): T {
@@ -257,15 +258,16 @@ function CalendarEditor({config,onConfig}:{config:Record<string,string>;onConfig
 
 function MemoryEditor({ config, onConfig }: { config: Record<string,string>; onConfig:(key:string,value:string)=>void }) {
   const items=safeParse<MemoryItem[]>(config.memoryItems,[]);
-  async function add(files:FileList|null){if(!files)return;const added=await Promise.all(Array.from(files).slice(0,12).map(async(file,index)=>({id:`memory-${Date.now()}-${index}`,image:await imageToDataUrl(file),caption:file.name.replace(/\.[^.]+$/,"")})));onConfig("memoryItems",JSON.stringify([...items,...added].slice(0,20)))}
+  async function add(files:FileList|null){if(!files)return;const added=await Promise.all(Array.from(files).slice(0,12).map(async(file,index)=>({id:`memory-${Date.now()}-${index}`,image:await imageToDataUrl(file),caption:file.name.replace(/\.[^.]+$/,""),note:"",arrow:"Curve right",animation:"Polaroid pop"})));onConfig("memoryItems",JSON.stringify([...items,...added].slice(0,20)))}
   async function cover(files:FileList|null){const file=files?.[0];if(file)onConfig("coverImage",await imageToDataUrl(file))}
-  function caption(index:number,value:string){onConfig("memoryItems",JSON.stringify(items.map((item,i)=>i===index?{...item,caption:value}:item)))}
-  return <CustomizationSection title="Memory book" hint="A cover followed by page-turning photo memories">
+  function patch(index:number,key:keyof MemoryItem,value:string){onConfig("memoryItems",JSON.stringify(items.map((item,i)=>i===index?{...item,[key]:value}:item)))}
+  return <CustomizationSection title="Scrapbook album" hint="Design every page with photos, words, arrows and motion">
     <div className="memory-cover-note"><img src={config.coverImage||"/mypookie-letter-photo.png"} alt="Memory book cover"/><div><strong>Your cover</strong><span>Shown first when the memory lane opens.</span></div></div>
     <UploadBox label="Customize cover photo" note="The complete photo will stay visible" accept="image/*" onFiles={cover}/>
     <label className="field">Cover caption<input maxLength={65} value={config.coverCaption||"Our little book of us"} onChange={event=>onConfig("coverCaption",event.target.value)}/></label>
+    <label className="field">Album style<select value={config.albumStyle||"Blush scrapbook"} onChange={event=>onConfig("albumStyle",event.target.value)}><option>Blush scrapbook</option><option>Retro travel album</option><option>Midnight love story</option><option>Playful sticker book</option></select></label>
     <UploadBox label="Add memory photos" note="Select several photos at once" accept="image/*" multiple onFiles={add}/>
-    <div className="memory-item-editor">{items.map((item,index)=><article key={item.id}><img src={item.image} alt="Uploaded memory"/><label>Caption {index+1}<input maxLength={65} value={item.caption} onChange={event=>caption(index,event.target.value)}/></label><button onClick={()=>onConfig("memoryItems",JSON.stringify(items.filter((_,i)=>i!==index)))}>×</button></article>)}</div>
+    <div className="memory-item-editor scrapbook-editor">{items.map((item,index)=><article key={item.id}><img src={item.image} alt="Uploaded memory"/><div className="scrapbook-page-fields"><label>Photo caption<input maxLength={65} value={item.caption} onChange={event=>patch(index,"caption",event.target.value)}/></label><label>Handwritten text<textarea rows={2} maxLength={100} value={item.note||""} onChange={event=>patch(index,"note",event.target.value)} placeholder="Add a date, joke or tiny memory…"/></label><div><label>Curved arrow<select value={item.arrow||"Curve right"} onChange={event=>patch(index,"arrow",event.target.value)}><option>Curve right</option><option>Curve left</option><option>Loop around</option><option>None</option></select></label><label>Page animation<select value={item.animation||"Polaroid pop"} onChange={event=>patch(index,"animation",event.target.value)}><option>Polaroid pop</option><option>Soft zoom</option><option>Film slide</option><option>Sparkle reveal</option></select></label></div></div><button onClick={()=>onConfig("memoryItems",JSON.stringify(items.filter((_,i)=>i!==index)))}>×</button></article>)}</div>
     {items.length===0&&<div className="collection-empty">Your uploaded pages will appear here.</div>}
   </CustomizationSection>;
 }

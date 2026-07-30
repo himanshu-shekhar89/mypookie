@@ -5,15 +5,16 @@ import { playSound } from "./soundFx";
 
 type Props = {
   id:string;
+  blockInstanceId?:string;
   config:Record<string,string>;
   giftId?:string;
   recipientName?:string;
+  senderName?:string;
   onComplete?:()=>void;
   onReward?:(reward:string)=>void;
 };
 type Pair={left:string;right:string};
 type PairPhoto={id:string;image:string;caption:string};
-type Milestone={year:string;label:string};
 type BoardNote={from:string;message:string;photos?:string[]};
 type SavedResponse={id:string;contributorName:string;responseText:string;photoUrls:string};
 const api=process.env.NEXT_PUBLIC_API_URL||"https://backend-production-22bd.up.railway.app";
@@ -32,7 +33,7 @@ export function TinyBlockPreview(props:Props){
   if(props.id==="countdownus")return <CountdownUs {...props}/>;
   if(props.id==="constellation")return <Constellation {...props}/>;
   if(props.id==="growthring")return <GrowthRing {...props}/>;
-  if(props.id==="movie")return <MovieReveal {...props}/>;
+  if(props.id==="movie"||props.id==="song")return <BondReveal {...props}/>;
   if(props.id==="alwaysyou")return <AlwaysYou {...props}/>;
   if(props.id==="excuse")return <ExcuseGenerator {...props}/>;
   if(props.id==="roast")return <RoastCards {...props}/>;
@@ -61,7 +62,7 @@ function NeverHave({config,onComplete,onReward}:Props){
   return <div className="never-have-deck"><div className="deck-progress">{index+1}/{statements.length}</div><article><small>NEVER HAVE I EVER…</small><strong>{statements[index]}</strong></article><div><button onClick={()=>answer(false)}>I haven’t</button><button onClick={()=>answer(true)}>I have</button></div></div>;
 }
 
-function TruthDare({config,giftId,recipientName,onComplete,onReward}:Props){
+function TruthDare({config,giftId,recipientName,blockInstanceId,onComplete,onReward}:Props){
   const truths=lines(config.truths,["What was your first impression of me?"]);const dares=lines(config.dares,["Send me your cutest selfie"]);
   const [rotation,setRotation]=useState(0);const [result,setResult]=useState("");const [resultType,setResultType]=useState<"TRUTH"|"DARE"|"">("");const [spinning,setSpinning]=useState(false);const [answer,setAnswer]=useState("");const [saveState,setSaveState]=useState<"idle"|"saving"|"saved"|"error">("idle");
   function spin(){if(spinning)return;setSpinning(true);setResult("");setResultType("");setAnswer("");setSaveState("idle");playSound("wheel");const truth=randomIndex(2)===0;const prompts=truth?truths:dares;const prompt=prompts[randomIndex(prompts.length)];setRotation(value=>value+1440+(truth?0:180));window.setTimeout(()=>{setSpinning(false);setResult(prompt);setResultType(truth?"TRUTH":"DARE");playSound("reveal")},1800)}
@@ -70,7 +71,7 @@ function TruthDare({config,giftId,recipientName,onComplete,onReward}:Props){
     setSaveState("saving");
     try{
       if(giftId&&resultType==="TRUTH"){
-        const response=await fetch(`${api}/api/public/gifts/${giftId}/responses`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({blockId:"truthdare",responseType:"TRUTH",contributorName:recipientName||"Recipient",responseText:`${result} — ${answer.trim()}`,photoUrls:[]})});
+        const response=await fetch(`${api}/api/public/gifts/${giftId}/responses`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({blockId:blockInstanceId||"truthdare",responseType:"TRUTH",contributorName:recipientName||"Recipient",responseText:`${result} — ${answer.trim()}`,photoUrls:[]})});
         if(!response.ok)throw new Error();
       }
       setSaveState("saved");onReward?.(resultType==="TRUTH"?`Truth answer: ${answer.trim()}`:`Dare accepted: ${result}`);onComplete?.();playSound("win");
@@ -115,16 +116,43 @@ function Constellation({config,onComplete}:Props){
   return <div className={`constellation-map ${config.skyStyle?.toLowerCase().replaceAll(" ","-")} ${revealed?"revealed":""}`}>{stars.map((star,index)=><i key={index} style={{left:`${star.left}%`,top:`${star.top}%`,width:star.size,height:star.size}}/>)}<span className="constellation-lines"/><button onClick={()=>{if(!revealed){setRevealed(true);playSound("reveal");onComplete?.()}}}><b>✦</b><strong>{revealed?(config.starName||"Your star"):"Find the brightest star"}</strong></button>{revealed&&<p>{config.starMessage}</p>}</div>;
 }
 
-function GrowthRing({config,onComplete}:Props){
-  const milestones=parse<Milestone[]>(config.milestones,[{year:"2024",label:"We met"}]);const [active,setActive]=useState(0);
-  function next(){const next=Math.min(active+1,milestones.length-1);setActive(next);playSound("page");if(next===milestones.length-1)onComplete?.()}
-  return <div className="growth-ring-play"><div>{milestones.map((item,index)=><button key={index} className={index<=active?"seen":""} style={{inset:`${index*15}px`}} onClick={()=>{setActive(index);if(index===milestones.length-1)onComplete?.()}} aria-label={`${item.year}: ${item.label}`}/>) }<span>♡</span></div><article><small>{milestones[active]?.year}</small><strong>{milestones[active]?.label}</strong><button onClick={next} disabled={active===milestones.length-1}>{active===milestones.length-1?"Every ring is us":"Next ring →"}</button></article></div>;
+function GrowthRing({config,giftId,recipientName,blockInstanceId,onComplete}:Props){
+  const sender=parse<string[]>(config.growthSenderMemories,["The day our story began","Our funniest adventure","When this bond felt unbreakable"]).slice(0,3);
+  const [answers,setAnswers]=useState(["","",""]);const [revealed,setRevealed]=useState(false);const [saving,setSaving]=useState(false);
+  async function reveal(){
+    if(answers.some(answer=>!answer.trim())||saving)return;
+    setSaving(true);
+    try{
+      if(giftId)await fetch(`${api}/api/public/gifts/${giftId}/responses`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({blockId:blockInstanceId||"growthring",responseType:"GROWTH",contributorName:recipientName||"Recipient",responseText:JSON.stringify(answers),photoUrls:[]})});
+    }finally{setSaving(false);setRevealed(true);playSound("win");onComplete?.()}
+  }
+  if(!revealed)return <div className="growth-memory-form"><span>∞</span><small>ADD YOUR SIDE OF THE STORY</small><strong>Which three moments grew this bond?</strong>{answers.map((answer,index)=><label key={index}><b>{index+1}</b><textarea rows={2} maxLength={120} value={answer} onChange={event=>setAnswers(current=>current.map((item,itemIndex)=>itemIndex===index?event.target.value:item))} placeholder={index===0?"A beginning you treasure…":index===1?"A moment that still makes you smile…":"A memory that changed your bond…"}/></label>)}<button onClick={reveal} disabled={answers.some(answer=>!answer.trim())||saving}>{saving?"Saving your memories…":"Grow our shared timeline →"}</button></div>;
+  const moments=sender.flatMap((memory,index)=>[{who:"FROM THEM",text:memory},{who:"FROM YOU",text:answers[index]}]);
+  return <div className="growth-timeline"><header><span>∞</span><div><small>SIX MOMENTS · ONE STORY</small><strong>Look how far you’ve grown together.</strong></div></header><div>{moments.map((moment,index)=><article key={index} style={{"--delay":`${index*.14}s`} as React.CSSProperties}><i>{index+1}</i><small>{moment.who}</small><strong>{moment.text}</strong></article>)}</div><footer>Not rings in a tree—moments still moving forward. ♡</footer></div>;
 }
 
-function MovieReveal({config,onComplete}:Props){
-  const [revealed,setRevealed]=useState(false);
+type BondAnalysis={title:string;subtitle:string;senderRole:string;recipientRole:string;tagline:string;genre:string};
+
+function BondReveal({id,config,giftId,recipientName,senderName,blockInstanceId,onComplete,onReward}:Props){
+  const fallback=["What small thing instantly reminds you of us?","Which moment best captures our bond?","What is our shared superpower?","What kind of adventure feels most like us?","What do we understand without words?","Choose three words for our story."];
+  const questions=parse<string[]>(config.bondQuestions,fallback).slice(0,6);
+  const normalized=Array.from({length:6},(_,index)=>questions[index]||fallback[index]);
+  const senderAnswers=parse<string[]>(config.senderBondAnswers,[]);
+  const [index,setIndex]=useState(0);const [answers,setAnswers]=useState<string[]>([]);const [value,setValue]=useState("");const [analysis,setAnalysis]=useState<BondAnalysis|null>(null);const [state,setState]=useState<"answering"|"analyzing"|"error">("answering");
+  function next(){if(!value.trim())return;const nextAnswers=[...answers,value.trim()];setAnswers(nextAnswers);setValue("");if(index<normalized.length-1){setIndex(current=>current+1);playSound("tile")}else void analyze(nextAnswers)}
+  async function analyze(recipientAnswers:string[]){
+    setState("analyzing");
+    try{
+      if(giftId)await fetch(`${api}/api/public/gifts/${giftId}/responses`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({blockId:blockInstanceId||id,responseType:id==="movie"?"MOVIE_BOND":"SONG_BOND",contributorName:recipientName||"Recipient",responseText:JSON.stringify({questions:normalized,answers:recipientAnswers}),photoUrls:[]})});
+      const response=await fetch(`${api}/api/ai/bond-analysis`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mode:id,senderName:senderName||"The sender",recipientName:recipientName||"The recipient",questions:normalized,senderAnswers,recipientAnswers,preference:id==="movie"?config.genre:config.songStyle})});
+      if(!response.ok)throw new Error();
+      const result=await response.json() as BondAnalysis;
+      setAnalysis(result);playSound("win");onReward?.(`${id==="movie"?"Movie":"Song"} reveal: ${result.title}`);onComplete?.();
+    }catch{setState("error")}
+  }
+  if(!analysis)return <div className={`bond-recipient-quiz mode-${id}`}><header><span>{id==="movie"?"▰":"♪"}</span><div><small>{id==="movie"?"CASTING YOUR STORY":"FINDING YOUR SOUND"}</small><strong>Answer the same questions as {senderName||"your person"}.</strong></div></header>{state==="analyzing"?<div className="bond-analyzing"><i/><strong>AI is comparing both sides of your bond…</strong><small>Finding the title, characters and story only you two could make.</small></div>:state==="error"?<div className="bond-analyzing error"><strong>The reveal paused for a moment.</strong><button onClick={()=>void analyze(answers)}>Try the analysis again</button></div>:<><div className="bond-progress">{normalized.map((_,dot)=><i key={dot} className={dot<=index?"active":""}/>)}</div><small>QUESTION {index+1} OF {normalized.length}</small><strong>{normalized[index]}</strong><textarea autoFocus rows={3} maxLength={180} value={value} onChange={event=>setValue(event.target.value)} placeholder="Your honest answer…"/><button onClick={next} disabled={!value.trim()}>{index===normalized.length-1?"Create our reveal ✦":"Next question →"}</button></>}</div>;
   const template=(config.posterTemplate||"Golden musical").toLowerCase().replaceAll(" ","-");
-  return <button className={`movie-poster poster-${template} ${config.posterImage?"uploaded":""} ${revealed?"revealed":""}`} style={config.posterImage?{backgroundImage:`linear-gradient(transparent 10%,rgba(30,15,24,.82)),url("${config.posterImage}")`}:undefined} onClick={()=>{if(!revealed){setRevealed(true);playSound("reveal");onComplete?.()}}}><div className="movie-curtain left"/><div className="movie-curtain right"/><small>A MYPOOKIE. {String(config.genre||"ROMANCE").toUpperCase()}</small><strong>{config.movieTitle||"Us, Somehow"}</strong><p>{config.tagline}</p><b>STARRING {config.starring}</b><span>{revealed?"NOW PLAYING · FOREVER":"Tap for the premiere"}</span></button>;
+  return <div className={`bond-result mode-${id}`}>{id==="movie"?<div className={`movie-poster poster-${template} uploaded revealed`} style={config.posterImage?{backgroundImage:`linear-gradient(transparent 10%,rgba(30,15,24,.82)),url("${config.posterImage}")`}:undefined}><small>A MYPOOKIE. {analysis.genre.toUpperCase()}</small><strong>{analysis.title}</strong><p>{analysis.tagline}</p><b>{senderName}: {analysis.senderRole}<br/>{recipientName}: {analysis.recipientRole}</b><span>NOW PLAYING · FOREVER</span></div>:<div className="song-reveal-card"><div className="song-disc"><i/><span>♪</span></div><small>YOUR BOND SOUNDS LIKE</small><strong>{analysis.title}</strong><em>{analysis.genre}</em><p>{analysis.tagline}</p><div><span>{senderName}</span><b>{analysis.senderRole}</b><span>{recipientName}</span><b>{analysis.recipientRole}</b></div></div>}<p>{analysis.subtitle}</p></div>;
 }
 
 function AlwaysYou({config,onComplete,onReward}:Props){
