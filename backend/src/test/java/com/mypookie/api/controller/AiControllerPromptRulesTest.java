@@ -1,0 +1,37 @@
+package com.mypookie.api.controller;
+
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+class AiControllerPromptRulesTest {
+    @Test
+    void neverHaveIeverHasItsOwnStatementContract() {
+        String rules = AiController.activityRulesFor("neverhave");
+
+        assertThat(rules)
+            .contains("Never Have I Ever statement")
+            .contains("options array must be empty")
+            .contains("Never use the words \"truth\" or \"dare\"");
+    }
+
+    @Test
+    void wouldRatherAlwaysProducesExactlyTwoChoices() {
+        String rules = AiController.activityRulesFor("wouldrather");
+
+        assertThat(rules)
+            .contains("exactly two distinct")
+            .contains("Do not write truth questions, dares");
+    }
+
+    @Test
+    void truthDareKeepsItsOwnSplitFormat() {
+        String rules = AiController.activityRulesFor("truthdare");
+
+        assertThat(rules)
+            .contains("first half")
+            .contains("second half")
+            .contains("Truth questions")
+            .contains("Dare instructions");
+    }
+}

@@ -74,25 +74,16 @@ public class AiController {
         String relationship = safe(request, "relationship", "two people who care about each other");
         String tone = safe(request, "tone", "warm, playful and clever");
         int count = boundedInt(request == null ? null : request.get("count"), 6, 2, 12);
-        boolean fortune = "fortune".equalsIgnoreCase(gameType);
-        String activityRules = fortune
-            ? "Every prompt must be a short, positive fortune or gentle prediction. Never write a question, task, quiz, instruction, or question mark. Keep options empty."
-            : """
-              Use 2-4 concise options when the activity benefits from choices.
-              For truth-or-dare, make the first half truths and the second half dares.
-              For treasure hunts, option 1 is a hint and option 2 is a short accepted answer.
-              For emoji decoder, the prompt is an emoji clue, option 1 its answer, and option 2 its hint.
-              For excuse generator, each prompt is a funny situation both people need an excuse for, and option 1 is the sender's playful excuse.
-              For movie or song bond analysis, ask surprising, funny and playful questions rather than generic compatibility questions—for example silly plot twists, snacks, bloopers, superpowers and shared chaos.
-              """;
+        String activityRules = activityRulesFor(gameType);
         String prompt = """
             Create exactly %d editable ideas for the digital-gift activity "%s".
             Relationship context: %s. Tone: %s.
             Keep them personal-feeling but never assume private facts. "Sexy" means consenting adults only and must remain playful, flirty and non-explicit. Avoid graphic sexual content, invasive, cruel, unsafe, coercive, or embarrassing content.
             Return JSON only in this exact shape:
             {"items":[{"prompt":"...","options":["...","...","...","..."]}]}
-            Every item needs a concise prompt. Use 2-4 concise options when the activity benefits from choices.
+            Follow this activity-specific contract exactly; it overrides generic game patterns:
             %s
+            Do not borrow wording, formats, or mechanics from Truth or Dare unless this activity is explicitly Truth or Dare.
             """.formatted(count, gameType, relationship, tone, activityRules);
         return generate(prompt, "You design warm, safe and playful interactive gift activities.", "items");
     }
@@ -124,6 +115,76 @@ public class AiController {
     }
 
     private boolean configured(){return apiKey!=null&&!apiKey.isBlank();}
+    static String activityRulesFor(String gameType){
+        String key=(gameType==null?"":gameType.toLowerCase()).replaceAll("[^a-z]","");
+        return switch(key){
+            case "neverhave", "neverhaveiever" -> """
+                Every prompt must be a grammatically complete Never Have I Ever statement that naturally follows the words "Never have I ever…".
+                Write a light confession such as "re-read our old chats at midnight". Do not write a question, dare, command, scenario, or question mark.
+                Never use the words "truth" or "dare". The options array must be empty because the interface supplies "I haven't" and "I have".
+                """;
+            case "wouldrather" -> """
+                Create a playful either/or dilemma. Put a short card theme in prompt and exactly two distinct, equally appealing choices in options.
+                Do not write truth questions, dares, confessions, yes/no questions, or more than two options.
+                """;
+            case "thisorthat" -> """
+                Create a fast preference question in prompt and exactly two concise choices in options.
+                The choices must be comparable alternatives, not truth answers or dares.
+                """;
+            case "truthdare", "truthordare" -> """
+                The first half of items must be answerable Truth questions. The second half must be safe, achievable Dare instructions.
+                Keep every options array empty. Do not mix a truth and a dare inside one item.
+                """;
+            case "quiz", "playfulquiz" -> """
+                Each prompt must be a playful multiple-choice question with two to four concise options.
+                Put the intended answer first. Do not write dares or Never Have I Ever statements.
+                """;
+            case "emoji", "emojidecoder" -> """
+                Put an emoji-only or emoji-led memory clue in prompt. Put its short answer in options[0] and a helpful hint in options[1].
+                Return exactly two options and never write a truth or dare.
+                """;
+            case "wheel", "spinthewheel", "slots", "slotmachine" -> """
+                Every prompt must be a short prize, treat, promise, or activity that can be won. Keep every options array empty.
+                Do not write questions, dares, or instructions.
+                """;
+            case "scratch", "scratchreveal" -> """
+                Create one reveal: prompt is the short surprise title and options[0] is its warm supporting detail.
+                Do not return a question or dare.
+                """;
+            case "treasure", "treasurehunt" -> """
+                Each prompt is one solvable clue. Put a helpful hint in options[0] and one short accepted answer in options[1].
+                Return exactly two options. Do not write truth-or-dare prompts.
+                """;
+            case "alwaysyou", "theanswerwasalwaysyou" -> """
+                Each prompt is a funny affectionate question where every answer secretly points to the recipient.
+                Return two to four playful answer variants in options. Never include dares.
+                """;
+            case "excuse", "excusegenerator" -> """
+                Each prompt is a funny situation for which both people need an excuse. Put one playful sender excuse in options[0].
+                Return exactly one option. Do not write a question, truth prompt, or dare.
+                """;
+            case "roast", "roastmegently" -> """
+                Every prompt is a short, affectionate, harmless complaint or loving roast. Keep every options array empty.
+                Never make it cruel, humiliating, sensitive, or a truth-or-dare prompt.
+                """;
+            case "fortune", "fortunecookie" -> """
+                Every prompt is a short, positive fortune or gentle prediction. Never write a question, task, quiz, instruction, or question mark.
+                Keep every options array empty.
+                """;
+            case "mysterybox" -> """
+                Every prompt is a concise surprise, reward, promise, or reveal that can come out of a mystery box. Keep every options array empty.
+                Do not write questions or dares.
+                """;
+            case "movie", "song" -> """
+                Every prompt is a surprising, funny bonding question about shared chaos, snacks, plot twists, bloopers, superpowers, or inside-joke energy.
+                Keep every options array empty. Avoid generic compatibility questions and never write dares.
+                """;
+            default -> """
+                Every prompt must belong only to the named activity. Use zero to four concise options only when that activity genuinely needs choices.
+                Never silently turn the activity into Truth or Dare.
+                """;
+        };
+    }
     private String safe(Map<String,Object> request,String key,String fallback){
         if(request==null)return fallback;
         String value=String.valueOf(request.getOrDefault(key,fallback));

@@ -25,7 +25,11 @@ export function PlayfulAiAssistant({id,relationship,config,onConfig}:Props){
       onConfig("thisOrThatRounds",JSON.stringify(items.slice(0,8).map(item=>({prompt:item.prompt||"Choose one",left:item.options?.[0]||"This",right:item.options?.[1]||"That"}))));
     }else if(id==="wouldrather"){
       onConfig("pairs",JSON.stringify(items.slice(0,8).map(item=>({left:item.options?.[0]||item.prompt||"This",right:item.options?.[1]||"That"}))));
-    }else if(id==="neverhave")onConfig("statements",lines(items,config.statements||""));
+    }else if(id==="neverhave"){
+      const statements=items.map(item=>item.prompt?.trim()).filter((value):value is string=>Boolean(value)).slice(0,10);
+      onConfig("statements",statements.join("\n"));
+      onConfig("neverHaveCards",JSON.stringify(statements.map((statement,index)=>({id:`never-ai-${Date.now()}-${index}`,statement,senderPick:"",haventReaction:"",haveReaction:""}))));
+    }
     else if(id==="truthdare"){
       const middle=Math.ceil(items.length/2);
       onConfig("truths",lines(items.slice(0,middle),config.truths||""));

@@ -11,7 +11,8 @@ type Props = {
   onConfig: (key:string,value:string)=>void;
 };
 
-type Pair = { left:string; right:string };
+type Pair = { left:string; right:string; senderPick?:string; leftReaction?:string; rightReaction?:string };
+type NeverHaveCard = { id:string; statement:string; senderPick?:string; haventReaction?:string; haveReaction?:string };
 type PairPhoto = { id:string; image:string; caption:string };
 type AlwaysQuestion = { id:string; question:string; answers:string[] };
 type ExcuseRound = { id:string; situation:string; senderExcuse:string };
@@ -21,6 +22,10 @@ const api=process.env.NEXT_PUBLIC_API_URL||"https://backend-production-22bd.up.r
 
 function parse<T>(value:string|undefined,fallback:T):T {
   try { return value ? JSON.parse(value) as T : fallback } catch { return fallback }
+}
+function lineValues(value:string|undefined,fallback:string[]){
+  const values=(value||"").split("\n").map(item=>item.trim()).filter(Boolean);
+  return values.length?values:fallback;
 }
 
 async function imageToDataUrl(file:File){
@@ -46,12 +51,8 @@ function Lines({label,configKey,value,max,onConfig}:{label:string;configKey:stri
 }
 
 export function TinyBlockCustomization({id,instanceId,config,giftId,onConfig}:Props){
-  if(id==="wouldrather"){
-    const pairs=parse<Pair[]>(config.pairs,[{left:"Sunrise date",right:"Midnight drive"}]).slice(0,8);
-    const update=(next:Pair[])=>onConfig("pairs",JSON.stringify(next.slice(0,8)));
-    return <Section title="Would You Rather" hint="Each card has two equally tempting choices"><div className="tiny-editor-list">{pairs.map((pair,index)=><article key={index}><header><strong>Card {index+1}</strong><button disabled={pairs.length===1} onClick={()=>update(pairs.filter((_,itemIndex)=>itemIndex!==index))}>Remove</button></header><div><label className="field">This<input maxLength={40} value={pair.left} onChange={event=>update(pairs.map((item,itemIndex)=>itemIndex===index?{...item,left:event.target.value}:item))}/></label><label className="field">Or that<input maxLength={40} value={pair.right} onChange={event=>update(pairs.map((item,itemIndex)=>itemIndex===index?{...item,right:event.target.value}:item))}/></label></div></article>)}</div><button className="add-collection-item" disabled={pairs.length>=8} onClick={()=>update([...pairs,{left:"",right:""}])}>＋ Add either/or card</button></Section>;
-  }
-  if(id==="neverhave")return <Section title="Never Have I Ever" hint="Light confessions—nothing embarrassing unless you want it"><Lines label="Statements · one per line" configKey="statements" value={config.statements||""} max={10} onConfig={onConfig}/><label className="tiny-check"><input type="checkbox" checked={config.shareSummary!=="false"} onChange={event=>onConfig("shareSummary",String(event.target.checked))}/> Add their final picks to the result summary</label></Section>;
+  if(id==="wouldrather")return <WouldRatherEditor config={config} onConfig={onConfig}/>;
+  if(id==="neverhave")return <NeverHaveEditor config={config} onConfig={onConfig}/>;
   if(id==="truthdare")return <Section title="Truth or Dare Roulette" hint="Truth answers are saved for the sender"><label className="field">Number of spins<select value={config.truthDareSpins||"1"} onChange={event=>onConfig("truthDareSpins",event.target.value)}>{Array.from({length:8},(_,index)=><option key={index+1} value={index+1}>{index+1} {index?"spins":"spin"}</option>)}</select><small>The recipient completes every result before continuing.</small></label><Lines label="Truth prompts" configKey="truths" value={config.truths||""} max={8} onConfig={onConfig}/><Lines label="Dare prompts" configKey="dares" value={config.dares||""} max={8} onConfig={onConfig}/><ResponseInbox giftId={giftId} blockId={instanceId||"truthdare"} title="Saved truth answers"/></Section>;
   if(id==="tapheart")return <TapHeartEditor config={config} onConfig={onConfig}/>;
   if(id==="matchpair")return <MatchPairEditor config={config} onConfig={onConfig}/>;
@@ -69,6 +70,28 @@ export function TinyBlockCustomization({id,instanceId,config,giftId,onConfig}:Pr
   if(id==="countdowninvite")return <Section title="Countdown Invite" hint="Plan an event and collect their playful RSVP"><label className="field">Event title<input maxLength={55} value={config.eventTitle||""} onChange={event=>onConfig("eventTitle",event.target.value)}/></label><label className="field">Date and time<input type="datetime-local" value={config.eventDate||""} onChange={event=>onConfig("eventDate",event.target.value)}/></label><label className="field">What they should know<textarea rows={3} maxLength={100} value={config.inviteNote||""} onChange={event=>onConfig("inviteNote",event.target.value)}/></label></Section>;
   if(id==="groupboard")return <GroupBoardEditor config={config} giftId={giftId} onConfig={onConfig}/>;
   return null;
+}
+
+function ModePicker({value,onChange}:{value:string;onChange:(value:string)=>void}){
+  return <div className="play-mode-picker"><button className={value==="playAlong"?"active":""} onClick={()=>onChange("playAlong")}><span>⇄</span><strong>Play along</strong><small>Pick your own answers too</small></button><button className={value==="react"?"active":""} onClick={()=>onChange("react")}><span>♡</span><strong>React to their choice</strong><small>Prepare a reaction for each answer</small></button></div>;
+}
+
+function WouldRatherEditor({config,onConfig}:{config:Record<string,string>;onConfig:Props["onConfig"]}){
+  const pairs=parse<Pair[]>(config.pairs,[{left:"Sunrise date",right:"Midnight drive"}]).slice(0,8);
+  const mode=config.wouldRatherMode||"playAlong";
+  const update=(next:Pair[])=>onConfig("pairs",JSON.stringify(next.slice(0,8)));
+  const patch=(index:number,values:Partial<Pair>)=>update(pairs.map((item,itemIndex)=>itemIndex===index?{...item,...values}:item));
+  return <Section title="Would You Rather" hint="Play along with their picks or prepare a reaction for each choice"><ModePicker value={mode} onChange={value=>onConfig("wouldRatherMode",value)}/><div className="tiny-editor-list">{pairs.map((pair,index)=><article key={index}><header><strong>Card {index+1}</strong><button disabled={pairs.length===1} onClick={()=>update(pairs.filter((_,itemIndex)=>itemIndex!==index))}>Remove</button></header><div><label className="field">This<input maxLength={40} value={pair.left} onChange={event=>patch(index,{left:event.target.value})}/></label><label className="field">Or that<input maxLength={40} value={pair.right} onChange={event=>patch(index,{right:event.target.value})}/></label></div>{mode==="playAlong"?<fieldset className="sender-pick"><legend>What would you pick? · tap again to clear</legend><button className={pair.senderPick==="left"?"active":""} onClick={()=>patch(index,{senderPick:pair.senderPick==="left"?"":"left"})}>{pair.left||"Left"}</button><button className={pair.senderPick==="right"?"active":""} onClick={()=>patch(index,{senderPick:pair.senderPick==="right"?"":"right"})}>{pair.right||"Right"}</button></fieldset>:<div className="reaction-editor"><label className="field">If they choose “{pair.left||"This"}”<input maxLength={90} value={pair.leftReaction||""} onChange={event=>patch(index,{leftReaction:event.target.value})} placeholder="Your reaction… e.g. I knew you'd pick this 😂"/></label><label className="field">If they choose “{pair.right||"That"}”<input maxLength={90} value={pair.rightReaction||""} onChange={event=>patch(index,{rightReaction:event.target.value})} placeholder="Your reaction… e.g. Okay, this surprised me 👀"/></label></div>}</article>)}</div><button className="add-collection-item" disabled={pairs.length>=8} onClick={()=>update([...pairs,{left:"",right:"",senderPick:"",leftReaction:"",rightReaction:""}])}>＋ Add either/or card</button></Section>;
+}
+
+function NeverHaveEditor({config,onConfig}:{config:Record<string,string>;onConfig:Props["onConfig"]}){
+  const legacy=lineValues(config.statements,["Danced in the kitchen","Re-read our old chats"]);
+  const fallback=legacy.map((statement,index)=>({id:`never-${index}`,statement}));
+  const cards=parse<NeverHaveCard[]>(config.neverHaveCards,fallback).slice(0,10);
+  const mode=config.neverHaveMode||"playAlong";
+  const update=(next:NeverHaveCard[])=>{const limited=next.slice(0,10);onConfig("neverHaveCards",JSON.stringify(limited));onConfig("statements",limited.map(item=>item.statement).join("\n"))};
+  const patch=(index:number,values:Partial<NeverHaveCard>)=>update(cards.map((item,itemIndex)=>itemIndex===index?{...item,...values}:item));
+  return <Section title="Never Have I Ever" hint="Use proper Never Have I Ever statements—never Truth or Dare prompts"><ModePicker value={mode} onChange={value=>onConfig("neverHaveMode",value)}/><div className="tiny-editor-list never-have-editor">{cards.map((card,index)=><article key={card.id}><header><strong>Statement {index+1}</strong><button disabled={cards.length===1} onClick={()=>update(cards.filter((_,itemIndex)=>itemIndex!==index))}>Remove</button></header><label className="field">Never have I ever…<input maxLength={90} value={card.statement} onChange={event=>patch(index,{statement:event.target.value})} placeholder="Danced in the kitchen at midnight"/></label>{mode==="playAlong"?<fieldset className="sender-pick"><legend>What would you pick? · tap again to clear</legend><button className={card.senderPick==="havent"?"active":""} onClick={()=>patch(index,{senderPick:card.senderPick==="havent"?"":"havent"})}>I haven’t</button><button className={card.senderPick==="have"?"active":""} onClick={()=>patch(index,{senderPick:card.senderPick==="have"?"":"have"})}>I have</button></fieldset>:<div className="reaction-editor"><label className="field">If they choose “I haven’t”<input maxLength={90} value={card.haventReaction||""} onChange={event=>patch(index,{haventReaction:event.target.value})} placeholder="Your reaction… e.g. We need to fix that!"/></label><label className="field">If they choose “I have”<input maxLength={90} value={card.haveReaction||""} onChange={event=>patch(index,{haveReaction:event.target.value})} placeholder="Your reaction… e.g. I absolutely remember this 😂"/></label></div>}</article>)}</div><button className="add-collection-item" disabled={cards.length>=10} onClick={()=>update([...cards,{id:`never-${Date.now()}`,statement:"",senderPick:"",haventReaction:"",haveReaction:""}])}>＋ Add another statement</button><label className="tiny-check"><input type="checkbox" checked={config.shareSummary!=="false"} onChange={event=>onConfig("shareSummary",String(event.target.checked))}/> Add their final picks to the result summary</label></Section>;
 }
 
 function TapHeartEditor({config,onConfig}:{config:Record<string,string>;onConfig:Props["onConfig"]}){

@@ -13,7 +13,8 @@ type Props = {
   onComplete?:()=>void;
   onReward?:(reward:string)=>void;
 };
-type Pair={left:string;right:string};
+type Pair={left:string;right:string;senderPick?:string;leftReaction?:string;rightReaction?:string};
+type NeverHaveCard={id:string;statement:string;senderPick?:string;haventReaction?:string;haveReaction?:string};
 type PairPhoto={id:string;image:string;caption:string};
 type AlwaysQuestion={id:string;question:string;answers:string[]};
 type ExcuseRound={id:string;situation:string;senderExcuse:string};
@@ -47,21 +48,43 @@ export function TinyBlockPreview(props:Props){
   return null;
 }
 
-function WouldRather({config,onComplete,onReward}:Props){
+function WouldRather({config,senderName,onComplete,onReward}:Props){
   const pairs=parse<Pair[]>(config.pairs,[{left:"Sunrise date",right:"Midnight drive"}]);
-  const [index,setIndex]=useState(0);const [picks,setPicks]=useState<string[]>([]);const pointer=useRef<number|null>(null);
+  const mode=config.wouldRatherMode||"playAlong";
+  const [index,setIndex]=useState(0);const [picks,setPicks]=useState<string[]>([]);const [selected,setSelected]=useState<{value:string;side:"left"|"right"}|null>(null);const pointer=useRef<number|null>(null);
+  useEffect(()=>{setIndex(0);setPicks([]);setSelected(null)},[mode,config.pairs]);
   if(index>=pairs.length)return <div className="tiny-finish"><span>⇄</span><strong>Your choices are in</strong>{picks.map((pick,itemIndex)=><small key={itemIndex}>{itemIndex+1}. {pick}</small>)}<b>The sender will see this pick list.</b></div>;
-  function choose(value:string){playSound("tile");const next=[...picks,value];setPicks(next);setIndex(current=>current+1);if(index===pairs.length-1){playSound("win");onReward?.(`Would Rather picks: ${next.join(" · ")}`);onComplete?.()}}
   const pair=pairs[index];
-  return <div className="swipe-deck"><div className="deck-progress">{index+1}/{pairs.length}</div><article onPointerDown={event=>pointer.current=event.clientX} onPointerUp={event=>{if(pointer.current===null)return;const distance=event.clientX-pointer.current;if(Math.abs(distance)>45)choose(distance<0?pair.left:pair.right);pointer.current=null}}><small>WOULD YOU RATHER</small><strong>{pair.left}</strong><span>OR</span><strong>{pair.right}</strong><p>Swipe left or right—or tap a choice.</p></article><div><button onClick={()=>choose(pair.left)}>← {pair.left}</button><button onClick={()=>choose(pair.right)}>{pair.right} →</button></div></div>;
+  const person=senderName||"The sender";
+  function choose(value:string,side:"left"|"right"){if(selected)return;playSound("tile");setSelected({value,side});window.setTimeout(()=>playSound("reveal"),120)}
+  function next(){
+    if(!selected)return;
+    const nextPicks=[...picks,selected.value];setPicks(nextPicks);setSelected(null);setIndex(current=>current+1);
+    if(index===pairs.length-1){playSound("win");onReward?.(`Would Rather picks: ${nextPicks.join(" · ")}`);onComplete?.()}
+  }
+  const reaction=selected?(selected.side==="left"?pair.leftReaction:pair.rightReaction):"";
+  const senderChoice=pair.senderPick==="left"?pair.left:pair.senderPick==="right"?pair.right:"";
+  return <div className="swipe-deck"><div className="deck-progress">{index+1}/{pairs.length}</div><article onPointerDown={event=>{if(!selected)pointer.current=event.clientX}} onPointerUp={event=>{if(pointer.current===null||selected)return;const distance=event.clientX-pointer.current;if(Math.abs(distance)>45)choose(distance<0?pair.left:pair.right,distance<0?"left":"right");pointer.current=null}}><small>WOULD YOU RATHER</small><strong>{pair.left}</strong><span>OR</span><strong>{pair.right}</strong><p>{selected?"Choice locked—see what they left for you.":"Swipe left or right—or tap a choice."}</p></article>{selected?<section className="choice-reaction-reveal"><small>{mode==="react"?`${person} reacted to your choice`:`${person} played along`}</small><strong>{mode==="react"?(reaction||"That choice earned a very knowing smile 👀"):senderChoice?(senderChoice===selected.value?`“I picked this too!” ♡`:`“I chose ${senderChoice}.”`):"They left this one entirely up to you ♡"}</strong><button onClick={next}>{index===pairs.length-1?"See my choices ✓":"Next card →"}</button></section>:<div><button onClick={()=>choose(pair.left,"left")}>← {pair.left}</button><button onClick={()=>choose(pair.right,"right")}>{pair.right} →</button></div>}</div>;
 }
 
-function NeverHave({config,onComplete,onReward}:Props){
+function NeverHave({config,senderName,onComplete,onReward}:Props){
   const statements=lines(config.statements,["Danced in the kitchen","Re-read our old chats"]);
-  const [index,setIndex]=useState(0);const [have,setHave]=useState(0);
-  if(index>=statements.length)return <div className="tiny-finish"><span>✋</span><strong>{have} “I have” {have===1?"moment":"moments"}</strong><p>Lightly confessed. Entirely shareable.</p></div>;
-  function answer(did:boolean){playSound("tile");const total=have+(did?1:0);setHave(total);setIndex(value=>value+1);if(index===statements.length-1){onReward?.(`Never Have I Ever: ${total}/${statements.length} “I have”`);onComplete?.();playSound("win")}}
-  return <div className="never-have-deck"><div className="deck-progress">{index+1}/{statements.length}</div><article><small>NEVER HAVE I EVER…</small><strong>{statements[index]}</strong></article><div><button onClick={()=>answer(false)}>I haven’t</button><button onClick={()=>answer(true)}>I have</button></div></div>;
+  const fallback=statements.map((statement,index)=>({id:`never-${index}`,statement}));
+  const cards=parse<NeverHaveCard[]>(config.neverHaveCards,fallback);
+  const mode=config.neverHaveMode||"playAlong";
+  const [index,setIndex]=useState(0);const [have,setHave]=useState(0);const [selected,setSelected]=useState<boolean|null>(null);
+  useEffect(()=>{setIndex(0);setHave(0);setSelected(null)},[mode,config.neverHaveCards,config.statements]);
+  if(index>=cards.length)return <div className="tiny-finish"><span>✋</span><strong>{have} “I have” {have===1?"moment":"moments"}</strong><p>Lightly confessed. Entirely shareable.</p></div>;
+  const card=cards[index];const person=senderName||"The sender";
+  function answer(did:boolean){if(selected!==null)return;playSound("tile");setSelected(did);window.setTimeout(()=>playSound("reveal"),120)}
+  function next(){
+    if(selected===null)return;
+    const total=have+(selected?1:0);setHave(total);setSelected(null);setIndex(value=>value+1);
+    if(index===cards.length-1){onReward?.(`Never Have I Ever: ${total}/${cards.length} “I have”`);onComplete?.();playSound("win")}
+  }
+  const reaction=selected===null?"":selected?card.haveReaction:card.haventReaction;
+  const senderChoice=card.senderPick==="have"?true:card.senderPick==="havent"?false:null;
+  return <div className="never-have-deck"><div className="deck-progress">{index+1}/{cards.length}</div><article><small>NEVER HAVE I EVER…</small><strong>{card.statement}</strong></article>{selected!==null?<section className="choice-reaction-reveal"><small>{mode==="react"?`${person} reacted to your choice`:`${person} played along`}</small><strong>{mode==="react"?(reaction||"That answer definitely deserves a story 👀"):senderChoice===null?"They left this confession entirely to you ♡":senderChoice===selected?"“Same answer as me!” ♡":`“I chose ${senderChoice?"I have":"I haven’t"}.”`}</strong><button onClick={next}>{index===cards.length-1?"See my confession score ✓":"Next statement →"}</button></section>:<div><button onClick={()=>answer(false)}>I haven’t</button><button onClick={()=>answer(true)}>I have</button></div>}</div>;
 }
 
 function TruthDare({config,giftId,recipientName,blockInstanceId,onComplete,onReward}:Props){
