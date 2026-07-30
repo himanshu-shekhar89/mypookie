@@ -66,7 +66,8 @@ export function BlockCustomization({ block, giftId, onMessage, onConfig }: { blo
     <div className="letter-customization-grid">
       <label className="field">Envelope style<select value={config.envelopeStyle||"Blush satin"} onChange={event=>onConfig("envelopeStyle",event.target.value)}><option>Blush satin</option><option>Ivory airmail</option><option>Midnight velvet</option><option>Kraft keepsake</option><option>Floral garden</option></select></label>
       <label className="field">Letter page<select value={config.pageType||"Classic cream"} onChange={event=>onConfig("pageType",event.target.value)}><option>Classic cream</option><option>Lined notebook</option><option>Vintage parchment</option><option>Floral border</option><option>Polaroid note</option></select></label>
-      <label className="field">Letter font<select value={config.letterFont||"Handwritten"} onChange={event=>onConfig("letterFont",event.target.value)}><option>Handwritten</option><option>Elegant serif</option><option>Typewriter</option><option>Clean modern</option></select></label>
+      <label className="field">Letter font<select value={config.letterFont||"Handwritten"} onChange={event=>onConfig("letterFont",event.target.value)}><option>Handwritten</option><option>Romantic script</option><option>Elegant serif</option><option>Vintage typewriter</option><option>Clean modern</option></select></label>
+      <label className="field color-field">Letter colour<span><input type="color" value={config.letterColor||"#3f3036"} onChange={event=>onConfig("letterColor",event.target.value)}/><b>{config.letterColor||"#3f3036"}</b></span></label>
       <label className="field">Seal / closure<select value={config.envelopeSeal||"Wax heart"} onChange={event=>onConfig("envelopeSeal",event.target.value)}><option>Wax heart</option><option>Monogram wax</option><option>Flower sticker</option><option>Star sticker</option><option>Glue strip</option><option>None</option></select></label>
       <label className="field">Stamp<select value={config.stampStyle||"Rose stamp"} onChange={event=>onConfig("stampStyle",event.target.value)}><option>Rose stamp</option><option>Air mail</option><option>Golden heart</option><option>Postmark</option><option>None</option></select></label>
       <label className="field">Sticker<select value={config.stickerStyle||"Daisies"} onChange={event=>onConfig("stickerStyle",event.target.value)}><option>Daisies</option><option>Heart cluster</option><option>Stars</option><option>Smiley</option><option>None</option></select></label>
@@ -79,13 +80,19 @@ export function BlockCustomization({ block, giftId, onMessage, onConfig }: { blo
 
   if (block.id === "voice") return <CustomizationSection title="Voice note" hint="Only the recording is delivered">
     <VoiceRecorder audioName={config.audioName} onConfig={onConfig} />
-    <label className="field">Player style<select value={config.playbackStyle} onChange={event=>onConfig("playbackStyle",event.target.value)}><option>Classic waveform</option><option>Floating heart</option><option>Minimal player</option></select></label>
+    <label className="field">Player style<select value={config.playbackStyle||"Classic waveform"} onChange={event=>onConfig("playbackStyle",event.target.value)}><option>Classic waveform</option><option>Floating heart</option><option>Minimal player</option></select><small>The live preview changes instantly.</small></label>
   </CustomizationSection>;
 
-  if (block.id === "video") return <CustomizationSection title="Video note" hint="Record or upload a personal face-to-face message">
-    <VideoRecorder videoName={config.videoName} videoUrl={config.videoUrl} onConfig={onConfig} />
-    <label className="field">Camera effect<select value={config.videoEffect} onChange={event=>onConfig("videoEffect",event.target.value)}><option>Retro cam</option><option>Warm film</option><option>Black & white</option><option>Clean</option></select></label>
+  if (block.id === "video") return <CustomizationSection title="Video note" hint="Choose a finished video from your gallery">
+    <VideoUploader videoName={config.videoName} videoUrl={config.videoUrl} onConfig={onConfig} />
+    <label className="field">Video frame<select value={config.videoFrame||config.videoEffect||"Retro cam"} onChange={event=>onConfig("videoFrame",event.target.value)}><option>Retro cam</option><option>Warm film</option><option>Polaroid video</option><option>Phone memory</option><option>Classic cinema</option><option>Minimal</option></select></label>
     <label className="field">Caption<input maxLength={70} value={config.videoCaption||""} onChange={event=>onConfig("videoCaption",event.target.value)} /></label>
+    <div className="video-style-grid">
+      <label className="field">Caption font<select value={config.videoCaptionFont||"Handwritten"} onChange={event=>onConfig("videoCaptionFont",event.target.value)}><option>Handwritten</option><option>Romantic script</option><option>Elegant serif</option><option>Clean modern</option></select></label>
+      <label className="field color-field">Caption colour<span><input type="color" value={config.videoCaptionColor||"#3f3036"} onChange={event=>onConfig("videoCaptionColor",event.target.value)}/><b>{config.videoCaptionColor||"#3f3036"}</b></span></label>
+    </div>
+    <label className="field">Screen celebration<select value={config.videoShower||"Petal shower"} onChange={event=>onConfig("videoShower",event.target.value)}><option>None</option><option>Flower shower</option><option>Petal shower</option><option>Heart shower</option><option>Golden sparkles</option></select><small>Begins when the recipient plays the video.</small></label>
+    {config.videoShower!=="None"&&<label className="field effect-density">Celebration density<input type="range" min="8" max="36" step="1" value={config.videoShowerDensity||"18"} onChange={event=>onConfig("videoShowerDensity",event.target.value)}/><small>{config.videoShowerDensity||"18"} floating pieces</small></label>}
   </CustomizationSection>;
 
   if (block.id === "flowers") return <EGiftEditor config={config} onConfig={onConfig} />;
@@ -311,7 +318,11 @@ function MemoryEditor({ config, onConfig }: { config: Record<string,string>; onC
     <div className="memory-cover-note"><img src={config.coverImage||"/mypookie-letter-photo.png"} alt="Memory book cover"/><div><strong>Your cover</strong><span>Shown first when the memory lane opens.</span></div></div>
     <UploadBox label="Customize cover photo" note="The complete photo will stay visible" accept="image/*" onFiles={cover}/>
     <label className="field">Cover caption<input maxLength={65} value={config.coverCaption||"Our little book of us"} onChange={event=>onConfig("coverCaption",event.target.value)}/></label>
-    <label className="field">Album style<select value={config.albumStyle||"Blush scrapbook"} onChange={event=>onConfig("albumStyle",event.target.value)}><option>Blush scrapbook</option><option>Retro travel album</option><option>Midnight love story</option><option>Playful sticker book</option><option>Pressed flower journal</option><option>Luxury leather album</option><option>Minimal linen book</option><option>Celestial night</option><option>Vintage botanical</option></select></label>
+    <label className="field">Album style<select value={config.albumStyle||"Blush scrapbook"} onChange={event=>{const next=event.target.value;const dark=["Midnight love story","Luxury leather album","Celestial night"];onConfig("albumStyle",next);if(dark.includes(next)&&(!config.albumTextColor||config.albumTextColor==="#49343e"))onConfig("albumTextColor","#f8eef3");else if(!dark.includes(next)&&config.albumTextColor==="#f8eef3")onConfig("albumTextColor","#49343e")}}><option>Blush scrapbook</option><option>Retro travel album</option><option>Midnight love story</option><option>Playful sticker book</option><option>Pressed flower journal</option><option>Luxury leather album</option><option>Minimal linen book</option><option>Celestial night</option><option>Vintage botanical</option></select></label>
+    <div className="memory-typography-grid">
+      <label className="field">Album font<select value={config.albumFont||"Handwritten"} onChange={event=>onConfig("albumFont",event.target.value)}><option>Handwritten</option><option>Romantic script</option><option>Elegant serif</option><option>Vintage typewriter</option><option>Clean modern</option></select></label>
+      <label className="field color-field">Text colour<span><input type="color" value={config.albumTextColor||"#49343e"} onChange={event=>onConfig("albumTextColor",event.target.value)}/><b>{config.albumTextColor||"#49343e"}</b></span></label>
+    </div>
     <div className="album-page-meter"><div><strong>{items.length} / {maxPages} album pages</strong><span>The cover is separate and free.</span></div><b>{remaining} left</b></div>
     <label className="album-upgrade"><input type="checkbox" checked={upgraded} onChange={event=>{onConfig("extraPages",String(event.target.checked));if(!event.target.checked&&items.length>7)onConfig("memoryItems",JSON.stringify(items.slice(0,7)))}}/><span>＋5</span><div><strong>Add five more album pages</strong><small>Increase the limit from 7 to 12 pages.</small></div><b>₹20</b></label>
     <div className={remaining===0?"upload-disabled":""}><UploadBox label="Add memory photos" note={remaining?`Each photo becomes a page · ${remaining} available`:"Page limit reached"} accept="image/*" multiple onFiles={add}/></div>
@@ -442,55 +453,13 @@ function VoiceRecorder({ audioName, onConfig }: { audioName?: string; onConfig: 
   </div>;
 }
 
-function VideoRecorder({videoName,videoUrl,onConfig}:{videoName?:string;videoUrl?:string;onConfig:(key:string,value:string)=>void}){
-  const [status,setStatus]=useState<"idle"|"recording"|"uploading"|"ready"|"error">("idle");
-  const [seconds,setSeconds]=useState(0);
+function VideoUploader({videoName,videoUrl,onConfig}:{videoName?:string;videoUrl?:string;onConfig:(key:string,value:string)=>void}){
+  const [status,setStatus]=useState<"idle"|"uploading"|"ready"|"error">("idle");
   const [localPreview,setLocalPreview]=useState("");
   const [errorMessage,setErrorMessage]=useState("");
-  const livePreview=useRef<HTMLVideoElement|null>(null);
-  const elapsed=useRef(0);
-  const recorder=useRef<MediaRecorder|null>(null);
-  const chunks=useRef<Blob[]>([]);
   const lastBlob=useRef<Blob|null>(null);
-  const timer=useRef<number|null>(null);
 
-  useEffect(()=>()=>{if(timer.current)window.clearInterval(timer.current);recorder.current?.stream.getTracks().forEach(track=>track.stop())},[]);
   useEffect(()=>()=>{if(localPreview)URL.revokeObjectURL(localPreview)},[localPreview]);
-
-  function stop(){
-    if(recorder.current?.state==="recording")recorder.current.stop();
-    if(timer.current)window.clearInterval(timer.current);
-    timer.current=null;
-  }
-
-  async function start(){
-    try{
-      setErrorMessage("");
-      const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user"},audio:true});
-      if(livePreview.current){livePreview.current.srcObject=stream;await livePreview.current.play().catch(()=>{})}
-      const mimeTypes=["video/mp4;codecs=h264,aac","video/webm;codecs=vp8,opus","video/webm"];
-      const mimeType=mimeTypes.find(type=>globalThis.MediaRecorder?.isTypeSupported(type));
-      const mediaRecorder=new MediaRecorder(stream,mimeType?{mimeType}:undefined);
-      chunks.current=[];
-      mediaRecorder.ondataavailable=event=>event.data.size&&chunks.current.push(event.data);
-      mediaRecorder.onstop=async()=>{
-        const blob=new Blob(chunks.current,{type:mediaRecorder.mimeType||"video/webm"});
-        lastBlob.current=blob;
-        const preview=URL.createObjectURL(blob);
-        setLocalPreview(current=>{if(current)URL.revokeObjectURL(current);return preview});
-        onConfig("videoName",`Recorded video note · ${Math.max(elapsed.current,1)}s`);
-        if(livePreview.current)livePreview.current.srcObject=null;
-        stream.getTracks().forEach(track=>track.stop());
-        await storeVideo(blob,`video-note-${Date.now()}.${blob.type.includes("mp4")?"mp4":"webm"}`);
-      };
-      recorder.current=mediaRecorder;
-      mediaRecorder.start(250);
-      elapsed.current=0;
-      setSeconds(0);
-      setStatus("recording");
-      timer.current=window.setInterval(()=>setSeconds(value=>{const next=value+1;elapsed.current=next;if(next>=30)window.setTimeout(stop,0);return next}),1000);
-    }catch{setErrorMessage("Camera or microphone permission was not available.");setStatus("error")}
-  }
 
   async function storeVideo(blob:Blob,name:string){
     setStatus("uploading");
@@ -505,7 +474,7 @@ function VideoRecorder({videoName,videoUrl,onConfig}:{videoName?:string;videoUrl
       setStatus("ready");
     }catch{
       onConfig("videoUrl",await blobToDataUrl(blob));
-      setErrorMessage("The video plays locally, but secure cloud upload needs you to be signed in. Sign in and tap “Save video securely”.");
+      setErrorMessage("The video is saved inside this draft for now. Secure cloud media storage will activate after Firebase Storage is enabled.");
       setStatus("error");
     }
   }
@@ -521,26 +490,20 @@ function VideoRecorder({videoName,videoUrl,onConfig}:{videoName?:string;videoUrl
   }
 
   function retake(){
-    stop();
-    recorder.current?.stream.getTracks().forEach(track=>track.stop());
-    if(livePreview.current)livePreview.current.srcObject=null;
     onConfig("videoUrl","");
     onConfig("videoName","");
     if(localPreview)URL.revokeObjectURL(localPreview);
     setLocalPreview("");
     lastBlob.current=null;
     setErrorMessage("");
-    setSeconds(0);
-    elapsed.current=0;
     setStatus("idle");
   }
 
-  return <div className="video-recorder">
-    {status==="recording"?<div className="camera-viewfinder"><video ref={livePreview} muted autoPlay playsInline/><span>● REC</span><b>{seconds}s / 30s</b></div>:(localPreview||videoUrl)&&<video className="video-preview-mini" src={localPreview||videoUrl} controls playsInline preload="metadata"/>}
-    {status==="recording"?<button className="record recording" onClick={stop}>■ Stop video <span>{seconds}s · maximum 30 seconds</span></button>:<button className="record" onClick={start} disabled={status==="uploading"}>{status==="uploading"?"Uploading securely…":"● Record video note"} <span>{videoName||"Camera + microphone · up to 30 seconds"}</span></button>}
-    {videoUrl&&status!=="recording"&&<button className="retake-video" onClick={retake}>↻ Retake video</button>}
+  return <div className="video-recorder gallery-only">
+    {(localPreview||videoUrl)&&<video className="video-preview-mini" src={localPreview||videoUrl} controls playsInline preload="metadata"/>}
+    <label className={`video-gallery-upload ${status==="uploading"?"uploading":""}`}><span>▣</span><strong>{status==="uploading"?"Uploading securely…":videoUrl?"Choose a different video":"Choose video from gallery"}</strong><small>{videoName||"MP4, MOV or WebM · maximum 30 MB"}</small><input type="file" accept="video/mp4,video/quicktime,video/webm" onChange={event=>upload(event.target.files)} disabled={status==="uploading"}/></label>
+    {videoUrl&&<button className="retake-video" onClick={retake}>Remove video</button>}
     {status==="error"&&lastBlob.current&&<button className="retake-video" onClick={()=>void storeVideo(lastBlob.current!,videoName||`video-note-${Date.now()}.webm`)}>Save video securely</button>}
-    <label className="audio-upload">or upload a video<input type="file" accept="video/*" onChange={event=>upload(event.target.files)}/></label>
     {errorMessage&&<p>{errorMessage}</p>}
   </div>;
 }

@@ -31,7 +31,7 @@ type WonItem = { id: number; source: string; reward: string };
 const activities: Block[] = [
   { id: "letter", icon: "✉", name: "Personal letter", description: "A message they tap to unfold", price: 29, color: "coral", category: "Messages & media", message: "You make ordinary days feel like celebrations." },
   { id: "voice", icon: "◖", name: "Voice message", description: "Record something only you can say", price: 39, color: "violet", category: "Messages & media", message: "A little message from my heart to yours." },
-  { id: "video", icon: "▶", name: "Video note", description: "Record or upload a retro-style video", price: 59, color: "rose", category: "Messages & media", message: "A little face-to-face moment, just for you." },
+  { id: "video", icon: "▶", name: "Video note", description: "Upload and style a beautiful gallery video", price: 59, color: "rose", category: "Messages & media", message: "A little face-to-face moment, just for you." },
   { id: "memory", icon: "⌁", name: "Memory lane", description: "Photos, dates and little stories", price: 79, color: "rose", category: "Memories", message: "Every chapter with you is my favourite." },
   { id: "puzzle", icon: "▦", name: "Photo puzzle", description: "Turn a memory into a 3×3 or 4×4", price: 59, color: "mint", category: "Memories", message: "Put this favourite memory back together." },
   { id: "quiz", icon: "?", name: "Playful quiz", description: "Normal or floating wrong answers", price: 49, color: "blue", category: "Playful games", message: "How well do you know us?" },
@@ -106,9 +106,9 @@ const funBondQuestions = [
 ];
 
 const blockDefaults: Record<string, Record<string, string>> = {
-  letter: { signoff: "— sent with love", animation: "Flower burst", envelopeStyle: "Blush satin", frontText: "For someone wonderful", backText: "Sealed with love", envelopeSeal: "Wax heart", stampStyle: "Rose stamp", stickerStyle: "Daisies", pageType: "Classic cream", letterFont: "Handwritten", effectDensity: "22" },
+  letter: { signoff: "— sent with love", animation: "Flower burst", envelopeStyle: "Blush satin", frontText: "For someone wonderful", backText: "Sealed with love", envelopeSeal: "Wax heart", stampStyle: "Rose stamp", stickerStyle: "Daisies", pageType: "Classic cream", letterFont: "Handwritten", letterColor: "#3f3036", effectDensity: "22" },
   voice: { audioName: "", playbackStyle: "Classic waveform" },
-  video: { videoName: "", videoUrl: "", videoEffect: "Retro cam", videoCaption: "I wanted to tell you this face to face." },
+  video: { videoName: "", videoUrl: "", videoFrame: "Retro cam", videoCaption: "I wanted to tell you this face to face.", videoCaptionFont: "Handwritten", videoCaptionColor: "#3f3036", videoShower: "Petal shower", videoShowerDensity: "18" },
   flowers: { effect: "Rose garden", timing: "Entire show", intensity: "Lush", effectNote: "This whole moment is blooming for you." },
   quiz: { quizQuestions: JSON.stringify([{ id: "q1", question: "Where did we first meet?", options: [{ text: "At our favourite café", image: "" }, { text: "At a party", image: "" }, { text: "Online", image: "" }, { text: "I forgot", image: "" }], correctIndex: 0, interaction: "floating" }]) },
   thisorthat: { thisOrThatRounds: JSON.stringify([{prompt:"Our perfect evening",left:"Movie night",right:"Long drive"},{prompt:"Pick a treat",left:"Ice cream",right:"Chocolate"},{prompt:"Choose our trip",left:"Mountains",right:"Beach"}]) },
@@ -121,7 +121,7 @@ const blockDefaults: Record<string, Record<string, string>> = {
   wheel: { prizes: "Breakfast in bed\nMovie night\nMystery date\nA long hug\nSweet treat", spins: "1", resultMode: "Random", plannedResults: "Breakfast in bed", revealAnimation: "Confetti burst" },
   slots: { prizes: "Movie night\nBreakfast date\nA long hug\nSweet treat", pulls: "3", resultMode: "Random", plannedResults: "", revealAnimation: "Sparkle shower" },
   puzzle: { imageUrl: "/mypookie-puzzle-picnic.png", imageName: "", difficulty: "3 × 3 · Sweet and simple", successMessage: "You put this memory back together." },
-  memory: { memoryItems: "[]", coverImage: "/mypookie-letter-photo.png", coverCaption: "Our little album of us", albumStyle: "Blush scrapbook", extraPages: "false" },
+  memory: { memoryItems: "[]", coverImage: "/mypookie-letter-photo.png", coverCaption: "Our little album of us", albumStyle: "Blush scrapbook", albumFont: "Handwritten", albumTextColor: "#49343e", extraPages: "false" },
   scratch: { revealText: "A candlelit dinner ♡", revealDetail: "Friday · 8:00 PM", coating: "Lilac shimmer" },
   treasure: { treasureClues: JSON.stringify([{ clue: "Start where we first said hello.", hint: "Think about our first conversation.", answer: "cafe", photo: "", caption: "" }, { clue: "Find the place in our favourite photo.", hint: "It was outdoors.", answer: "picnic", photo: "", caption: "" }]), finalSurprise: "A mystery date for us" },
   excuse: { excuses: "My coffee tastes better when you are here\nThe cat has requested your immediate presence\nI need expert help choosing dessert\nThere is an emergency hug shortage", excuseRounds: JSON.stringify([{id:"excuse-1",situation:"We both need an excuse to meet tonight.",senderExcuse:"There is an emergency hug shortage and only you can fix it."},{id:"excuse-2",situation:"We want to escape a boring plan together.",senderExcuse:"Our imaginary cat has scheduled a very important family meeting."}]) },
