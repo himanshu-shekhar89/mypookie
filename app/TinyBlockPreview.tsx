@@ -15,6 +15,7 @@ type Props = {
 };
 type Pair={left:string;right:string};
 type PairPhoto={id:string;image:string;caption:string};
+type AlwaysQuestion={id:string;question:string;answers:string[]};
 type BoardNote={from:string;message:string;photos?:string[]};
 type SavedResponse={id:string;contributorName:string;responseText:string;photoUrls:string};
 const api=process.env.NEXT_PUBLIC_API_URL||"https://backend-production-22bd.up.railway.app";
@@ -64,8 +65,16 @@ function NeverHave({config,onComplete,onReward}:Props){
 
 function TruthDare({config,giftId,recipientName,blockInstanceId,onComplete,onReward}:Props){
   const truths=lines(config.truths,["What was your first impression of me?"]);const dares=lines(config.dares,["Send me your cutest selfie"]);
-  const [rotation,setRotation]=useState(0);const [result,setResult]=useState("");const [resultType,setResultType]=useState<"TRUTH"|"DARE"|"">("");const [spinning,setSpinning]=useState(false);const [answer,setAnswer]=useState("");const [saveState,setSaveState]=useState<"idle"|"saving"|"saved"|"error">("idle");
-  function spin(){if(spinning)return;setSpinning(true);setResult("");setResultType("");setAnswer("");setSaveState("idle");playSound("wheel");const truth=randomIndex(2)===0;const prompts=truth?truths:dares;const prompt=prompts[randomIndex(prompts.length)];setRotation(value=>value+1440+(truth?0:180));window.setTimeout(()=>{setSpinning(false);setResult(prompt);setResultType(truth?"TRUTH":"DARE");playSound("reveal")},1800)}
+  const maxSpins=Math.min(8,Math.max(1,Number(config.truthDareSpins)||1));
+  const [rotation,setRotation]=useState(0);const [result,setResult]=useState("");const [resultType,setResultType]=useState<"TRUTH"|"DARE"|"">("");const [spinning,setSpinning]=useState(false);const [answer,setAnswer]=useState("");const [saveState,setSaveState]=useState<"idle"|"saving"|"saved"|"error">("idle");const [spinCount,setSpinCount]=useState(0);const [history,setHistory]=useState<string[]>([]);
+  function spin(){
+    if(spinning||resultType||spinCount>=maxSpins)return;
+    setSpinning(true);setResult("");setAnswer("");setSaveState("idle");playSound("wheel");
+    const truth=randomIndex(2)===0;const prompts=truth?truths:dares;const prompt=prompts[randomIndex(prompts.length)];
+    const target=truth?270:90;
+    setRotation(value=>{const current=((value%360)+360)%360;const offset=((target-current)%360+360)%360;return value+1440+offset});
+    window.setTimeout(()=>{setSpinning(false);setResult(prompt);setResultType(truth?"TRUTH":"DARE");playSound("reveal")},1800);
+  }
   async function finish(){
     if(resultType==="TRUTH"&&!answer.trim())return;
     setSaveState("saving");
@@ -74,10 +83,15 @@ function TruthDare({config,giftId,recipientName,blockInstanceId,onComplete,onRew
         const response=await fetch(`${api}/api/public/gifts/${giftId}/responses`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({blockId:blockInstanceId||"truthdare",responseType:"TRUTH",contributorName:recipientName||"Recipient",responseText:`${result} — ${answer.trim()}`,photoUrls:[]})});
         if(!response.ok)throw new Error();
       }
-      setSaveState("saved");onReward?.(resultType==="TRUTH"?`Truth answer: ${answer.trim()}`:`Dare accepted: ${result}`);onComplete?.();playSound("win");
+      const reward=resultType==="TRUTH"?`Truth answer: ${answer.trim()}`:`Dare accepted: ${result}`;
+      const nextCount=spinCount+1;
+      setSaveState("saved");setSpinCount(nextCount);setHistory(current=>[...current,`${resultType}: ${result}`]);onReward?.(reward);playSound("win");
+      if(nextCount>=maxSpins)onComplete?.();
+      else window.setTimeout(()=>{setResult("");setResultType("");setAnswer("");setSaveState("idle")},650);
     }catch{setSaveState("error")}
   }
-  return <div className="truth-dare-play"><div className="td-wheel" style={{transform:`rotate(${rotation}deg)`}}><span>TRUTH</span><span>DARE</span><i>♡</i></div><i className="td-pointer"/><button onClick={spin} disabled={spinning||Boolean(resultType)}>{spinning?"Choosing…":resultType?"Roulette complete":"Spin roulette"}</button><output>{resultType?<><b>{resultType}</b> · {result}</>:"Truth or dare? Let chance decide."}</output>{resultType==="TRUTH"&&<div className="truth-answer-box"><label>Your answer<textarea rows={3} maxLength={500} value={answer} onChange={event=>setAnswer(event.target.value)} placeholder="Type the truth…"/></label><button onClick={finish} disabled={!answer.trim()||saveState==="saving"||saveState==="saved"}>{saveState==="saving"?"Saving…":saveState==="saved"?"Saved for sender ✓":"Save answer for sender"}</button>{saveState==="error"&&<small>Couldn’t save yet. Please try again.</small>}</div>}{resultType==="DARE"&&<button className="dare-done" onClick={finish} disabled={saveState==="saved"}>{saveState==="saved"?"Dare accepted ✓":"I’ll do it →"}</button>}</div>;
+  const complete=spinCount>=maxSpins;
+  return <div className="truth-dare-play"><div className="td-spin-progress">Spin {Math.min(spinCount+1,maxSpins)} of {maxSpins}</div><div className="td-wheel" style={{transform:`rotate(${rotation}deg)`}}><span>TRUTH</span><span>DARE</span><i>♡</i></div><i className="td-pointer"/><button onClick={spin} disabled={spinning||Boolean(resultType)||complete}>{spinning?"Choosing…":complete?"All spins complete ✓":resultType?"Complete this result":"Spin roulette"}</button><output>{resultType?<><b>{resultType}</b> · {result}</>:complete?"Every roulette moment is complete.":"Truth or dare? Let chance decide."}</output>{resultType==="TRUTH"&&<div className="truth-answer-box"><label>Your answer<textarea rows={3} maxLength={500} value={answer} onChange={event=>setAnswer(event.target.value)} placeholder="Type the truth…"/></label><button onClick={finish} disabled={!answer.trim()||saveState==="saving"||saveState==="saved"}>{saveState==="saving"?"Saving…":saveState==="saved"?(spinCount>=maxSpins?"Saved for sender ✓":"Saved · next spin…"):"Save answer for sender"}</button>{saveState==="error"&&<small>Couldn’t save yet. Please try again.</small>}</div>}{resultType==="DARE"&&<button className="dare-done" onClick={finish} disabled={saveState==="saved"}>{saveState==="saved"?(spinCount>=maxSpins?"Dare accepted ✓":"Accepted · next spin…"):"I’ll do it →"}</button>}{history.length>0&&<div className="td-history">{history.map((item,index)=><small key={index}>✓ {item}</small>)}</div>}</div>;
 }
 
 function TapHeart({config,onComplete,onReward}:Props){
@@ -92,10 +106,15 @@ function TapHeart({config,onComplete,onReward}:Props){
 
 function MatchPair({config,onComplete,onReward}:Props){
   const uploaded=parse<PairPhoto[]>(config.pairPhotos,[]);
-  const photos=uploaded.length>=2?uploaded:[{id:"a",image:"/mypookie-letter-photo.png",caption:"Fair day"},{id:"b",image:"/mypookie-puzzle-picnic.png",caption:"Picnic"},{id:"c",image:"/mypookie-memory-polaroids.png",caption:"Us"}];
-  const [cards]=useState(()=>shuffle(photos.flatMap(photo=>[{...photo,cardId:`${photo.id}-a`},{...photo,cardId:`${photo.id}-b`}])));const [open,setOpen]=useState<number[]>([]);const [matched,setMatched]=useState<string[]>([]);
+  const desiredPairs=Math.max(2,Math.min(12,Math.floor((Number.parseInt(config.matchGrid||"12",10)||12)/2)));
+  const samples=[{id:"a",image:"/mypookie-letter-photo.png",caption:"Fair day"},{id:"b",image:"/mypookie-puzzle-picnic.png",caption:"Picnic"},{id:"c",image:"/mypookie-memory-polaroids.png",caption:"Us"},{id:"d",image:"/mypookie-letter-photo.png",caption:"Golden hour"},{id:"e",image:"/mypookie-puzzle-picnic.png",caption:"Little adventures"},{id:"f",image:"/mypookie-memory-polaroids.png",caption:"Favourite days"},{id:"g",image:"/mypookie-letter-photo.png",caption:"Sweet chaos"},{id:"h",image:"/mypookie-puzzle-picnic.png",caption:"Together"},{id:"i",image:"/mypookie-memory-polaroids.png",caption:"Our chapter"},{id:"j",image:"/mypookie-letter-photo.png",caption:"Tiny joys"},{id:"k",image:"/mypookie-puzzle-picnic.png",caption:"Best company"},{id:"l",image:"/mypookie-memory-polaroids.png",caption:"Always us"}];
+  const photos=(uploaded.length>=desiredPairs?uploaded:samples).slice(0,desiredPairs);
+  const makeDeck=()=>shuffle(photos.flatMap(photo=>[{...photo,cardId:`${photo.id}-a`},{...photo,cardId:`${photo.id}-b`}]));
+  const [cards,setCards]=useState(makeDeck);const [open,setOpen]=useState<number[]>([]);const [matched,setMatched]=useState<string[]>([]);const [moves,setMoves]=useState(0);
   function flip(index:number){if(open.length>=2||open.includes(index)||matched.includes(cards[index].id))return;playSound("page");const next=[...open,index];setOpen(next);if(next.length===2){if(cards[next[0]].id===cards[next[1]].id){const nextMatched=[...matched,cards[index].id];window.setTimeout(()=>{setMatched(nextMatched);setOpen([]);playSound("correct");if(nextMatched.length===photos.length){playSound("win");onReward?.("Matched every photo pair");onComplete?.()}},350)}else window.setTimeout(()=>{setOpen([]);playSound("incorrect")},650)}}
-  return <div className="match-pair-game"><header><strong>Match the memories</strong><span>{matched.length}/{photos.length} pairs</span></header><div style={{gridTemplateColumns:`repeat(${Math.min(photos.length,3)},1fr)`}}>{cards.map((card,index)=><button key={card.cardId} className={`${open.includes(index)||matched.includes(card.id)?"open":""} ${matched.includes(card.id)?"matched":""}`} onClick={()=>flip(index)}><span>♡</span><figure><img src={card.image} alt={card.caption}/><figcaption>{card.caption}</figcaption></figure></button>)}</div></div>;
+  function choose(index:number){if(open.length===1)setMoves(value=>value+1);flip(index)}
+  const columns=cards.length<=4?2:cards.length<=12?4:6;
+  return <div className="match-pair-game"><header><div><strong>Match the memories</strong><span>{matched.length}/{photos.length} pairs · {moves} moves</span></div><button disabled={moves>0||open.length>0||matched.length>0} onClick={()=>setCards(makeDeck())}>↻ Shuffle</button></header><div className={`match-grid cards-${cards.length}`} style={{gridTemplateColumns:`repeat(${columns},1fr)`}}>{cards.map((card,index)=><button key={card.cardId} className={`${open.includes(index)||matched.includes(card.id)?"open":""} ${matched.includes(card.id)?"matched":""}`} onClick={()=>choose(index)}><span>♡</span><figure><img src={card.image} alt={card.caption}/><figcaption>{card.caption}</figcaption></figure></button>)}</div></div>;
 }
 
 function useClock(dateValue:string|undefined,mode:"since"|"until"){
@@ -134,7 +153,7 @@ function GrowthRing({config,giftId,recipientName,blockInstanceId,onComplete}:Pro
 type BondAnalysis={title:string;subtitle:string;senderRole:string;recipientRole:string;tagline:string;genre:string};
 
 function BondReveal({id,config,giftId,recipientName,senderName,blockInstanceId,onComplete,onReward}:Props){
-  const fallback=["What small thing instantly reminds you of us?","Which moment best captures our bond?","What is our shared superpower?","What kind of adventure feels most like us?","What do we understand without words?","Choose three words for our story."];
+  const fallback=["Who would accidentally become the villain in your movie?","What snack would get top billing in your story?","Which of you causes the surprise plot twists?","What ridiculous scene sums up your bond?","If your bond had a superpower, what would it be?","What would the end-credit blooper show?"];
   const questions=parse<string[]>(config.bondQuestions,fallback).slice(0,6);
   const normalized=Array.from({length:6},(_,index)=>questions[index]||fallback[index]);
   const senderAnswers=parse<string[]>(config.senderBondAnswers,[]);
@@ -156,9 +175,16 @@ function BondReveal({id,config,giftId,recipientName,senderName,blockInstanceId,o
 }
 
 function AlwaysYou({config,onComplete,onReward}:Props){
-  const answers=lines(config.answers,["You","Still you","Obviously you"]);const [selected,setSelected]=useState<string|null>(null);
-  function choose(answer:string){if(!selected){setSelected(answer);playSound("win");onReward?.("Every answer was you");onComplete?.()}}
-  return <div className="always-you-quiz"><small>ONE VERY IMPORTANT QUESTION</small><strong>{config.question||"Who makes every day better?"}</strong><div>{answers.map(answer=><button key={answer} onClick={()=>choose(answer)} className={selected===answer?"selected":""}>{answer}{selected&&<span> ✓ correct</span>}</button>)}</div>{selected&&<p>Plot twist: every answer was always you. ♡</p>}</div>;
+  const fallback:AlwaysQuestion[]=[{id:"always-1",question:config.question||"Who makes every day better?",answers:lines(config.answers,["You","Still you","Obviously you"])}];
+  const questions=parse<AlwaysQuestion[]>(config.alwaysYouQuestions,fallback).slice(0,7);
+  const [index,setIndex]=useState(0);const [selected,setSelected]=useState<string|null>(null);
+  const current=questions[index]||fallback[0];
+  function choose(answer:string){
+    if(selected)return;
+    setSelected(answer);playSound("correct");
+    window.setTimeout(()=>{if(index>=questions.length-1){playSound("win");onReward?.(`${questions.length} answers—and every one was you`);onComplete?.()}else{setIndex(value=>value+1);setSelected(null)}},650);
+  }
+  return <div className="always-you-quiz"><small>OBVIOUS ANSWER {index+1} OF {questions.length}</small><strong>{current.question}</strong><div>{current.answers.slice(0,4).map(answer=><button key={answer} onClick={()=>choose(answer)} className={selected===answer?"selected":""}>{answer}{selected&&<span> ✓ correct</span>}</button>)}</div>{selected&&<p>Correct. Somehow, the answer is still you. ♡</p>}</div>;
 }
 
 function ExcuseGenerator({config,onComplete,onReward}:Props){

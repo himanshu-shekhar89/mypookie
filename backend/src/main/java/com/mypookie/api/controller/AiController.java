@@ -73,18 +73,26 @@ public class AiController {
         String gameType = safe(request, "gameType", "playful quiz");
         String relationship = safe(request, "relationship", "two people who care about each other");
         String tone = safe(request, "tone", "warm, playful and clever");
+        int count = boundedInt(request == null ? null : request.get("count"), 6, 2, 12);
+        boolean fortune = "fortune".equalsIgnoreCase(gameType);
+        String activityRules = fortune
+            ? "Every prompt must be a short, positive fortune or gentle prediction. Never write a question, task, quiz, instruction, or question mark. Keep options empty."
+            : """
+              Use 2-4 concise options when the activity benefits from choices.
+              For truth-or-dare, make the first half truths and the second half dares.
+              For treasure hunts, option 1 is a hint and option 2 is a short accepted answer.
+              For emoji decoder, the prompt is an emoji clue, option 1 its answer, and option 2 its hint.
+              For movie or song bond analysis, ask surprising, funny and playful questions rather than generic compatibility questions—for example silly plot twists, snacks, bloopers, superpowers and shared chaos.
+              """;
         String prompt = """
-            Create exactly 6 editable ideas for the digital-gift activity "%s".
+            Create exactly %d editable ideas for the digital-gift activity "%s".
             Relationship context: %s. Tone: %s.
-            Keep them personal-feeling but never assume private facts. Avoid sexual, invasive, cruel, unsafe, or embarrassing content.
+            Keep them personal-feeling but never assume private facts. "Sexy" means consenting adults only and must remain playful, flirty and non-explicit. Avoid graphic sexual content, invasive, cruel, unsafe, coercive, or embarrassing content.
             Return JSON only in this exact shape:
             {"items":[{"prompt":"...","options":["...","...","...","..."]}]}
             Every item needs a concise prompt. Use 2-4 concise options when the activity benefits from choices.
-            For truth-or-dare, make the first 3 truths and last 3 dares.
-            For treasure hunts, option 1 is a hint and option 2 is a short accepted answer.
-            For emoji decoder, the prompt is an emoji clue, option 1 its answer, and option 2 its hint.
-            For movie or song bond analysis, write six short open-ended questions that reveal the character of their bond.
-            """.formatted(gameType, relationship, tone);
+            %s
+            """.formatted(count, gameType, relationship, tone, activityRules);
         return generate(prompt, "You design warm, safe and playful interactive gift activities.", "items");
     }
 
@@ -119,6 +127,10 @@ public class AiController {
         if(request==null)return fallback;
         String value=String.valueOf(request.getOrDefault(key,fallback));
         return value.length()>500?value.substring(0,500):value;
+    }
+    private int boundedInt(Object value,int fallback,int min,int max){
+        try{return Math.max(min,Math.min(max,Integer.parseInt(String.valueOf(value))));}
+        catch(Exception ignored){return fallback;}
     }
     private ResponseEntity<?> generate(String prompt,String system,String rootKey){
         Map<String,Object> body=Map.of(

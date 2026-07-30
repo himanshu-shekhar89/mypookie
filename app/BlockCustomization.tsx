@@ -51,9 +51,20 @@ export function BlockCustomization({ block, giftId, onMessage, onConfig }: { blo
   }
 
   if (block.id === "letter") return <CustomizationSection title="Letter content" hint="Written inside the animated letter">
-    <label className="field">Letter message<textarea rows={4} maxLength={100} value={block.message.slice(0,100)} onChange={event=>onMessage(event.target.value)} placeholder="Write a short, meaningful note…" /><small>{Math.min(block.message.length,100)}/100</small></label>
+    <label className="field">Letter message<textarea rows={5} maxLength={240} value={block.message.slice(0,240)} onChange={event=>onMessage(event.target.value)} placeholder="Write a short, meaningful note…" /><small>{Math.min(block.message.length,240)}/240</small></label>
     <label className="field">Sign-off<input maxLength={40} value={config.signoff || ""} onChange={event=>onConfig("signoff",event.target.value)} placeholder="— sent with love" /></label>
+    <div className="letter-customization-grid">
+      <label className="field">Envelope style<select value={config.envelopeStyle||"Blush satin"} onChange={event=>onConfig("envelopeStyle",event.target.value)}><option>Blush satin</option><option>Ivory airmail</option><option>Midnight velvet</option><option>Kraft keepsake</option><option>Floral garden</option></select></label>
+      <label className="field">Letter page<select value={config.pageType||"Classic cream"} onChange={event=>onConfig("pageType",event.target.value)}><option>Classic cream</option><option>Lined notebook</option><option>Vintage parchment</option><option>Floral border</option><option>Polaroid note</option></select></label>
+      <label className="field">Letter font<select value={config.letterFont||"Handwritten"} onChange={event=>onConfig("letterFont",event.target.value)}><option>Handwritten</option><option>Elegant serif</option><option>Typewriter</option><option>Clean modern</option></select></label>
+      <label className="field">Seal / closure<select value={config.envelopeSeal||"Wax heart"} onChange={event=>onConfig("envelopeSeal",event.target.value)}><option>Wax heart</option><option>Monogram wax</option><option>Flower sticker</option><option>Star sticker</option><option>Glue strip</option><option>None</option></select></label>
+      <label className="field">Stamp<select value={config.stampStyle||"Rose stamp"} onChange={event=>onConfig("stampStyle",event.target.value)}><option>Rose stamp</option><option>Air mail</option><option>Golden heart</option><option>Postmark</option><option>None</option></select></label>
+      <label className="field">Sticker<select value={config.stickerStyle||"Daisies"} onChange={event=>onConfig("stickerStyle",event.target.value)}><option>Daisies</option><option>Heart cluster</option><option>Stars</option><option>Smiley</option><option>None</option></select></label>
+    </div>
+    <label className="field">Front of envelope<input maxLength={42} value={config.frontText||""} onChange={event=>onConfig("frontText",event.target.value)} placeholder="For someone wonderful" /></label>
+    <label className="field">Back of envelope<input maxLength={42} value={config.backText||""} onChange={event=>onConfig("backText",event.target.value)} placeholder="Sealed with love" /></label>
     <label className="field">When the envelope opens<select value={config.animation||"Flower burst"} onChange={event=>onConfig("animation",event.target.value)}><option>Flower burst</option><option>Heart burst</option><option>Petal shower</option><option>Golden sparkles</option><option>Classic unfold</option></select><small>The message appears after the selected animation.</small></label>
+    <label className="field effect-density">Animation density<input type="range" min="8" max="40" step="1" value={config.effectDensity||"22"} onChange={event=>onConfig("effectDensity",event.target.value)} /><small>{config.effectDensity||"22"} flowers / hearts / sparkles</small></label>
   </CustomizationSection>;
 
   if (block.id === "voice") return <CustomizationSection title="Voice note" hint="Only the recording is delivered">

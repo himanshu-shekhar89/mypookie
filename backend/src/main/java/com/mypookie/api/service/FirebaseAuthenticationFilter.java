@@ -6,16 +6,18 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority; import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component; import org.springframework.web.filter.OncePerRequestFilter;
+import com.mypookie.api.repository.AppUserRepository;
 import java.io.IOException; import java.util.List;
 @Component @RequiredArgsConstructor
 public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
  private final ObjectProvider<FirebaseApp> firebaseApp;
+ private final AppUserRepository users;
  @Value("${app.auth.firebase-enabled:false}") boolean enabled;
  @Value("${app.auth.admin-emails:}") String adminEmails;
  @Override protected void doFilterInternal(HttpServletRequest req,HttpServletResponse res,FilterChain chain)throws ServletException,IOException{
   String auth=req.getHeader("Authorization");
   try{
-   if(enabled&&auth!=null&&auth.startsWith("Bearer ")){FirebaseToken token=FirebaseAuth.getInstance(firebaseApp.getObject()).verifyIdToken(auth.substring(7));authenticate(token.getUid(),token.getEmail(),Boolean.TRUE.equals(token.getClaims().get("admin"))||isAdminEmail(token.getEmail()));}
+   if(enabled&&auth!=null&&auth.startsWith("Bearer ")){FirebaseToken token=FirebaseAuth.getInstance(firebaseApp.getObject()).verifyIdToken(auth.substring(7));boolean storedAdmin=users.findByFirebaseUid(token.getUid()).map(user->"ADMIN".equals(user.getRole())).orElse(false);authenticate(token.getUid(),token.getEmail(),Boolean.TRUE.equals(token.getClaims().get("admin"))||isAdminEmail(token.getEmail())||storedAdmin);}
    else if(!enabled){String user=req.getHeader("X-Demo-User");if(user!=null&&!user.isBlank())authenticate(user,user+"@demo.mypookie.app","local-admin".equals(user)||"local-creator".equals(user));}
   }catch(Exception ignored){}
   chain.doFilter(req,res);

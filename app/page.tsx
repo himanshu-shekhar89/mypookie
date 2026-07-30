@@ -89,8 +89,22 @@ type CatalogResponse = {
   bundles: Array<{id:string;name:string;description:string;pricePaise:number;activityIds:string;recipientType:Recipient;active:boolean}>;
 };
 
+const ROOT_ADMIN_EMAILS = new Set([
+  "himaanshushekharr.pvt@gmail.com",
+  "himanshushekharr.pvt@gmail.com",
+]);
+
+const funBondQuestions = [
+  "Who would accidentally become the villain in your movie?",
+  "What snack would get top billing in your story?",
+  "Which of you causes the surprise plot twists?",
+  "What ridiculous scene sums up your bond?",
+  "If your bond had a superpower, what would it be?",
+  "What would the end-credit blooper show?",
+];
+
 const blockDefaults: Record<string, Record<string, string>> = {
-  letter: { signoff: "— sent with love", animation: "Flower burst" },
+  letter: { signoff: "— sent with love", animation: "Flower burst", envelopeStyle: "Blush satin", frontText: "For someone wonderful", backText: "Sealed with love", envelopeSeal: "Wax heart", stampStyle: "Rose stamp", stickerStyle: "Daisies", pageType: "Classic cream", letterFont: "Handwritten", effectDensity: "22" },
   voice: { audioName: "", playbackStyle: "Classic waveform" },
   video: { videoName: "", videoUrl: "", videoEffect: "Retro cam", videoCaption: "I wanted to tell you this face to face." },
   flowers: { effect: "Rose garden", timing: "Entire show", intensity: "Lush", effectNote: "This whole moment is blooming for you." },
@@ -99,9 +113,9 @@ const blockDefaults: Record<string, Record<string, string>> = {
   emoji: { emojiClue: "☕ + 🌧 + ♡", emojiAnswer: "our rainy cafe date", emojiHint: "Think about where we hid from the rain." },
   wouldrather: { pairs: JSON.stringify([{left:"Sunrise date",right:"Midnight drive"},{left:"Beach holiday",right:"Mountain cabin"},{left:"Cook together",right:"Order everything"}]) },
   neverhave: { statements: "Danced in the kitchen\nRe-read our old chats\nPlanned a surprise date\nPretended not to miss you", shareSummary: "true" },
-  truthdare: { truths: "What was your first impression of me?\nWhich memory makes you smile instantly?\nWhat is one thing you want us to try?", dares: "Send me your cutest selfie\nRecreate our first photo\nPlan our next snack date" },
+  truthdare: { truths: "What was your first impression of me?\nWhich memory makes you smile instantly?\nWhat is one thing you want us to try?", dares: "Send me your cutest selfie\nRecreate our first photo\nPlan our next snack date", truthDareSpins: "1" },
   tapheart: { duration: "10", scoreTitle: "Official heart-catching score" },
-  matchpair: { pairPhotos: "[]" },
+  matchpair: { pairPhotos: "[]", matchGrid: "12 cards · 6 pairs" },
   wheel: { prizes: "Breakfast in bed\nMovie night\nMystery date\nA long hug\nSweet treat", spins: "1", resultMode: "Random", plannedResults: "Breakfast in bed", revealAnimation: "Confetti burst" },
   slots: { prizes: "Movie night\nBreakfast date\nA long hug\nSweet treat", pulls: "3", resultMode: "Random", plannedResults: "", revealAnimation: "Sparkle shower" },
   puzzle: { imageUrl: "/mypookie-puzzle-picnic.png", imageName: "", difficulty: "3 × 3 · Sweet and simple", successMessage: "You put this memory back together." },
@@ -115,9 +129,9 @@ const blockDefaults: Record<string, Record<string, string>> = {
   countdownus: { sinceDate: "2024-02-14T18:30", counterLabel: "Since our story began" },
   constellation: { starName: "Ananya's Star", starMessage: "Even in a sky full of light, I would find you.", skyStyle: "Midnight rose" },
   growthring: { growthSenderMemories: JSON.stringify(["The day our story really began","The adventure we still laugh about","The moment I knew this bond was special"]) },
-  movie: { genre: "Romantic comedy", movieTitle: "Us, Somehow", tagline: "Two people. Too many inside jokes. One beautiful story.", starring: "Ananya & Himanshu", posterTemplate: "Golden musical", posterImage: "", bondQuestions: "[]", senderBondAnswers: "[]" },
-  song: { songStyle: "Dreamy acoustic", bondQuestions: "[]", senderBondAnswers: "[]" },
-  alwaysyou: { question: "Who makes every ordinary day better?", answers: "You\nStill you\nObviously you\nThe person reading this" },
+  movie: { genre: "Romantic comedy", movieTitle: "Us, Somehow", tagline: "Two people. Too many inside jokes. One beautiful story.", starring: "Ananya & Himanshu", posterTemplate: "Golden musical", posterImage: "", bondQuestions: JSON.stringify(funBondQuestions), senderBondAnswers: "[]", bondQuestionTone: "Playful" },
+  song: { songStyle: "Dreamy acoustic", bondQuestions: JSON.stringify(funBondQuestions), senderBondAnswers: "[]", bondQuestionTone: "Playful" },
+  alwaysyou: { question: "Who makes every ordinary day better?", answers: "You\nStill you\nObviously you\nThe person reading this", alwaysYouQuestions: JSON.stringify([{id:"always-1",question:"Who makes every ordinary day better?",answers:["You","Still you","Obviously you","The person reading this"]},{id:"always-2",question:"Who deserves the biggest hug today?",answers:["You","Definitely you","No doubt—you","The lovely person reading this"]}]) },
   calendar: { days: "7", unlockRule: "One per day", startDate: "", calendarNotes: JSON.stringify(["A reason I adore you","A favourite memory","A tiny promise","A photo that makes me smile","Your song of the day","A little challenge","Your final surprise"]) },
   gift: { brand: "Custom gift", code: "POOKIE-LOVE-24", value: "₹1,000", giftMessage: "Choose something that makes you smile.", interaction: "Flip to reveal", showCode: "true", showValue: "true", showNote: "true" },
   playlist: { playlistTitle: "Songs that feel like us", playlistUrl: "https://open.spotify.com/", dedication: "Press play whenever you want to feel a little closer to me." },
@@ -154,6 +168,8 @@ export default function Home() {
   const [currentTime, setCurrentTime] = useState("");
   const [occasionFx, setOccasionFx] = useState<string | null>(null);
   const [soundtrack, setSoundtrack] = useState({ enabled: false, templateId: "warm-sunset", audioUrl: "/music/warm-sunset.mp3", name: "Warm Sunset", startMode: "From the beginning", startBlockId: "", startSeconds: "0" });
+  const [soundtrackOpen,setSoundtrackOpen]=useState(false);
+  const [builderPreviewNonce,setBuilderPreviewNonce]=useState(0);
   const [revealAt,setRevealAt]=useState("");
   const [signedIn,setSignedIn]=useState(false);
   const [authError,setAuthError]=useState("");
@@ -325,6 +341,11 @@ export default function Home() {
       await fetch(`${api}/api/auth/session`,{method:"POST",headers:await authHeaders()});
       setSignedIn(Boolean(user));
       setAuthOpen(false);
+      const email=user?.email?.trim().toLowerCase();
+      if(provider==="google"&&email&&ROOT_ADMIN_EMAILS.has(email)){
+        window.location.assign(`${window.location.origin}/?admin=true`);
+        return;
+      }
       if(afterAuth==="save")window.setTimeout(()=>void saveDraft(),0);
       if(afterAuth==="checkout")window.setTimeout(()=>setScreen("checkout"),0);
       setAfterAuth(null);
@@ -522,7 +543,8 @@ export default function Home() {
   return (
     <main className="builder-page">
       {signInPopup}
-      <header className="app-header builder-header"><div className="builder-brand-row"><button className="editor-back" onClick={() => setScreen("catalog")} aria-label="Go back to gift choices">← <span>Back</span></button><button className="brand" onClick={() => setScreen("welcome")}><span className="brand-heart">♥</span> mypookie.</button></div><div className="gift-title"><small>CREATING FOR</small><strong>{name || "Someone special"} <i>♡</i></strong></div><div className="header-actions"><button className="quiet" onClick={() => signedIn ? void saveDraft() : requestSignIn("save")}>{saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved ✓" : saveState === "offline" ? "Backend offline · Retry" : "Save draft"}</button><button className="preview-button" onClick={launchPreview}>Preview gift <span>▶</span></button></div></header>
+      <header className="app-header builder-header"><div className="builder-brand-row"><button className="editor-back" onClick={() => setScreen("catalog")} aria-label="Go back to gift choices">← <span>Back</span></button><button className="brand" onClick={() => setScreen("welcome")}><span className="brand-heart">♥</span> mypookie.</button></div><div className="gift-title"><small>CREATING FOR</small><strong>{name || "Someone special"} <i>♡</i></strong></div><div className="header-actions"><button className={`global-soundtrack-button ${soundtrack.enabled?"active":""}`} onClick={()=>setSoundtrackOpen(true)}>♫ Soundtrack <span>{soundtrack.enabled?"ON":"OFF"}</span></button><button className="quiet" onClick={() => signedIn ? void saveDraft() : requestSignIn("save")}>{saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved ✓" : saveState === "offline" ? "Backend offline · Retry" : "Save draft"}</button><button className="preview-button" onClick={launchPreview}>Preview gift <span>▶</span></button></div></header>
+      {soundtrackOpen&&<div className="global-soundtrack-backdrop" role="presentation" onMouseDown={event=>event.target===event.currentTarget&&setSoundtrackOpen(false)}><section className="global-soundtrack-panel" role="dialog" aria-modal="true" aria-label="Gift soundtrack"><header><div><small>ONE SOUNDTRACK · THE WHOLE GIFT</small><h2>Set the mood</h2></div><button onClick={()=>setSoundtrackOpen(false)} aria-label="Close soundtrack">×</button></header><SoundtrackEditor settings={soundtrack} blocks={selected} onChange={patch=>setSoundtrack(current=>({...current,...patch}))}/></section></div>}
       <div className="builder-shell">
         <aside className="library">
           <div className="library-head"><div><div className="section-kicker">ACTIVITY LIBRARY</div><h2>Add a little magic</h2></div><span>{catalogActivities.length}</span></div>
@@ -539,8 +561,8 @@ export default function Home() {
           </section>)}</div>
         </aside>
         <section className="live-editor">
-          <div className="live-editor-head"><div><div className="section-kicker">LIVE RECIPIENT PREVIEW</div><h2>{activeBlock ? activeBlock.name : "Choose a block to begin"}</h2><p>{activeBlock ? "Play with it here. Changes from the right appear instantly." : "Select any activity from the library and its real interaction will appear here."}</p></div>{activeBlock && <span className="live-badge"><i /> Interactive</span>}</div>
-          {activeBlock ? <BuilderLivePreview key={activeBlock.instanceId||activeBlock.id} block={activeBlock} name={name} senderName={senderName.trim()||"Someone special"} theme={theme} ambience={ambience} giftId={giftId||undefined} /> : <div className="empty-live-preview"><div className="empty-live-orbit"><span>✦</span><i>♡</i><b>✿</b></div><h3>Your live preview will appear here</h3><p>Try the letter, wheel, puzzle, quiz and every other block before sending it.</p><button onClick={() => selectActivity(catalogActivities[0]||activities[0])}>Start with a personal letter →</button></div>}
+          <div className="live-editor-head"><div><div className="section-kicker">LIVE RECIPIENT PREVIEW</div><h2>{activeBlock ? activeBlock.name : "Choose a block to begin"}</h2><p>{activeBlock ? "Play with it here. Changes from the right appear instantly." : "Select any activity from the library and its real interaction will appear here."}</p></div>{activeBlock&&<div className="live-preview-controls"><button onClick={()=>setBuilderPreviewNonce(value=>value+1)} aria-label={`Restart ${activeBlock.name}`}>↻ Restart activity</button><span className="live-badge"><i /> Interactive</span></div>}</div>
+          {activeBlock ? <BuilderLivePreview key={`${activeBlock.instanceId||activeBlock.id}-${builderPreviewNonce}`} block={activeBlock} name={name} senderName={senderName.trim()||"Someone special"} theme={theme} ambience={ambience} giftId={giftId||undefined} /> : <div className="empty-live-preview"><div className="empty-live-orbit"><span>✦</span><i>♡</i><b>✿</b></div><h3>Your live preview will appear here</h3><p>Try the letter, wheel, puzzle, quiz and every other block before sending it.</p><button onClick={() => selectActivity(catalogActivities[0]||activities[0])}>Start with a personal letter →</button></div>}
           {selected.length > 0 && <div className="journey-rail"><div className="journey-rail-head"><div><small>GIFT SEQUENCE</small><strong>{selected.length} moments for {name}</strong></div><span>Tap a block to edit it</span></div><div className="journey-chips">{selected.map((item,index)=><div className={`journey-chip ${active===index?"active":""}`} key={item.instanceId||`${item.id}-${index}`}><button className="journey-select" onClick={()=>setActive(index)}><i className={item.color}>{item.icon}</i><span><small>{index+1}</small>{item.name}</span></button><div><button onClick={()=>move(index,-1)} disabled={index===0} aria-label={`Move ${item.name} earlier`}>←</button><button onClick={()=>move(index,1)} disabled={index===selected.length-1} aria-label={`Move ${item.name} later`}>→</button></div></div>)}</div></div>}
         </section>
         <aside className="customizer">
@@ -549,7 +571,6 @@ export default function Home() {
             <div className="current-block"><i className={activeBlock.color}>{activeBlock.icon}</i><div><small>MOMENT {active+1}</small><h2>{activeBlock.name}</h2></div></div>
             <BlockCustomization key={activeBlock.instanceId||activeBlock.id} block={activeBlock} giftId={giftId||undefined} onMessage={updateMessage} onConfig={updateBlockConfig} />
             <PlayfulAiAssistant id={activeBlock.id} relationship={`${senderName.trim()||"the sender"} and ${name||"the recipient"} are ${recipient.toLowerCase()}s celebrating ${occasion.toLowerCase()}`} config={activeBlock.config||{}} onConfig={updateBlockConfig}/>
-            <SoundtrackEditor settings={soundtrack} blocks={selected} onChange={patch=>setSoundtrack(current=>({...current,...patch}))} />
             <div className="style-row"><label className="field">Theme<select value={theme} onChange={e=>setTheme(e.target.value)}><option>Blush romance</option><option>Golden celebration</option><option>Midnight magic</option></select></label><label className="field">Ambience<select value={ambience} onChange={e=>setAmbience(e.target.value)}><option>Petals</option><option>Soft sparkles</option><option>None</option></select></label></div>
             <div className="customizer-live-note"><i /> You’re editing the live preview</div>
             <div className="next-row"><button disabled={active===0} onClick={()=>setActive(active-1)}>←</button><button onClick={()=>setActive(Math.min(active+1,selected.length-1))}>{active===selected.length-1?"Finish customization":"Save & customize next"} <span>→</span></button></div>
@@ -598,8 +619,8 @@ const soundtrackTemplates = [
 
 function SoundtrackEditor({settings,blocks,onChange}:{settings:SoundtrackSettings;blocks:Block[];onChange:(patch:Partial<SoundtrackSettings>)=>void}){
   const startBlock=settings.startBlockId&&blocks.some(block=>block.id===settings.startBlockId)?settings.startBlockId:(blocks[0]?.id||"");
-  return <details className="soundtrack-editor">
-    <summary><span>♫</span><div><strong>Soothing soundtrack</strong><small>{settings.enabled?settings.name:"Choose a built-in music template"}</small></div><b>{settings.enabled?"ON":"OFF"}</b></summary>
+  return <div className="soundtrack-editor global">
+    <div className="soundtrack-summary"><span>♫</span><div><strong>Soothing soundtrack</strong><small>{settings.enabled?settings.name:"Choose a built-in music template"}</small></div><b>{settings.enabled?"ON":"OFF"}</b></div>
     <div className="soundtrack-body">
       <label className="soundtrack-toggle"><input type="checkbox" checked={settings.enabled} onChange={event=>onChange({enabled:event.target.checked})}/><span/><div><strong>Play background music</strong><small>The recipient can always pause or mute it.</small></div></label>
       <div className="soundtrack-template-grid">{soundtrackTemplates.map(template=><button type="button" className={`soundtrack-template-card ${settings.templateId===template.id?"selected":""}`} key={template.id} onClick={()=>onChange({templateId:template.id,audioUrl:template.url,name:template.name,enabled:true})}><span>{template.mark}</span><div><strong>{template.name}</strong><small>{template.mood}</small></div><b>{settings.templateId===template.id?"✓":"Choose"}</b></button>)}</div>
@@ -609,7 +630,7 @@ function SoundtrackEditor({settings,blocks,onChange}:{settings:SoundtrackSetting
       {settings.startMode==="From a specific block"&&<label className="field">Start at block<select value={startBlock} onChange={event=>onChange({startBlockId:event.target.value})}>{blocks.map((block,index)=><option value={block.id} key={block.id}>{index+1}. {block.name}</option>)}</select></label>}
       <label className="field">Start song at<input type="number" min="0" max="600" value={settings.startSeconds} onChange={event=>onChange({startSeconds:event.target.value})}/><small>seconds</small></label>
     </div>
-  </details>;
+  </div>;
 }
 
 function GiftSoundtrack({settings,blocks,step}:{settings:SoundtrackSettings;blocks:Block[];step:number}){

@@ -18,7 +18,8 @@ app:
   auth:
     firebase-enabled: ${FIREBASE_ENABLED:false}
     firebase-service-account-base64: ${FIREBASE_SERVICE_ACCOUNT_BASE64:}
-    admin-emails: ${ADMIN_EMAILS:}
+    admin-emails: ${ADMIN_EMAILS:himaanshushekharr.pvt@gmail.com,himanshushekharr.pvt@gmail.com}
+    super-admin-emails: ${SUPER_ADMIN_EMAILS:himaanshushekharr.pvt@gmail.com,himanshushekharr.pvt@gmail.com}
   razorpay:
     key-id: ${RAZORPAY_KEY_ID:}
     key-secret: ${RAZORPAY_KEY_SECRET:}

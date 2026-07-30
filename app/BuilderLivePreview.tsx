@@ -67,6 +67,14 @@ export function BuilderLivePreview({ block, name, senderName, theme, ambience, g
   function resetLetter(){setOpened(false);setLetterStage("closed")}
   const letterEffect=(config.animation||"Flower burst").toLowerCase().replaceAll(" ","-");
   const letterSymbols=config.animation==="Heart burst"?["♥","♡","♥"]:config.animation==="Golden sparkles"?["✦","✧","⋆"]:config.animation==="Classic unfold"?["·","✦","·"]:["✿","❀","❁"];
+  const letterDensity=Math.min(40,Math.max(8,Number(config.effectDensity)||22));
+  const envelopeStyle=(config.envelopeStyle||"Blush satin").toLowerCase().replaceAll(" ","-");
+  const sealStyle=(config.envelopeSeal||"Wax heart").toLowerCase().replaceAll(" ","-").replaceAll("/","-");
+  const pageStyle=(config.pageType||"Classic cream").toLowerCase().replaceAll(" ","-");
+  const fontStyle=(config.letterFont||"Handwritten").toLowerCase().replaceAll(" ","-");
+  const stampSymbols:Record<string,string>={"Rose stamp":"❀","Air mail":"✈","Golden heart":"♥","Postmark":"◎","None":""};
+  const stickerSymbols:Record<string,string>={Daisies:"✿ ❀","Heart cluster":"♥ ♡","Stars":"✦ ✧",Smiley:"☺",None:""};
+  const sealSymbols:Record<string,string>={"Wax heart":"♥","Monogram wax":(senderName||"M").slice(0,1).toUpperCase(),"Flower sticker":"✿","Star sticker":"✦","Glue strip":"—","None":""};
 
   return (
     <div className={`builder-live-card live-theme-${theme.toLowerCase().replaceAll(" ", "-")}`}>
@@ -77,7 +85,7 @@ export function BuilderLivePreview({ block, name, senderName, theme, ambience, g
       <h3>{block.name}</h3>
       {block.id !== "letter" && block.id !== "voice" && block.id !== "video" && <p>{block.message}</p>}
       <div className="live-interaction" onClickCapture={onInteract} onPointerDownCapture={onInteract}>
-        {block.id === "letter" && <div className={`letter-reveal-scene effect-${letterEffect} stage-${letterStage}`}><div className="letter-particles" aria-hidden="true">{Array.from({length:22},(_,index)=><i key={index} style={{"--angle":`${index*16.36}deg`,"--distance":`${70+(index%5)*18}px`,"--delay":`${(index%4)*.05}s`} as React.CSSProperties}>{letterSymbols[index%letterSymbols.length]}</i>)}</div><button className={`live-letter ${opened ? "opened" : ""} ${letterStage==="revealed"?"message-ready":""}`} onClick={letterStage==="closed"?openLetter:resetLetter}><span>{block.message.slice(0, 100)}<small>{config.signoff || "— sent with love"}</small></span><i/><b>♥</b></button><small className="letter-effect-caption">{letterStage==="closed"?"Tap the sealed envelope":letterStage==="burst"?"A little magic is unfolding…":"Tap to close and replay"}</small></div>}
+        {block.id === "letter" && <div className={`letter-reveal-scene effect-${letterEffect} stage-${letterStage} envelope-${envelopeStyle} seal-${sealStyle} page-${pageStyle} font-${fontStyle}`}><div className="letter-particles" aria-hidden="true">{Array.from({length:letterDensity},(_,index)=><i key={index} style={{"--angle":`${index*(360/letterDensity)}deg`,"--distance":`${70+(index%5)*18}px`,"--delay":`${(index%6)*.04}s`} as React.CSSProperties}>{letterSymbols[index%letterSymbols.length]}</i>)}</div><button className={`envelope-3d ${opened?"opened":""} ${letterStage==="revealed"?"message-ready":""}`} onClick={letterStage==="closed"?openLetter:resetLetter} aria-label={letterStage==="closed"?"Open the envelope":"Close and replay the letter"}><span className="envelope-card"><span className="envelope-face envelope-front"><i className="envelope-stamp">{stampSymbols[config.stampStyle||"Rose stamp"]}</i><strong>{config.frontText||`For ${name}`}</strong><em className="envelope-stickers">{stickerSymbols[config.stickerStyle||"Daisies"]}</em><b className="envelope-seal">{sealSymbols[config.envelopeSeal||"Wax heart"]}</b></span><span className="envelope-face envelope-back"><i className="envelope-flap"/><strong>{config.backText||`From ${senderName||"someone special"}`}</strong><b className="envelope-seal">{sealSymbols[config.envelopeSeal||"Wax heart"]}</b></span></span><article className="letter-sheet"><p>{block.message.slice(0,240)}</p><small>{config.signoff||"— sent with love"}</small></article></button><small className="letter-effect-caption">{letterStage==="closed"?"Tap the rotating envelope":letterStage==="burst"?"A little magic is unfolding…":"Tap to close and replay"}</small></div>}
         {block.id === "voice" && <VoicePreview audioUrl={config.audioUrl} onComplete={onComplete} />}
         {block.id === "video" && <VideoNotePlay config={config} onComplete={onComplete} />}
         {block.id === "flowers" && <EGiftPreview config={config} onComplete={onComplete} />}
