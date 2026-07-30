@@ -16,6 +16,7 @@ type Props = {
 type Pair={left:string;right:string};
 type PairPhoto={id:string;image:string;caption:string};
 type AlwaysQuestion={id:string;question:string;answers:string[]};
+type ExcuseRound={id:string;situation:string;senderExcuse:string};
 type BoardNote={from:string;message:string;photos?:string[]};
 type SavedResponse={id:string;contributorName:string;responseText:string;photoUrls:string};
 const api=process.env.NEXT_PUBLIC_API_URL||"https://backend-production-22bd.up.railway.app";
@@ -96,12 +97,13 @@ function TruthDare({config,giftId,recipientName,blockInstanceId,onComplete,onRew
 
 function TapHeart({config,onComplete,onReward}:Props){
   const duration=Math.min(Math.max(Number(config.duration)||10,5),15);
+  const targetLabel=(config.tapTargetLabel||"hearts").trim()||"hearts";
   const [time,setTime]=useState(duration);const [score,setScore]=useState(0);const [playing,setPlaying]=useState(false);const [position,setPosition]=useState({left:48,top:46});const completed=useRef(false);
   useEffect(()=>{if(!playing)return;const timer=window.setInterval(()=>setTime(value=>Math.max(0,value-1)),1000);return()=>window.clearInterval(timer)},[playing]);
-  useEffect(()=>{if(time!==0||!playing||completed.current)return;completed.current=true;setPlaying(false);playSound("win");onReward?.(`Heart-tap score: ${score}`);onComplete?.()},[time,playing,score,onComplete,onReward]);
+  useEffect(()=>{if(time!==0||!playing||completed.current)return;completed.current=true;setPlaying(false);playSound("win");onReward?.(`${targetLabel} tapped: ${score}`);onComplete?.()},[time,playing,score,onComplete,onReward,targetLabel]);
   function start(){completed.current=false;setScore(0);setTime(duration);setPlaying(true);playSound("reveal")}
   function tap(){if(!playing)return;setScore(value=>value+1);playSound("tile");setPosition({left:8+randomIndex(78),top:8+randomIndex(67)})}
-  return <div className="rhythm-heart-game"><header><strong>{playing?`${time}s`:(time===0?`${score} hearts`:"Ready?")}</strong><span>{config.scoreTitle||"Official heart-catching score"} · {score}</span></header><div>{playing&&<button style={{left:`${position.left}%`,top:`${position.top}%`}} onClick={tap}>♥</button>}{!playing&&<button className="start-heart" onClick={start}>{time===0?"Play again":"Start 10-second burst"}</button>}<i/><i/><i/></div></div>;
+  return <div className={`rhythm-heart-game ${config.tapImage?"custom-target":""}`}><header><strong>{playing?`${time}s`:(time===0?`${score} ${targetLabel}`:"Ready?")}</strong><span>{config.scoreTitle||"Official heart-catching score"} · {score}</span></header><div>{playing&&<button style={{left:`${position.left}%`,top:`${position.top}%`}} onClick={tap} aria-label={`Tap ${targetLabel}`}>{config.tapImage?<img src={config.tapImage} alt=""/>:"♥"}</button>}{!playing&&<button className="start-heart" onClick={start}>{time===0?"Play again":`Start ${duration}-second burst`}</button>}<i/><i/><i/></div></div>;
 }
 
 function MatchPair({config,onComplete,onReward}:Props){
@@ -187,10 +189,24 @@ function AlwaysYou({config,onComplete,onReward}:Props){
   return <div className="always-you-quiz"><small>OBVIOUS ANSWER {index+1} OF {questions.length}</small><strong>{current.question}</strong><div>{current.answers.slice(0,4).map(answer=><button key={answer} onClick={()=>choose(answer)} className={selected===answer?"selected":""}>{answer}{selected&&<span> ✓ correct</span>}</button>)}</div>{selected&&<p>Correct. Somehow, the answer is still you. ♡</p>}</div>;
 }
 
-function ExcuseGenerator({config,onComplete,onReward}:Props){
-  const options=lines(config.excuses,["I need expert help choosing dessert"]);const [result,setResult]=useState("Pull for a perfectly valid excuse");const [pulling,setPulling]=useState(false);
-  function pull(){if(pulling)return;setPulling(true);playSound("lever");window.setTimeout(()=>{const value=options[randomIndex(options.length)];setResult(value);setPulling(false);playSound("win");onReward?.(`Excuse: ${value}`);onComplete?.()},850)}
-  return <div className="excuse-machine"><div><small>OFFICIAL EXCUSE TO SEE ME</small><strong>{pulling?"Generating something extremely convincing…":result}</strong></div><button className={pulling?"pulled":""} onClick={pull} aria-label="Pull excuse lever"><i/><b/></button></div>;
+function ExcuseGenerator({config,giftId,recipientName,blockInstanceId,onComplete,onReward}:Props){
+  const legacy=lines(config.excuses,["There is an emergency hug shortage."]).map((senderExcuse,index)=>({id:`legacy-${index}`,situation:"We need a playful excuse to meet right now.",senderExcuse}));
+  const rounds=parse<ExcuseRound[]>(config.excuseRounds,legacy);
+  const [round]=useState(()=>rounds[randomIndex(rounds.length)]||legacy[0]);const [stage,setStage]=useState<"ready"|"choosing"|"writing"|"revealed">("ready");const [recipientExcuse,setRecipientExcuse]=useState("");const [saving,setSaving]=useState(false);const [error,setError]=useState("");
+  function pull(){if(stage!=="ready")return;setStage("choosing");playSound("lever");window.setTimeout(()=>{setStage("writing");playSound("reveal")},850)}
+  async function reveal(){
+    if(!recipientExcuse.trim()||saving)return;
+    setSaving(true);setError("");
+    try{
+      if(giftId){
+        const response=await fetch(`${api}/api/public/gifts/${giftId}/responses`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({blockId:blockInstanceId||"excuse",responseType:"EXCUSE",contributorName:recipientName||"Recipient",responseText:JSON.stringify({situation:round.situation,senderExcuse:round.senderExcuse,recipientExcuse:recipientExcuse.trim()}),photoUrls:[]})});
+        if(!response.ok)throw new Error();
+      }
+      setStage("revealed");playSound("win");onReward?.(`Our excuse: ${round.senderExcuse} + ${recipientExcuse.trim()}`);onComplete?.();
+    }catch{setError("Couldn’t save your excuse yet. Try again.")}
+    finally{setSaving(false)}
+  }
+  return <div className={`excuse-duet stage-${stage}`}><header><small>THE SITUATION</small><strong>{stage==="ready"?"Pull to get your situation":stage==="choosing"?"Choosing something suitably ridiculous…":round.situation}</strong></header>{stage==="ready"||stage==="choosing"?<button className={`excuse-lever ${stage==="choosing"?"pulled":""}`} onClick={pull} disabled={stage==="choosing"} aria-label="Pull for an excuse situation"><i/><b/></button>:stage==="writing"?<section className="excuse-write"><small>{recipientName||"Your"} turn</small><strong>Make your best excuse.</strong><textarea autoFocus rows={3} maxLength={140} value={recipientExcuse} onChange={event=>setRecipientExcuse(event.target.value)} placeholder="Make it believable… or beautifully ridiculous."/><button onClick={()=>void reveal()} disabled={!recipientExcuse.trim()||saving}>{saving?"Saving both sides…":"Reveal both excuses →"}</button>{error&&<output>{error}</output>}</section>:<section className="excuse-reveal"><article><small>THEIR EXCUSE</small><strong>{round.senderExcuse}</strong></article><span>＋</span><article><small>YOUR EXCUSE</small><strong>{recipientExcuse}</strong></article><p>Official verdict: suspiciously convincing together. ✓</p></section>}</div>;
 }
 
 function RoastCards({config,onComplete}:Props){

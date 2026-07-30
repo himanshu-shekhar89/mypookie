@@ -38,7 +38,11 @@ export function PlayfulAiAssistant({id,relationship,config,onConfig}:Props){
       onConfig("alwaysYouQuestions",JSON.stringify(generated));
       if(generated[0]){onConfig("question",generated[0].question);onConfig("answers",generated[0].answers.join("\n"))}
     }
-    else if(id==="excuse")onConfig("excuses",lines(items,config.excuses||""));
+    else if(id==="excuse"){
+      const rounds=items.slice(0,6).map((item,index)=>({id:`excuse-ai-${Date.now()}-${index}`,situation:item.prompt||"We need a playful excuse to meet right now.",senderExcuse:item.options?.[0]||"There is an emergency hug shortage."}));
+      onConfig("excuseRounds",JSON.stringify(rounds));
+      onConfig("excuses",rounds.map(round=>round.senderExcuse).join("\n"));
+    }
     else if(id==="roast")onConfig("roasts",lines(items,config.roasts||""));
     else if(id==="fortune")onConfig("fortunes",lines(items,config.fortunes||""));
     else if(id==="mysterybox")onConfig("surprises",lines(items,config.surprises||""));

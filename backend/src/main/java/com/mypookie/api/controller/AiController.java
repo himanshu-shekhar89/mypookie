@@ -82,6 +82,7 @@ public class AiController {
               For truth-or-dare, make the first half truths and the second half dares.
               For treasure hunts, option 1 is a hint and option 2 is a short accepted answer.
               For emoji decoder, the prompt is an emoji clue, option 1 its answer, and option 2 its hint.
+              For excuse generator, each prompt is a funny situation both people need an excuse for, and option 1 is the sender's playful excuse.
               For movie or song bond analysis, ask surprising, funny and playful questions rather than generic compatibility questions—for example silly plot twists, snacks, bloopers, superpowers and shared chaos.
               """;
         String prompt = """

@@ -14,6 +14,7 @@ type Props = {
 type Pair = { left:string; right:string };
 type PairPhoto = { id:string; image:string; caption:string };
 type AlwaysQuestion = { id:string; question:string; answers:string[] };
+type ExcuseRound = { id:string; situation:string; senderExcuse:string };
 type BoardNote = { from:string; message:string };
 type SavedResponse = { id:string; contributorName:string; responseText:string; photoUrls:string; createdAt:string };
 const api=process.env.NEXT_PUBLIC_API_URL||"https://backend-production-22bd.up.railway.app";
@@ -52,7 +53,7 @@ export function TinyBlockCustomization({id,instanceId,config,giftId,onConfig}:Pr
   }
   if(id==="neverhave")return <Section title="Never Have I Ever" hint="Light confessions—nothing embarrassing unless you want it"><Lines label="Statements · one per line" configKey="statements" value={config.statements||""} max={10} onConfig={onConfig}/><label className="tiny-check"><input type="checkbox" checked={config.shareSummary!=="false"} onChange={event=>onConfig("shareSummary",String(event.target.checked))}/> Add their final picks to the result summary</label></Section>;
   if(id==="truthdare")return <Section title="Truth or Dare Roulette" hint="Truth answers are saved for the sender"><label className="field">Number of spins<select value={config.truthDareSpins||"1"} onChange={event=>onConfig("truthDareSpins",event.target.value)}>{Array.from({length:8},(_,index)=><option key={index+1} value={index+1}>{index+1} {index?"spins":"spin"}</option>)}</select><small>The recipient completes every result before continuing.</small></label><Lines label="Truth prompts" configKey="truths" value={config.truths||""} max={8} onConfig={onConfig}/><Lines label="Dare prompts" configKey="dares" value={config.dares||""} max={8} onConfig={onConfig}/><ResponseInbox giftId={giftId} blockId={instanceId||"truthdare"} title="Saved truth answers"/></Section>;
-  if(id==="tapheart")return <Section title="Tap the Heart" hint="A quick rhythm burst with a final bragging-rights score"><label className="field">Round length<select value={config.duration||"10"} onChange={event=>onConfig("duration",event.target.value)}><option>5</option><option>10</option><option>15</option></select><small>seconds</small></label><label className="field">Score heading<input maxLength={55} value={config.scoreTitle||""} onChange={event=>onConfig("scoreTitle",event.target.value)}/></label></Section>;
+  if(id==="tapheart")return <TapHeartEditor config={config} onConfig={onConfig}/>;
   if(id==="matchpair")return <MatchPairEditor config={config} onConfig={onConfig}/>;
   if(id==="countdownus")return <Section title="Countdown to Us" hint="A live counter that keeps moving every second"><label className="field">Your special date<input type="datetime-local" value={config.sinceDate||""} onChange={event=>onConfig("sinceDate",event.target.value)}/></label><label className="field">Counter label<input maxLength={60} value={config.counterLabel||""} onChange={event=>onConfig("counterLabel",event.target.value)}/></label></Section>;
   if(id==="constellation")return <Section title="Constellation Map" hint="Name one star and attach a message to it"><label className="field">Star name<input maxLength={40} value={config.starName||""} onChange={event=>onConfig("starName",event.target.value)}/></label><label className="field">Message<textarea rows={3} maxLength={120} value={config.starMessage||""} onChange={event=>onConfig("starMessage",event.target.value)}/><small>{(config.starMessage||"").length}/120</small></label><label className="field">Sky style<select value={config.skyStyle||"Midnight rose"} onChange={event=>onConfig("skyStyle",event.target.value)}><option>Midnight rose</option><option>Deep indigo</option><option>Golden dusk</option></select></label></Section>;
@@ -60,7 +61,7 @@ export function TinyBlockCustomization({id,instanceId,config,giftId,onConfig}:Pr
   if(id==="movie")return <MovieEditor config={config} onConfig={onConfig}/>;
   if(id==="song")return <SongEditor config={config} onConfig={onConfig}/>;
   if(id==="alwaysyou")return <AlwaysYouEditor config={config} onConfig={onConfig}/>;
-  if(id==="excuse")return <Section title="Excuse Generator" hint="Funny sender-written reasons to meet"><Lines label="Excuses · one per line" configKey="excuses" value={config.excuses||""} max={10} onConfig={onConfig}/></Section>;
+  if(id==="excuse")return <ExcuseEditor config={config} onConfig={onConfig}/>;
   if(id==="roast")return <Section title="Roast Me Gently" hint="Affectionate complaints only"><Lines label="Loving roasts · one per line" configKey="roasts" value={config.roasts||""} max={10} onConfig={onConfig}/></Section>;
   if(id==="fortune")return <Section title="Fortune Cookie Break" hint="Each crack randomly reveals one feel-good fortune"><Lines label="Feel-good fortunes · one per line" configKey="fortunes" value={config.fortunes||""} max={12} onConfig={onConfig}/></Section>;
   if(id==="mysterybox")return <Section title="Mystery Box" hint="The box shakes before revealing one surprise"><Lines label="Possible surprises" configKey="surprises" value={config.surprises||""} max={8} onConfig={onConfig}/><label className="field">Reveal mode<select value={config.boxMode||"Random"} onChange={event=>onConfig("boxMode",event.target.value)}><option>Random</option><option>Always reveal the first</option></select></label></Section>;
@@ -68,6 +69,24 @@ export function TinyBlockCustomization({id,instanceId,config,giftId,onConfig}:Pr
   if(id==="countdowninvite")return <Section title="Countdown Invite" hint="Plan an event and collect their playful RSVP"><label className="field">Event title<input maxLength={55} value={config.eventTitle||""} onChange={event=>onConfig("eventTitle",event.target.value)}/></label><label className="field">Date and time<input type="datetime-local" value={config.eventDate||""} onChange={event=>onConfig("eventDate",event.target.value)}/></label><label className="field">What they should know<textarea rows={3} maxLength={100} value={config.inviteNote||""} onChange={event=>onConfig("inviteNote",event.target.value)}/></label></Section>;
   if(id==="groupboard")return <GroupBoardEditor config={config} giftId={giftId} onConfig={onConfig}/>;
   return null;
+}
+
+function TapHeartEditor({config,onConfig}:{config:Record<string,string>;onConfig:Props["onConfig"]}){
+  async function upload(files:FileList|null){const file=files?.[0];if(!file)return;onConfig("tapImage",await imageToDataUrl(file));onConfig("tapImageName",file.name)}
+  return <Section title="Tap the Hearts" hint="Replace the heart with any custom photo or character"><label className="field">Round length<select value={config.duration||"10"} onChange={event=>onConfig("duration",event.target.value)}><option>5</option><option>10</option><option>15</option></select><small>seconds</small></label><label className="field">Score heading<input maxLength={55} value={config.scoreTitle||""} onChange={event=>onConfig("scoreTitle",event.target.value)}/></label><label className="field">What should the score call them?<input maxLength={24} value={config.tapTargetLabel||"hearts"} onChange={event=>onConfig("tapTargetLabel",event.target.value)} placeholder="hearts, smiles, pookies…"/></label><label className={`upload dedicated-upload tap-image-upload ${config.tapImage?"has-image":""}`}>{config.tapImage?<img src={config.tapImage} alt="Custom tap target preview"/>:<span className="tap-image-placeholder">♥</span>}<strong>{config.tapImage?"Change tap image":"Upload a custom tap image"}</strong><span>Square photos and transparent PNGs work best</span><input type="file" accept="image/*" onChange={event=>void upload(event.target.files)}/></label>{config.tapImage&&<button className="remove-poster-image" onClick={()=>{onConfig("tapImage","");onConfig("tapImageName","")}}>Use the heart again</button>}</Section>;
+}
+
+function ExcuseEditor({config,onConfig}:{config:Record<string,string>;onConfig:Props["onConfig"]}){
+  const legacy=linesToExcuseRounds(config.excuses);
+  const rounds=parse<ExcuseRound[]>(config.excuseRounds,legacy).slice(0,6);
+  const update=(next:ExcuseRound[])=>onConfig("excuseRounds",JSON.stringify(next.slice(0,6)));
+  return <Section title="Our Excuse Generator" hint="You both invent one excuse for the same playful situation"><div className="tiny-editor-list excuse-round-editor">{rounds.map((round,index)=><article key={round.id}><header><strong>Situation {index+1}</strong><button disabled={rounds.length===1} onClick={()=>update(rounds.filter((_,roundIndex)=>roundIndex!==index))}>Remove</button></header><label className="field">The situation<textarea rows={2} maxLength={110} value={round.situation} onChange={event=>update(rounds.map((item,roundIndex)=>roundIndex===index?{...item,situation:event.target.value}:item))} placeholder="We need an excuse to sneak away for ice cream…"/><small>{round.situation.length}/110</small></label><label className="field">Your excuse<textarea rows={2} maxLength={140} value={round.senderExcuse} onChange={event=>update(rounds.map((item,roundIndex)=>roundIndex===index?{...item,senderExcuse:event.target.value}:item))} placeholder="The moon personally requested a snack run…"/><small>{round.senderExcuse.length}/140</small></label></article>)}</div><button className="add-collection-item" disabled={rounds.length>=6} onClick={()=>update([...rounds,{id:`excuse-${Date.now()}`,situation:"We need a ridiculous excuse to meet right now.",senderExcuse:""}])}>＋ Add another situation</button><p className="tiny-editor-note">The recipient sees one situation, writes their own excuse, and then both answers are revealed together.</p></Section>;
+}
+
+function linesToExcuseRounds(value:string|undefined):ExcuseRound[]{
+  const values=(value||"").split("\n").map(item=>item.trim()).filter(Boolean);
+  const excuses=values.length?values:["There is an emergency hug shortage."];
+  return excuses.slice(0,6).map((senderExcuse,index)=>({id:`legacy-excuse-${index}`,situation:"We need a playful excuse to meet right now.",senderExcuse}));
 }
 
 function MatchPairEditor({config,onConfig}:{config:Record<string,string>;onConfig:Props["onConfig"]}){
