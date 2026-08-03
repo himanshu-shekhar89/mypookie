@@ -33,9 +33,33 @@ import {
 } from "./authClient";
 import { playSound } from "./soundFx";
 import { GiftSoundtrack, type SoundtrackSettings } from "./GiftSoundtrack";
-import { defaultExperienceBackground, experienceBackgroundStyle, type ExperienceBackground } from "./experienceBackground";
+import {
+  defaultExperienceBackground,
+  experienceBackgroundStyle,
+  type ExperienceBackground,
+} from "./experienceBackground";
 
-const transitionGameBlocks = new Set(["quiz","thisorthat","emoji","heartcatch","wouldrather","neverhave","truthdare","tapheart","matchpair","wheel","slots","puzzle","scratch","treasure","alwaysyou","excuse","roast","fortune","mysterybox"]);
+const transitionGameBlocks = new Set([
+  "quiz",
+  "thisorthat",
+  "emoji",
+  "heartcatch",
+  "wouldrather",
+  "neverhave",
+  "truthdare",
+  "tapheart",
+  "matchpair",
+  "wheel",
+  "slots",
+  "puzzle",
+  "scratch",
+  "treasure",
+  "alwaysyou",
+  "excuse",
+  "roast",
+  "fortune",
+  "mysterybox",
+]);
 
 type Block = {
   instanceId?: string;
@@ -900,7 +924,9 @@ export default function Home() {
   >("welcome");
   const [recipient, setRecipient] = useState<Recipient>("Lover");
   const [name, setName] = useState("Ananya");
-  const [recipientGender, setRecipientGender] = useState<"Girl"|"Boy"|"Neutral"|"">("");
+  const [recipientGender, setRecipientGender] = useState<
+    "Girl" | "Boy" | "Neutral" | ""
+  >("");
   const [senderName, setSenderName] = useState("");
   const [occasion, setOccasion] = useState("Just because");
   const [selected, setSelected] = useState<Block[]>([]);
@@ -909,8 +935,10 @@ export default function Home() {
   const [libraryPreview, setLibraryPreview] = useState<Block | null>(null);
   const [theme, setTheme] = useState("Blush romance");
   const [ambience, setAmbience] = useState("Petals");
-  const [experienceBackground,setExperienceBackground]=useState<ExperienceBackground>(defaultExperienceBackground);
-  const [builderTransitionPreview,setBuilderTransitionPreview]=useState(false);
+  const [experienceBackground, setExperienceBackground] =
+    useState<ExperienceBackground>(defaultExperienceBackground);
+  const [builderTransitionPreview, setBuilderTransitionPreview] =
+    useState(false);
   const [previewStep, setPreviewStep] = useState(0);
   const [previewOrigin, setPreviewOrigin] = useState<"welcome" | "builder">(
     "builder",
@@ -927,9 +955,9 @@ export default function Home() {
   const [occasionFx, setOccasionFx] = useState<string | null>(null);
   const [soundtrack, setSoundtrack] = useState({
     enabled: false,
-    templateId: "warm-sunset",
-    audioUrl: "/music/warm-sunset.mp3",
-    name: "Warm Sunset",
+    templateId: "until-i-found-you",
+    audioUrl: "/music/until-i-found-you.mp3",
+    name: "Until I Found You",
     startMode: "From the beginning",
     startBlockId: "",
     startSeconds: "0",
@@ -938,8 +966,8 @@ export default function Home() {
   const [builderPreviewNonce, setBuilderPreviewNonce] = useState(0);
   const [revealAt, setRevealAt] = useState("");
   const [compatibilityPin, setCompatibilityPin] = useState("");
-  const [accessPin,setAccessPin]=useState("");
-  const [maxOpenCount,setMaxOpenCount]=useState(0);
+  const [accessPin, setAccessPin] = useState("");
+  const [maxOpenCount, setMaxOpenCount] = useState(0);
   const [signedIn, setSignedIn] = useState(false);
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(
     null,
@@ -1152,16 +1180,29 @@ export default function Home() {
     );
   }
 
-  async function uploadExperienceBackground(files:FileList|null){
-    const file=files?.[0];if(!file)return;
-    try{
-      const body=new FormData();body.append("file",file);
-      const api=process.env.NEXT_PUBLIC_API_URL||"https://backend-production-22bd.up.railway.app";
-      const response=await fetch(`${api}/api/media/image`,{method:"POST",headers:await authHeaders(),body});
-      if(!response.ok)throw new Error();
-      const result=await response.json() as {url:string};
-      setExperienceBackground(current=>({...current,imageUrl:result.url}));
-    }catch{setSaveState("offline")}
+  async function uploadExperienceBackground(files: FileList | null) {
+    const file = files?.[0];
+    if (!file) return;
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const api =
+        process.env.NEXT_PUBLIC_API_URL ||
+        "https://backend-production-22bd.up.railway.app";
+      const response = await fetch(`${api}/api/media/image`, {
+        method: "POST",
+        headers: await authHeaders(),
+        body,
+      });
+      if (!response.ok) throw new Error();
+      const result = (await response.json()) as { url: string };
+      setExperienceBackground((current) => ({
+        ...current,
+        imageUrl: result.url,
+      }));
+    } catch {
+      setSaveState("offline");
+    }
   }
 
   function launchPreview() {
@@ -1273,12 +1314,12 @@ export default function Home() {
   function openSavedDraft(draft: SavedDraft) {
     try {
       const parsed = JSON.parse(draft.blocksJson) as
-          | {
+        | {
             blocks?: Block[];
             soundtrack?: typeof soundtrack;
-            experienceBackground?:ExperienceBackground;
+            experienceBackground?: ExperienceBackground;
             bundleId?: string | null;
-            recipientGender?: "Girl"|"Boy"|"Neutral"|"";
+            recipientGender?: "Girl" | "Boy" | "Neutral" | "";
           }
         | Block[];
       const blocks = Array.isArray(parsed) ? parsed : parsed.blocks;
@@ -1286,7 +1327,9 @@ export default function Home() {
       setSelected(blocks);
       if (!Array.isArray(parsed)) {
         if (parsed.soundtrack) setSoundtrack(parsed.soundtrack);
-        setExperienceBackground(parsed.experienceBackground||defaultExperienceBackground);
+        setExperienceBackground(
+          parsed.experienceBackground || defaultExperienceBackground,
+        );
         setSelectedBundleId(parsed.bundleId || null);
         setRecipientGender(parsed.recipientGender || "");
       } else setSelectedBundleId(null);
@@ -1415,8 +1458,8 @@ export default function Home() {
   ) {
     setAuthError("");
     try {
-      if(process.env.NEXT_PUBLIC_E2E_MODE==="true"){
-        await completeSignIn({email});
+      if (process.env.NEXT_PUBLIC_E2E_MODE === "true") {
+        await completeSignIn({ email });
         return;
       }
       const user = await authenticateWithEmail(email, password, mode);
@@ -1723,9 +1766,7 @@ export default function Home() {
                 <div className="mini-petals">✿　·　✿</div>
                 <small>A LITTLE SOMETHING FOR</small>
                 <h3>Ananya</h3>
-                <div
-                  className="phone-envelope"
-                >
+                <div className="phone-envelope">
                   <div className="phone-card-wrap">
                     <button
                       className="phone-letter-card"
@@ -1954,7 +1995,14 @@ export default function Home() {
             </label>
             <label>
               They are
-              <select value={recipientGender} onChange={(e)=>setRecipientGender(e.target.value as "Girl"|"Boy"|"Neutral"|"")}>
+              <select
+                value={recipientGender}
+                onChange={(e) =>
+                  setRecipientGender(
+                    e.target.value as "Girl" | "Boy" | "Neutral" | "",
+                  )
+                }
+              >
                 <option value="">Choose</option>
                 <option value="Girl">A girl</option>
                 <option value="Boy">A boy</option>
@@ -2361,14 +2409,18 @@ export default function Home() {
                           role="button"
                           tabIndex={0}
                           onClick={() => {
-                            if (isSelected) { setLibraryPreview(null); setActive(selectedIndex); }
-                            else setLibraryPreview(item);
+                            if (isSelected) {
+                              setLibraryPreview(null);
+                              setActive(selectedIndex);
+                            } else setLibraryPreview(item);
                           }}
                           onKeyDown={(event) => {
                             if (event.key === "Enter" || event.key === " ") {
                               event.preventDefault();
-                              if (isSelected) { setLibraryPreview(null); setActive(selectedIndex); }
-                              else setLibraryPreview(item);
+                              if (isSelected) {
+                                setLibraryPreview(null);
+                                setActive(selectedIndex);
+                              } else setLibraryPreview(item);
                             }
                           }}
                         >
@@ -2381,7 +2433,23 @@ export default function Home() {
                             }
                             aria-label={`${isSelected ? "Remove" : "Add"} ${item.name}`}
                           />
-                          <span className="activity-check" role="checkbox" aria-checked={isSelected} tabIndex={0} onClick={(event) => { event.stopPropagation(); setActivitySelected(item, !isSelected); }} onKeyDown={(event) => { if(event.key==="Enter"||event.key===" "){event.preventDefault();event.stopPropagation();setActivitySelected(item,!isSelected)} }}>
+                          <span
+                            className="activity-check"
+                            role="checkbox"
+                            aria-checked={isSelected}
+                            tabIndex={0}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setActivitySelected(item, !isSelected);
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                setActivitySelected(item, !isSelected);
+                              }
+                            }}
+                          >
                             {isSelected ? "✓" : ""}
                           </span>
                           <i className={item.color}>{item.icon}</i>
@@ -2434,12 +2502,25 @@ export default function Home() {
           {activeBlock ? (
             <div className="builder-transition-preview-stage">
               {builderTransitionPreview ? (
-                <section className={`builder-transition-demo moment-slideshow moment-teaser transition-${(activeBlock.config?.transitionStyle || (transitionGameBlocks.has(activeBlock.id)?"Soft zoom":"None")).toLowerCase().replaceAll(" ","-")}`} style={{"--transition-duration":`${Math.min(2,Math.max(1,Number(activeBlock.config?.transitionDuration)||1.6))}s`} as React.CSSProperties}>
-                  <div className="moment-slide-orbit" aria-hidden="true"><i/><i/><span>{activeBlock.icon}</span></div>
+                <section
+                  className={`builder-transition-demo moment-slideshow moment-teaser transition-${(activeBlock.config?.transitionStyle || (transitionGameBlocks.has(activeBlock.id) ? "Soft zoom" : "None")).toLowerCase().replaceAll(" ", "-")}`}
+                  style={
+                    {
+                      "--transition-duration": `${Math.min(2, Math.max(1, Number(activeBlock.config?.transitionDuration) || 1.6))}s`,
+                    } as React.CSSProperties
+                  }
+                >
+                  <div className="moment-slide-orbit" aria-hidden="true">
+                    <i />
+                    <i />
+                    <span>{activeBlock.icon}</span>
+                  </div>
                   <small>COMING NEXT</small>
                   <h2>{activeBlock.name}</h2>
                   <p>{activeBlock.message}</p>
-                  <div className="teaser-progress" aria-hidden="true"><i/></div>
+                  <div className="teaser-progress" aria-hidden="true">
+                    <i />
+                  </div>
                 </section>
               ) : (
                 <BuilderLivePreview
@@ -2487,7 +2568,9 @@ export default function Home() {
               <span>✎</span>
               <h3>{libraryPreview ? "Preview only" : "Select an activity"}</h3>
               <p>
-                {libraryPreview ? "Use the checkbox in the library to add this activity before customizing it." : "Choose a moment to personalize its words, behaviour and style."}
+                {libraryPreview
+                  ? "Use the checkbox in the library to add this activity before customizing it."
+                  : "Choose a moment to personalize its words, behaviour and style."}
               </p>
             </div>
           ) : (
@@ -2507,16 +2590,91 @@ export default function Home() {
                 onConfig={updateBlockConfig}
               />
               <section className="block-transition-editor">
-                <header><span>↝</span><div><small>BEFORE THIS MOMENT</small><strong>Recipient transition</strong></div></header>
+                <header>
+                  <span>↝</span>
+                  <div>
+                    <small>BEFORE THIS MOMENT</small>
+                    <strong>Recipient transition</strong>
+                  </div>
+                </header>
                 <div className="transition-choice-grid">
-                  {[['None','—'],['Soft zoom','◎'],['Slide up','↑'],['Curtain reveal','◫'],['Dreamy blur','◌'],['Sparkle burst','✦']].map(([label,icon])=>{
-                    const chosen=(activeBlock.config?.transitionStyle || (transitionGameBlocks.has(activeBlock.id)?"Soft zoom":"None"))===label;
-                    return <button key={label} className={chosen?"active":""} onClick={()=>updateBlockConfig("transitionStyle",label)}><i>{icon}</i><span>{label}</span></button>;
+                  {[
+                    ["None", "—"],
+                    ["Soft zoom", "◎"],
+                    ["Slide up", "↑"],
+                    ["Curtain reveal", "◫"],
+                    ["Dreamy blur", "◌"],
+                    ["Sparkle burst", "✦"],
+                  ].map(([label, icon]) => {
+                    const chosen =
+                      (activeBlock.config?.transitionStyle ||
+                        (transitionGameBlocks.has(activeBlock.id)
+                          ? "Soft zoom"
+                          : "None")) === label;
+                    return (
+                      <button
+                        key={label}
+                        className={chosen ? "active" : ""}
+                        onClick={() =>
+                          updateBlockConfig("transitionStyle", label)
+                        }
+                      >
+                        <i>{icon}</i>
+                        <span>{label}</span>
+                      </button>
+                    );
                   })}
                 </div>
-                {(activeBlock.config?.transitionStyle || (transitionGameBlocks.has(activeBlock.id)?"Soft zoom":"None"))!=="None"&&<label className="field">Duration<select value={activeBlock.config?.transitionDuration || "1.6"} onChange={(event)=>updateBlockConfig("transitionDuration",event.target.value)}><option value="1">1 second</option><option value="1.3">1.3 seconds</option><option value="1.6">1.6 seconds</option><option value="2">2 seconds</option></select></label>}
-                {(activeBlock.config?.transitionStyle || (transitionGameBlocks.has(activeBlock.id)?"Soft zoom":"None"))!=="None"&&<button className="preview-transition-button" onClick={()=>{setBuilderTransitionPreview(true);window.setTimeout(()=>setBuilderTransitionPreview(false),Math.min(2,Math.max(1,Number(activeBlock.config?.transitionDuration)||1.6))*1000)}}>▶ Preview transition</button>}
-                <p>Shows the activity name briefly, then moves into the interaction automatically.</p>
+                {(activeBlock.config?.transitionStyle ||
+                  (transitionGameBlocks.has(activeBlock.id)
+                    ? "Soft zoom"
+                    : "None")) !== "None" && (
+                  <label className="field">
+                    Duration
+                    <select
+                      value={activeBlock.config?.transitionDuration || "1.6"}
+                      onChange={(event) =>
+                        updateBlockConfig(
+                          "transitionDuration",
+                          event.target.value,
+                        )
+                      }
+                    >
+                      <option value="1">1 second</option>
+                      <option value="1.3">1.3 seconds</option>
+                      <option value="1.6">1.6 seconds</option>
+                      <option value="2">2 seconds</option>
+                    </select>
+                  </label>
+                )}
+                {(activeBlock.config?.transitionStyle ||
+                  (transitionGameBlocks.has(activeBlock.id)
+                    ? "Soft zoom"
+                    : "None")) !== "None" && (
+                  <button
+                    className="preview-transition-button"
+                    onClick={() => {
+                      setBuilderTransitionPreview(true);
+                      window.setTimeout(
+                        () => setBuilderTransitionPreview(false),
+                        Math.min(
+                          2,
+                          Math.max(
+                            1,
+                            Number(activeBlock.config?.transitionDuration) ||
+                              1.6,
+                          ),
+                        ) * 1000,
+                      );
+                    }}
+                  >
+                    ▶ Preview transition
+                  </button>
+                )}
+                <p>
+                  Shows the activity name briefly, then moves into the
+                  interaction automatically.
+                </p>
               </section>
               <PlayfulAiAssistant
                 id={activeBlock.id}
@@ -2549,11 +2707,75 @@ export default function Home() {
                 </label>
               </div>
               <section className="experience-background-editor">
-                <header><span>▧</span><div><small>WHOLE EXPERIENCE</small><strong>Background</strong></div></header>
-                <label className="field">Background theme<select value={experienceBackground.theme} onChange={event=>setExperienceBackground(current=>({...current,theme:event.target.value}))}><option>Theme glow</option><option>Rose clouds</option><option>Golden hour</option><option>Midnight stars</option><option>Paper garden</option></select></label>
-                <label className="field">Personal background image<input type="file" accept="image/*" onChange={event=>void uploadExperienceBackground(event.target.files)}/><small>{experienceBackground.imageUrl?"Personal image selected":"Optional · JPG, PNG or WebP"}</small></label>
-                {experienceBackground.imageUrl&&<button className="remove-experience-background" onClick={()=>setExperienceBackground(current=>({...current,imageUrl:""}))}>Remove personal image</button>}
-                <label className="field">Image overlay<select value={experienceBackground.overlay} onChange={event=>setExperienceBackground(current=>({...current,overlay:event.target.value}))}><option>None</option><option>Soft</option><option>Strong</option></select></label>
+                <header>
+                  <span>▧</span>
+                  <div>
+                    <small>WHOLE EXPERIENCE</small>
+                    <strong>Background</strong>
+                  </div>
+                </header>
+                <label className="field">
+                  Background theme
+                  <select
+                    value={experienceBackground.theme}
+                    onChange={(event) =>
+                      setExperienceBackground((current) => ({
+                        ...current,
+                        theme: event.target.value,
+                      }))
+                    }
+                  >
+                    <option>Theme glow</option>
+                    <option>Rose clouds</option>
+                    <option>Golden hour</option>
+                    <option>Midnight stars</option>
+                    <option>Paper garden</option>
+                  </select>
+                </label>
+                <label className="field">
+                  Personal background image
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) =>
+                      void uploadExperienceBackground(event.target.files)
+                    }
+                  />
+                  <small>
+                    {experienceBackground.imageUrl
+                      ? "Personal image selected"
+                      : "Optional · JPG, PNG or WebP"}
+                  </small>
+                </label>
+                {experienceBackground.imageUrl && (
+                  <button
+                    className="remove-experience-background"
+                    onClick={() =>
+                      setExperienceBackground((current) => ({
+                        ...current,
+                        imageUrl: "",
+                      }))
+                    }
+                  >
+                    Remove personal image
+                  </button>
+                )}
+                <label className="field">
+                  Image overlay
+                  <select
+                    value={experienceBackground.overlay}
+                    onChange={(event) =>
+                      setExperienceBackground((current) => ({
+                        ...current,
+                        overlay: event.target.value,
+                      }))
+                    }
+                  >
+                    <option>None</option>
+                    <option>Soft</option>
+                    <option>Strong</option>
+                  </select>
+                </label>
               </section>
               <div className="customizer-live-note">
                 <i /> You’re editing the live preview
@@ -2799,25 +3021,74 @@ function SignInPopup({
 
 const soundtrackTemplates = [
   {
-    id: "warm-sunset",
-    name: "Warm Sunset",
-    mood: "Golden pads · slow and cosy",
-    url: "/music/warm-sunset.mp3",
-    mark: "☼",
+    id: "until-i-found-you",
+    name: "Until I Found You — Stephen Sanchez & Em Beihold",
+    mood: "Classic romance · warm duet",
+    url: "/music/until-i-found-you.mp3",
+    mark: "♡",
   },
   {
-    id: "moonlit-keys",
-    name: "Moonlit Keys",
-    mood: "Dreamy notes · quiet romance",
-    url: "/music/moonlit-keys.mp3",
+    id: "blue",
+    name: "Blue — yung kai",
+    mood: "Dreamy · tender",
+    url: "/music/blue.mp3",
     mark: "☾",
   },
   {
-    id: "soft-rain",
-    name: "Soft Rain",
-    mood: "Gentle rain · calm and intimate",
-    url: "/music/soft-rain.mp3",
-    mark: "⌇",
+    id: "i-think-they-call-this-love",
+    name: "I Think They Call This Love",
+    mood: "Sweet · timeless romance",
+    url: "/music/i-think-they-call-this-love.mp3",
+    mark: "♥",
+  },
+  {
+    id: "somewhere-only-we-know",
+    name: "Somewhere Only We Know — Keane",
+    mood: "Nostalgic · meaningful",
+    url: "/music/somewhere-only-we-know.mp3",
+    mark: "⌂",
+  },
+  {
+    id: "treat-you-better",
+    name: "Treat You Better — Shawn Mendes",
+    mood: "Pop · heartfelt",
+    url: "/music/treat-you-better.mp3",
+    mark: "✦",
+  },
+  {
+    id: "the-night-we-met",
+    name: "The Night We Met — Lord Huron",
+    mood: "Late night · wistful",
+    url: "/music/the-night-we-met.mp3",
+    mark: "☽",
+  },
+  {
+    id: "ive-got-my-eye-on-you",
+    name: "I've Got My Eye on You",
+    mood: "Intimate · magnetic",
+    url: "/music/ive-got-my-eye-on-you.mp3",
+    mark: "◉",
+  },
+  {
+    id: "perfect",
+    name: "Perfect — Ed Sheeran",
+    mood: "Slow dance · romantic",
+    url: "/music/perfect.mp3",
+    mark: "♪",
+  },
+  {
+    id: "i-wanna-be-yours",
+    name: "I Wanna Be Yours — Arctic Monkeys",
+    mood: "Moody · devoted",
+    url: "/music/i-wanna-be-yours.mp3",
+    mark: "∞",
+  },
+  {
+    id: "i-thought-i-saw-your-face-today",
+    name: "I Thought I Saw Your Face Today — She & Him",
+    mood: "Indie · nostalgic",
+    url: "/music/i-thought-i-saw-your-face-today.mp3",
+    mark: "❀",
   },
 ];
 
