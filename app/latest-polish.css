@@ -194,3 +194,12 @@
 .scrapbook-page-fields>div:has(.memory-animation-picker){grid-template-columns:1fr}.memory-animation-picker>span{display:block;margin:7px 0 6px;font-size:8px;font-weight:800;color:#6d5961}.memory-animation-picker>div{display:grid;grid-template-columns:repeat(2,1fr);gap:5px}.memory-animation-picker button{display:flex;align-items:center;gap:6px;min-width:0;padding:7px;border:1px solid #eadfe4;border-radius:9px;background:#fff;color:#745e67;text-align:left}.memory-animation-picker button i{display:grid;place-items:center;flex:0 0 24px;width:24px;height:24px;border-radius:7px;background:#f6edf6;color:#8055a5;font-style:normal}.memory-animation-picker button small{overflow:hidden;color:inherit;font-size:6.5px;font-weight:800;text-overflow:ellipsis;white-space:nowrap}.memory-animation-picker button.active{border-color:#9d70bd;background:#f7f1fc}.memory-animation-picker button.active i{background:#8055a5;color:#fff}
 @media(max-width:700px){.experience-background-editor{grid-template-columns:1fr}.experience-background-editor h4,.experience-background-editor>p{grid-column:auto}.letter-reveal-scene{min-height:430px}.letter-reveal-scene .envelope-3d{height:380px}.letter-reveal-scene .letter-sheet{min-height:330px;max-height:355px;padding:28px 25px}.letter-reveal-scene .letter-sheet p{font-size:19px}.letter-reveal-scene.letter-copy-long .letter-sheet p{font-size:17px}.letter-reveal-scene.letter-copy-max .letter-sheet p{font-size:15px}}
 @media(prefers-reduced-motion:reduce){.scrapbook-page.page-polaroid-pop,.scrapbook-page.page-page-curl,.scrapbook-page.page-crossfade,.scrapbook-page.page-flip-book,.scrapbook-page.page-wash-reveal,.scrapbook-page.page-photo-scatter img,.scrapbook-page.page-ken-burns img{animation:none}}
+
+/* Match-the-pair always fits inside the playground: 4 pairs by default, 6 max. */
+.match-pair-game{width:min(430px,100%)}
+.match-pair-game .match-grid{max-height:none;overflow:visible;gap:6px}
+.match-pair-game .match-grid button{aspect-ratio:1.03}
+.match-pair-game .cards-4 button{aspect-ratio:1.12}
+.match-pair-game .cards-10 button,.match-pair-game .cards-12 button{aspect-ratio:1.12}
+.match-pair-game .cards-10 figcaption,.match-pair-game .cards-12 figcaption{font-size:7px}
+@media(max-width:520px){.match-pair-game{width:min(360px,100%)}.match-pair-game .match-grid{gap:5px}.match-pair-game .match-grid button{aspect-ratio:.96}.match-pair-game .cards-10 button,.match-pair-game .cards-12 button{aspect-ratio:1.05}}

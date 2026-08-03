@@ -573,12 +573,12 @@ function TapHeart({ config, onComplete, onReward }: Props) {
 }
 
 function MatchPair({ config, onComplete, onReward }: Props) {
-  const uploaded = parse<PairPhoto[]>(config.pairPhotos, []);
+  const uploaded = parse<PairPhoto[]>(config.pairPhotos, []).slice(0, 6);
   const desiredPairs = Math.max(
     2,
     Math.min(
-      12,
-      Math.floor((Number.parseInt(config.matchGrid || "12", 10) || 12) / 2),
+      6,
+      Math.floor((Number.parseInt(config.matchGrid || "8", 10) || 8) / 2),
     ),
   );
   const samples = [

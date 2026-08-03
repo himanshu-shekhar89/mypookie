@@ -680,7 +680,7 @@ const blockDefaults: Record<string, Record<string, string>> = {
     tapImageName: "",
     tapTargetLabel: "hearts",
   },
-  matchpair: { pairPhotos: "[]", matchGrid: "12 cards · 6 pairs" },
+  matchpair: { pairPhotos: "[]", matchGrid: "8 cards · 4 pairs" },
   wheel: {
     prizes:
       "Breakfast in bed\nMovie night\nMystery date\nA long hug\nSweet treat",
@@ -2438,7 +2438,7 @@ export default function Home() {
                 </section>
               ) : (
                 <BuilderLivePreview
-                  key={`${activeBlock.instanceId || activeBlock.id}-${builderPreviewNonce}`}
+                  key={`${activeBlock.instanceId || activeBlock.id}-${builderPreviewNonce}-${activeBlock.id === "matchpair" ? `${activeBlock.config?.matchGrid || "8"}-${activeBlock.config?.pairPhotos || "[]"}` : "stable"}`}
                   block={activeBlock}
                   name={name}
                   senderName={senderName.trim() || "Someone special"}

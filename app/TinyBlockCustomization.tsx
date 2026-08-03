@@ -914,25 +914,25 @@ function MatchPairEditor({
   config: Record<string, string>;
   onConfig: Props["onConfig"];
 }) {
-  const photos = parse<PairPhoto[]>(config.pairPhotos, []);
+  const photos = parse<PairPhoto[]>(config.pairPhotos, []).slice(0, 6);
   async function add(files: FileList | null) {
     if (!files) return;
     const added = await Promise.all(
       Array.from(files)
-        .slice(0, 12 - photos.length)
+        .slice(0, 6 - photos.length)
         .map(async (file, index) => ({
           id: `pair-${Date.now()}-${index}`,
           image: await imageToDataUrl(file),
           caption: file.name.replace(/\.[^.]+$/, ""),
         })),
     );
-    onConfig("pairPhotos", JSON.stringify([...photos, ...added].slice(0, 12)));
+    onConfig("pairPhotos", JSON.stringify([...photos, ...added].slice(0, 6)));
   }
   const desiredPairs = Math.max(
     2,
     Math.min(
-      12,
-      Math.floor((Number.parseInt(config.matchGrid || "12", 10) || 12) / 2),
+      6,
+      Math.floor((Number.parseInt(config.matchGrid || "8", 10) || 8) / 2),
     ),
   );
   return (
@@ -943,10 +943,10 @@ function MatchPairEditor({
       <label className="field">
         Grid size
         <select
-          value={config.matchGrid || "12 cards · 6 pairs"}
+          value={`${desiredPairs * 2} cards · ${desiredPairs} pairs`}
           onChange={(event) => onConfig("matchGrid", event.target.value)}
         >
-          {[2, 4, 6, 8, 10, 12].map((pairs) => (
+          {[2, 3, 4, 5, 6].map((pairs) => (
             <option key={pairs}>
               {pairs * 2} cards · {pairs} pairs
             </option>
@@ -955,7 +955,7 @@ function MatchPairEditor({
       </label>
       <label className="upload dedicated-upload">
         ▥<strong>Add your photos</strong>
-        <span>{photos.length}/12 memories ready</span>
+        <span>{Math.min(photos.length,6)}/6 memories ready</span>
         <input
           type="file"
           accept="image/*"
