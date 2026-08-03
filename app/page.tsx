@@ -620,7 +620,9 @@ const blockDefaults: Record<string, Record<string, string>> = {
     effect: "Rose garden",
     timing: "Entire show",
     intensity: "Lush",
+    celebrationTitle: "Rose garden",
     effectNote: "This whole moment is blooming for you.",
+    celebrationHint: "Tap to light up the moment",
   },
   quiz: {
     quizQuestions: JSON.stringify([
@@ -845,7 +847,7 @@ const blockDefaults: Record<string, Record<string, string>> = {
     code: "POOKIE-LOVE-24",
     value: "₹1,000",
     giftMessage: "Choose something that makes you smile.",
-    interaction: "Flip to reveal",
+    interaction: "Scratchable card",
     showCode: "true",
     showValue: "true",
     showNote: "true",

@@ -539,9 +539,9 @@ function EGiftPreview({
         <i />
         <span>✦</span>
       </div>
-      <strong>{scene}</strong>
+      <strong>{config.celebrationTitle || scene}</strong>
       <p>{config.effectNote || "A beautiful celebration, just for you."}</p>
-      <small>{playing ? "Tap to pause" : "Tap to light up the moment"}</small>
+      <small>{playing ? "Tap to pause" : config.celebrationHint || "Tap to light up the moment"}</small>
     </button>
   );
 }
@@ -1431,18 +1431,37 @@ function MemoryBook({
   ];
   const [page, setPage] = useState(0);
   const [turning, setTurning] = useState(false);
+  const [turnDirection, setTurnDirection] = useState<"forward" | "backward">("forward");
   const viewed = useRef<Set<number>>(new Set([0]));
+  useEffect(() => {
+    const preloadItems: { image: string; images?: string[] }[] = [
+      { image: config.coverImage || "/mypookie-letter-photo.png" },
+      ...parseJson<MemoryItem[]>(config.memoryItems, []).slice(
+        0,
+        config.extraPages === "true" ? 12 : 7,
+      ),
+    ];
+    preloadItems.forEach((item) => {
+      (item.images?.length ? item.images : [item.image]).forEach((source) => {
+        const image = new Image();
+        image.src = source;
+      });
+    });
+  }, [config.memoryItems, config.coverImage, config.extraPages]);
   function turn(direction: number) {
     if (turning) return;
     playSound("page");
+    setTurnDirection(direction > 0 ? "forward" : "backward");
     setTurning(true);
     window.setTimeout(() => {
       const nextPage = (page + direction + pages.length) % pages.length;
       setPage(nextPage);
       viewed.current.add(nextPage);
       if (viewed.current.size >= pages.length) onComplete?.();
-      setTurning(false);
-    }, 360);
+      window.requestAnimationFrame(() =>
+        window.requestAnimationFrame(() => setTurning(false)),
+      );
+    }, 300);
   }
   const current = pages[page];
   const style = (config.albumStyle || "Blush scrapbook")
@@ -1466,7 +1485,7 @@ function MemoryBook({
     >
       <div
         key={`${page}-${animation}`}
-        className={`memory-page scrapbook-page page-${animation} ${turning ? "turning" : ""}`}
+        className={`memory-page scrapbook-page page-${animation} turn-${turnDirection} ${turning ? "turning" : ""}`}
       >
         <div className="album-corner-tape left" />
         <div className="album-corner-tape right" />
@@ -1479,6 +1498,8 @@ function MemoryBook({
                 src={image}
                 alt={`Memory collage ${index + 1}`}
                 key={index}
+                loading="eager"
+                decoding="async"
               />
             ))}
           </div>
@@ -1486,6 +1507,8 @@ function MemoryBook({
           <img
             src={current.image}
             alt={page === 0 ? "Memory album cover" : "Uploaded memory"}
+            loading="eager"
+            decoding="async"
           />
         )}
         <div className="scrapbook-copy">
@@ -1586,7 +1609,7 @@ function TreasurePlay({
       }, 650);
     } else {
       playSound("incorrect");
-      setMessage("Not yet — look again or use the hint.");
+      setMessage(`The correct answer was: ${current.answer}`);
     }
   }
   return (
@@ -1761,7 +1784,7 @@ function GiftCardPlay({
   onReward?: (reward: string) => void;
 }) {
   const [revealed, setRevealed] = useState(false);
-  if (config.interaction === "Scratchable card")
+  if ((config.interaction || "Scratchable card") === "Scratchable card")
     return (
       <GiftScratchCard
         config={config}

@@ -652,7 +652,11 @@ function EGiftEditor({
           <button
             key={label}
             className={config.effect === label ? "active" : ""}
-            onClick={() => onConfig("effect", label)}
+            onClick={() => {
+              onConfig("effect", label);
+              if (!config.celebrationTitle || effects.includes(config.celebrationTitle))
+                onConfig("celebrationTitle", label);
+            }}
           >
             <i className={`effect-swatch swatch-${index}`}>
               <b />
@@ -687,11 +691,27 @@ function EGiftEditor({
         </select>
       </label>
       <label className="field">
-        Celebration note
+        Scene title
+        <input
+          maxLength={45}
+          value={config.celebrationTitle || config.effect || "Rose garden"}
+          onChange={(event) => onConfig("celebrationTitle", event.target.value)}
+        />
+      </label>
+      <label className="field">
+        Celebration message
         <input
           maxLength={70}
           value={config.effectNote || ""}
           onChange={(event) => onConfig("effectNote", event.target.value)}
+        />
+      </label>
+      <label className="field">
+        Tap instruction
+        <input
+          maxLength={55}
+          value={config.celebrationHint || "Tap to light up the moment"}
+          onChange={(event) => onConfig("celebrationHint", event.target.value)}
         />
       </label>
     </CustomizationSection>
@@ -1489,6 +1509,10 @@ function MemoryEditor({
   const [captionState, setCaptionState] = useState<
     "idle" | "loading" | "done" | "error"
   >("idle");
+  const [pendingBatch, setPendingBatch] = useState<
+    { file: File; preview: string }[]
+  >([]);
+  const [uploadingMemories, setUploadingMemories] = useState(false);
   const upgraded = config.extraPages === "true";
   const maxPages = upgraded ? 12 : 7;
   const items = storedItems.slice(0, maxPages);
@@ -1505,10 +1529,15 @@ function MemoryEditor({
     ["Wash reveal", "▨"],
     ["Ken Burns", "⌕"],
   ];
-  async function add(files: FileList | null) {
-    if (!files || remaining === 0) return;
+  function clearPendingBatch() {
+    pendingBatch.forEach((item) => URL.revokeObjectURL(item.preview));
+    setPendingBatch([]);
+  }
+  async function uploadSingles(files: File[]) {
+    if (!files.length || remaining === 0) return;
+    setUploadingMemories(true);
     const added = await Promise.all(
-      Array.from(files)
+      files
         .slice(0, remaining)
         .map(async (file, index) => ({
           id: `memory-${Date.now()}-${index}`,
@@ -1523,11 +1552,14 @@ function MemoryEditor({
       "memoryItems",
       JSON.stringify([...items, ...added].slice(0, maxPages)),
     );
+    setUploadingMemories(false);
+    clearPendingBatch();
   }
-  async function addCollage(files: FileList | null) {
-    if (!files || remaining === 0) return;
-    const chosen = Array.from(files).slice(0, 4);
+  async function uploadCollage(files: File[]) {
+    if (!files.length || remaining === 0) return;
+    const chosen = files.slice(0, 4);
     if (chosen.length < 2) return;
+    setUploadingMemories(true);
     const images = await Promise.all(chosen.map(imageToDataUrl));
     const item: MemoryItem = {
       id: `collage-${crypto.randomUUID()}`,
@@ -1547,6 +1579,20 @@ function MemoryEditor({
     onConfig(
       "memoryItems",
       JSON.stringify([...items, item].slice(0, maxPages)),
+    );
+    setUploadingMemories(false);
+    clearPendingBatch();
+  }
+  function chooseMemoryFiles(files: FileList | null) {
+    if (!files || !files.length || remaining === 0) return;
+    const chosen = Array.from(files).slice(0, Math.max(remaining, 4));
+    if (chosen.length === 1) {
+      void uploadSingles(chosen);
+      return;
+    }
+    clearPendingBatch();
+    setPendingBatch(
+      chosen.map((file) => ({ file, preview: URL.createObjectURL(file) })),
     );
   }
   async function cover(files: FileList | null) {
@@ -1737,18 +1783,20 @@ function MemoryEditor({
           }
           accept="image/*"
           multiple
-          onFiles={add}
+          onFiles={chooseMemoryFiles}
         />
       </div>
-      <div className={remaining === 0 ? "upload-disabled" : ""}>
-        <UploadBox
-          label="Create a collage page"
-          note="Choose 2–4 photos · counts as one page"
-          accept="image/*"
-          multiple
-          onFiles={addCollage}
-        />
-      </div>
+      {uploadingMemories && <div className="memory-upload-progress"><i/><span>Preparing and uploading your photos…</span></div>}
+      {pendingBatch.length > 1 && (
+        <section className="memory-batch-choice">
+          <header><div><small>{pendingBatch.length} PHOTOS SELECTED</small><strong>How should these appear?</strong></div><button onClick={clearPendingBatch}>×</button></header>
+          <div className="memory-batch-thumbnails">{pendingBatch.map((item)=><img key={`${item.file.name}-${item.file.lastModified}`} src={item.preview} alt={item.file.name}/>)}</div>
+          <div className="memory-batch-actions">
+            <button onClick={()=>void uploadSingles(pendingBatch.map(item=>item.file))}><span>▱ ▱</span><strong>Separate pages</strong><small>One photo on each page</small></button>
+            <button onClick={()=>void uploadCollage(pendingBatch.map(item=>item.file))}><span>▦</span><strong>One collage</strong><small>Combine up to four photos</small></button>
+          </div>
+        </section>
+      )}
       <div className="memory-ai-captions">
         <span>✦</span>
         <div>
@@ -2085,11 +2133,11 @@ function GiftCardEditor({
       <label className="field">
         Reveal interaction
         <select
-          value={config.interaction}
+          value={config.interaction || "Scratchable card"}
           onChange={(event) => onConfig("interaction", event.target.value)}
         >
-          <option>Flip to reveal</option>
           <option>Scratchable card</option>
+          <option>Flip to reveal</option>
           <option>Blur to unblur</option>
         </select>
       </label>
