@@ -1493,6 +1493,18 @@ function MemoryEditor({
   const maxPages = upgraded ? 12 : 7;
   const items = storedItems.slice(0, maxPages);
   const remaining = Math.max(0, maxPages - items.length);
+  const pageAnimations = [
+    ["Polaroid pop", "▱"],
+    ["Soft zoom", "◎"],
+    ["Film slide", "→"],
+    ["Sparkle reveal", "✦"],
+    ["Page curl", "◩"],
+    ["Photo scatter", "⌁"],
+    ["Crossfade", "◌"],
+    ["Flip book", "↶"],
+    ["Wash reveal", "▨"],
+    ["Ken Burns", "⌕"],
+  ];
   async function add(files: FileList | null) {
     if (!files || remaining === 0) return;
     const added = await Promise.all(
@@ -1831,26 +1843,22 @@ function MemoryEditor({
                     <option>None</option>
                   </select>
                 </label>
-                <label>
-                  Page animation
-                  <select
-                    value={item.animation || "Polaroid pop"}
-                    onChange={(event) =>
-                      patch(index, "animation", event.target.value)
-                    }
-                  >
-                    <option>Polaroid pop</option>
-                    <option>Soft zoom</option>
-                    <option>Film slide</option>
-                    <option>Sparkle reveal</option>
-                    <option>Page curl</option>
-                    <option>Photo scatter</option>
-                    <option>Crossfade</option>
-                    <option>Flip book</option>
-                    <option>Wash reveal</option>
-                    <option>Ken Burns</option>
-                  </select>
-                </label>
+                <div className="memory-animation-picker">
+                  <span>Page animation</span>
+                  <div>
+                    {pageAnimations.map(([label, icon]) => (
+                      <button
+                        type="button"
+                        key={label}
+                        className={(item.animation || "Polaroid pop") === label ? "active" : ""}
+                        onClick={() => patch(index, "animation", label)}
+                        title={label}
+                      >
+                        <i>{icon}</i><small>{label}</small>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
             <button

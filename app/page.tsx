@@ -905,6 +905,7 @@ export default function Home() {
   const [theme, setTheme] = useState("Blush romance");
   const [ambience, setAmbience] = useState("Petals");
   const [experienceBackground,setExperienceBackground]=useState<ExperienceBackground>(defaultExperienceBackground);
+  const [builderTransitionPreview,setBuilderTransitionPreview]=useState(false);
   const [previewStep, setPreviewStep] = useState(0);
   const [previewOrigin, setPreviewOrigin] = useState<"welcome" | "builder">(
     "builder",
@@ -2426,15 +2427,27 @@ export default function Home() {
             )}
           </div>
           {activeBlock ? (
-            <BuilderLivePreview
-              key={`${activeBlock.instanceId || activeBlock.id}-${builderPreviewNonce}`}
-              block={activeBlock}
-              name={name}
-              senderName={senderName.trim() || "Someone special"}
-              theme={theme}
-              ambience={ambience}
-              giftId={giftId || undefined}
-            />
+            <div className="builder-transition-preview-stage">
+              {builderTransitionPreview ? (
+                <section className={`builder-transition-demo moment-slideshow moment-teaser transition-${(activeBlock.config?.transitionStyle || (transitionGameBlocks.has(activeBlock.id)?"Soft zoom":"None")).toLowerCase().replaceAll(" ","-")}`} style={{"--transition-duration":`${Math.min(2,Math.max(1,Number(activeBlock.config?.transitionDuration)||1.6))}s`} as React.CSSProperties}>
+                  <div className="moment-slide-orbit" aria-hidden="true"><i/><i/><span>{activeBlock.icon}</span></div>
+                  <small>COMING NEXT</small>
+                  <h2>{activeBlock.name}</h2>
+                  <p>{activeBlock.message}</p>
+                  <div className="teaser-progress" aria-hidden="true"><i/></div>
+                </section>
+              ) : (
+                <BuilderLivePreview
+                  key={`${activeBlock.instanceId || activeBlock.id}-${builderPreviewNonce}`}
+                  block={activeBlock}
+                  name={name}
+                  senderName={senderName.trim() || "Someone special"}
+                  theme={theme}
+                  ambience={ambience}
+                  giftId={giftId || undefined}
+                />
+              )}
+            </div>
           ) : (
             <div className="empty-live-preview">
               <div className="empty-live-orbit">
@@ -2490,8 +2503,14 @@ export default function Home() {
               />
               <section className="block-transition-editor">
                 <header><span>↝</span><div><small>BEFORE THIS MOMENT</small><strong>Recipient transition</strong></div></header>
-                <label className="field">Transition style<select value={activeBlock.config?.transitionStyle || (transitionGameBlocks.has(activeBlock.id)?"Soft zoom":"None")} onChange={(event)=>updateBlockConfig("transitionStyle",event.target.value)}><option>None</option><option>Soft zoom</option><option>Slide up</option><option>Curtain reveal</option><option>Dreamy blur</option><option>Sparkle burst</option></select></label>
+                <div className="transition-choice-grid">
+                  {[['None','—'],['Soft zoom','◎'],['Slide up','↑'],['Curtain reveal','◫'],['Dreamy blur','◌'],['Sparkle burst','✦']].map(([label,icon])=>{
+                    const chosen=(activeBlock.config?.transitionStyle || (transitionGameBlocks.has(activeBlock.id)?"Soft zoom":"None"))===label;
+                    return <button key={label} className={chosen?"active":""} onClick={()=>updateBlockConfig("transitionStyle",label)}><i>{icon}</i><span>{label}</span></button>;
+                  })}
+                </div>
                 {(activeBlock.config?.transitionStyle || (transitionGameBlocks.has(activeBlock.id)?"Soft zoom":"None"))!=="None"&&<label className="field">Duration<select value={activeBlock.config?.transitionDuration || "1.6"} onChange={(event)=>updateBlockConfig("transitionDuration",event.target.value)}><option value="1">1 second</option><option value="1.3">1.3 seconds</option><option value="1.6">1.6 seconds</option><option value="2">2 seconds</option></select></label>}
+                {(activeBlock.config?.transitionStyle || (transitionGameBlocks.has(activeBlock.id)?"Soft zoom":"None"))!=="None"&&<button className="preview-transition-button" onClick={()=>{setBuilderTransitionPreview(true);window.setTimeout(()=>setBuilderTransitionPreview(false),Math.min(2,Math.max(1,Number(activeBlock.config?.transitionDuration)||1.6))*1000)}}>▶ Preview transition</button>}
                 <p>Shows the activity name briefly, then moves into the interaction automatically.</p>
               </section>
               <PlayfulAiAssistant
