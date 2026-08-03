@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import { LegalPage } from "../LegalPage";
+
+export const metadata:Metadata={title:"Terms & Conditions",description:"Terms for creating, purchasing and sharing mypookie interactive digital gifts.",alternates:{canonical:"/terms"}};
 
 export default function TermsPage(){
  return <LegalPage eyebrow="LEGAL" title="Terms & Conditions" intro="These terms govern the creation, purchase and use of mypookie. interactive digital gifts.">

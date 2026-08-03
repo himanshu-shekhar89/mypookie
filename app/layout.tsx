@@ -1,26 +1,28 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const requestHeaders=await headers();
-  const host=requestHeaders.get("x-forwarded-host")||requestHeaders.get("host")||"frontend-production-48ed.up.railway.app";
-  const protocol=requestHeaders.get("x-forwarded-proto")||"https";
-  const image=`${protocol}://${host}/og.png`;
+  const siteUrl="https://www.mypookie.store";
+  const image=`${siteUrl}/og.png`;
   return {
-    title: "mypookie. — A gift they experience",
-    description: "Build a beautiful interactive gift from messages, memories, tiny games and surprises.",
+    metadataBase: new URL(siteUrl),
+    title: { default: "mypookie. — Create Personalized Interactive Gifts Online", template: "%s | mypookie." },
+    description: "Create a personalized interactive digital gift with letters, photos, videos, puzzles, games and private surprises—then share it with one beautiful link.",
+    keywords: ["personalized digital gift", "interactive gift online", "online gift for boyfriend", "online gift for girlfriend", "virtual birthday gift", "digital love letter"],
+    alternates: { canonical: "/" },
+    robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 } },
     icons: {
       icon: [{ url: "/mypookie-heart.svg", type: "image/svg+xml" }],
       shortcut: "/mypookie-heart.svg",
       apple: "/mypookie-heart.svg",
     },
-    openGraph: { title:"mypookie. — A gift they experience", description:"Build a little world of messages, memories, tiny games and surprises.", images:[{url:image,width:1200,height:630,alt:"mypookie. interactive gift studio"}] },
-    twitter: { card:"summary_large_image", title:"mypookie. — A gift they experience", description:"Build a little world of messages, memories, tiny games and surprises.", images:[image] },
+    openGraph: { type:"website", url:siteUrl, siteName:"mypookie.", title:"mypookie. — Create Personalized Interactive Gifts Online", description:"Build a little world of letters, memories, games and private surprises for someone special.", images:[{url:image,width:1200,height:630,alt:"mypookie. interactive gift studio"}] },
+    twitter: { card:"summary_large_image", title:"mypookie. — Create Personalized Interactive Gifts Online", description:"Build a little world of letters, memories, games and private surprises for someone special.", images:[image] },
   };
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const structuredData={"@context":"https://schema.org","@type":"WebApplication",name:"mypookie.",url:"https://www.mypookie.store",applicationCategory:"LifestyleApplication",operatingSystem:"Any",description:"Create personalized interactive digital gifts with messages, photos, videos, puzzles, games and surprises.",offers:{"@type":"Offer",priceCurrency:"INR"}};
   return (
     <html lang="en">
       <head>
@@ -31,7 +33,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body><script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(structuredData)}} />{children}</body>
     </html>
   );
 }

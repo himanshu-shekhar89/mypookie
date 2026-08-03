@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import { LegalPage } from "../LegalPage";
+
+export const metadata:Metadata={title:"Privacy Policy",description:"Learn how mypookie protects account information, private digital gifts and uploaded media.",alternates:{canonical:"/privacy"}};
 
 export default function PrivacyPage(){
  return <LegalPage eyebrow="YOUR PRIVACY" title="Privacy Policy" intro="This policy explains what mypookie. collects and how information is used to deliver private digital gifts.">

@@ -18,8 +18,9 @@ test("server-renders the mypookie application shell", async () => {
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
   const html = await response.text();
-  assert.match(html, /<title>mypookie\. — A gift they experience<\/title>/i);
-  assert.match(html, /Build a beautiful interactive gift/);
+  assert.match(html, /<title>mypookie\. — Create Personalized Interactive Gifts Online<\/title>/i);
+  assert.match(html, /Create a personalized interactive digital gift/);
+  assert.match(html, /rel="canonical" href="https:\/\/www\.mypookie\.store\/"/i);
   assert.match(html, /class="contribution-loading"/);
   assert.doesNotMatch(html, /Your site is taking shape|Starter Project/);
 });

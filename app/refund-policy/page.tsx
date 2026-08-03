@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import { LegalPage } from "../LegalPage";
+
+export const metadata:Metadata={title:"Refund & Cancellation Policy",description:"Read the mypookie refund, cancellation and payment-error policy for personalized digital gifts.",alternates:{canonical:"/refund-policy"}};
 
 export default function RefundPolicyPage(){
  return <LegalPage eyebrow="PURCHASE POLICY" title="Refund & Cancellation Policy" intro="mypookie. gifts are personalized digital products and are generally non-refundable.">

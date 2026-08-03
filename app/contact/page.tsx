@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import { LegalPage } from "../LegalPage";
+
+export const metadata:Metadata={title:"Contact",description:"Contact mypookie support for help with interactive gifts, payments, privacy or delivery.",alternates:{canonical:"/contact"}};
 
 export default function ContactPage(){
  return <LegalPage eyebrow="WE’RE HERE" title="Contact Us" intro="Need help with a draft, shared gift, contribution or payment issue? Send the details below.">
