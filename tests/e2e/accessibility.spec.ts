@@ -17,3 +17,14 @@ test("primary landing actions work from the keyboard",async({page})=>{
  await primary.press("Enter");
  await expect(page.getByText("Who is this little world for?",{exact:true})).toBeVisible();
 });
+
+test("search landing pages have no serious accessibility violations",async({page})=>{
+ const routes=["/gifts-for-boyfriend","/gifts-for-girlfriend","/birthday-gifts-online","/anniversary-gifts-online","/digital-love-letter","/personalized-online-gifts"];
+ for(const route of routes){
+  await page.goto(route);
+  const results=await new AxeBuilder({page}).withTags(["wcag2a","wcag2aa","wcag21a","wcag21aa"]).analyze();
+  const serious=results.violations.filter(item=>item.impact==="serious"||item.impact==="critical");
+  const details=serious.flatMap(item=>item.nodes.map(node=>`${route} ${item.id}: ${node.target.join(" ")}`));
+  expect(serious.length,details.join("\n")).toBe(0);
+ }
+});
