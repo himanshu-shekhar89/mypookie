@@ -308,6 +308,10 @@ export function BuilderLivePreview({
         {block.id === "emoji" && (
           <EmojiDecoderPlay
             config={config}
+            giftId={giftId}
+            recipientSession={recipientSession}
+            blockInstanceId={block.instanceId || block.id}
+            recipientName={name}
             onComplete={onComplete}
             onReward={onReward}
           />
@@ -541,7 +545,11 @@ function EGiftPreview({
       </div>
       <strong>{config.celebrationTitle || scene}</strong>
       <p>{config.effectNote || "A beautiful celebration, just for you."}</p>
-      <small>{playing ? "Tap to pause" : config.celebrationHint || "Tap to light up the moment"}</small>
+      <small>
+        {playing
+          ? "Tap to pause"
+          : config.celebrationHint || "Tap to light up the moment"}
+      </small>
     </button>
   );
 }
@@ -759,16 +767,46 @@ function ThisOrThatPlay({
 
 function EmojiDecoderPlay({
   config,
+  giftId,
+  recipientSession,
+  blockInstanceId,
+  recipientName,
   onComplete,
   onReward,
 }: {
   config: Record<string, string>;
+  giftId?: string;
+  recipientSession?: string;
+  blockInstanceId?: string;
+  recipientName?: string;
   onComplete?: () => void;
   onReward?: (reward: string) => void;
 }) {
   const [answer, setAnswer] = useState("");
   const [hint, setHint] = useState(false);
   const [message, setMessage] = useState("");
+  const [revealed, setRevealed] = useState(false);
+  async function saveResult(status: "SOLVED" | "UNSURE") {
+    if (!giftId) return;
+    await fetch(`${api}/api/public/gifts/${giftId}/responses`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Recipient-Session": recipientSession || "",
+      },
+      body: JSON.stringify({
+        blockId: blockInstanceId || "emoji",
+        responseType: "EMOJI_DECODER",
+        contributorName: recipientName || "Recipient",
+        responseText: JSON.stringify({
+          status,
+          guess: answer,
+          answer: config.emojiAnswer || "our rainy cafe date",
+        }),
+        photoUrls: [],
+      }),
+    }).catch(() => null);
+  }
   function check() {
     const normalize = (value: string) =>
       value.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -777,6 +815,7 @@ function EmojiDecoderPlay({
       normalize(config.emojiAnswer || "our rainy cafe date")
     ) {
       setMessage("Decoded perfectly! ♡");
+      void saveResult("SOLVED");
       playSound("win");
       onReward?.("Decoded the secret memory");
       onComplete?.();
@@ -784,6 +823,16 @@ function EmojiDecoderPlay({
       setMessage("Not quite—try the hint.");
       playSound("incorrect");
     }
+  }
+  function revealAnswer() {
+    setRevealed(true);
+    setMessage(
+      `The answer was “${config.emojiAnswer || "our rainy cafe date"}”`,
+    );
+    void saveResult("UNSURE");
+    onReward?.("Emoji decoder: asked to reveal the answer");
+    onComplete?.();
+    playSound("reveal");
   }
   return (
     <div className="emoji-decoder-play">
@@ -793,14 +842,22 @@ function EmojiDecoderPlay({
         <p>{config.emojiHint || "Think about where we hid from the rain."}</p>
       )}
       <input
+        disabled={revealed}
         value={answer}
         onChange={(event) => setAnswer(event.target.value)}
         onKeyDown={(event) => event.key === "Enter" && check()}
         placeholder="Type your guess"
       />
       <div>
-        <button onClick={() => setHint(true)}>Hint</button>
-        <button onClick={check}>Decode →</button>
+        <button onClick={() => setHint(true)} disabled={revealed}>
+          Hint
+        </button>
+        <button onClick={revealAnswer} disabled={revealed}>
+          I’m not sure
+        </button>
+        <button onClick={check} disabled={revealed}>
+          Decode →
+        </button>
       </div>
       <output>{message}</output>
     </div>
@@ -1431,7 +1488,9 @@ function MemoryBook({
   ];
   const [page, setPage] = useState(0);
   const [turning, setTurning] = useState(false);
-  const [turnDirection, setTurnDirection] = useState<"forward" | "backward">("forward");
+  const [turnDirection, setTurnDirection] = useState<"forward" | "backward">(
+    "forward",
+  );
   const viewed = useRef<Set<number>>(new Set([0]));
   useEffect(() => {
     const preloadItems: { image: string; images?: string[] }[] = [

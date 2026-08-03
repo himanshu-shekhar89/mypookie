@@ -10,6 +10,8 @@ public record CouponRequest(
  @PositiveOrZero Integer maxDiscountPaise,
  @PositiveOrZero int minOrderPaise,
  @Positive Integer usageLimit,
+ @Pattern(regexp="STANDARD|INFLUENCER") String couponType,
+ @PositiveOrZero Integer commissionPaisePerUse,
  Instant validFrom,
  Instant expiresAt,
  boolean active

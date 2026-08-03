@@ -223,7 +223,20 @@ export function TinyBlockCustomization({
         title="Constellation Map"
         hint="Choose your constellation; the recipient will draw theirs beside it"
       >
-        <label className="field">Your constellation shape<select value={config.constellationShape || "Heart"} onChange={(event)=>onConfig("constellationShape",event.target.value)}><option>Heart</option><option>Crown</option><option>Infinity</option><option>Little bear</option></select></label>
+        <label className="field">
+          Your constellation shape
+          <select
+            value={config.constellationShape || "Heart"}
+            onChange={(event) =>
+              onConfig("constellationShape", event.target.value)
+            }
+          >
+            <option>Heart</option>
+            <option>Crown</option>
+            <option>Infinity</option>
+            <option>Little bear</option>
+          </select>
+        </label>
         <label className="field">
           Star name
           <input
@@ -728,6 +741,10 @@ function TapHeartEditor({
     onConfig("tapImage", await imageToDataUrl(file));
     onConfig("tapImageName", file.name);
   }
+  async function uploadAvoid(files: FileList | null) {
+    const file = files?.[0];
+    if (file) onConfig("avoidImage", await imageToDataUrl(file));
+  }
   return (
     <Section
       title="Tap the Hearts"
@@ -753,6 +770,58 @@ function TapHeartEditor({
           onChange={(event) => onConfig("scoreTitle", event.target.value)}
         />
       </label>
+      <div className="style-row">
+        <label className="field">
+          Levels
+          <select
+            value={config.tapLevels || "1"}
+            onChange={(event) => onConfig("tapLevels", event.target.value)}
+          >
+            {[1, 2, 3, 4, 5, 6].map((value) => (
+              <option key={value}>{value}</option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
+          Tries
+          <select
+            value={config.tapTries || "3"}
+            onChange={(event) => onConfig("tapTries", event.target.value)}
+          >
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
+              <option key={value}>{value}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <label
+        className={`upload dedicated-upload tap-image-upload ${config.avoidImage ? "has-image" : ""}`}
+      >
+        {config.avoidImage ? (
+          <img src={config.avoidImage} alt="Avoid target" />
+        ) : (
+          <span className="tap-image-placeholder">×</span>
+        )}
+        <strong>
+          {config.avoidImage
+            ? "Change do-not-tap image"
+            : "Upload what they must not tap"}
+        </strong>
+        <span>Defaults to a cross. Speed increases each level.</span>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(event) => void uploadAvoid(event.target.files)}
+        />
+      </label>
+      {config.avoidImage && (
+        <button
+          className="remove-poster-image"
+          onClick={() => onConfig("avoidImage", "")}
+        >
+          Use the cross again
+        </button>
+      )}
       <label className="field">
         What should the score call them?
         <input
@@ -898,13 +967,11 @@ function linesToExcuseRounds(value: string | undefined): ExcuseRound[] {
   const excuses = values.length
     ? values
     : ["There is an emergency hug shortage."];
-  return excuses
-    .slice(0, 6)
-    .map((senderExcuse, index) => ({
-      id: `legacy-excuse-${index}`,
-      situation: "We need a playful excuse to meet right now.",
-      senderExcuse,
-    }));
+  return excuses.slice(0, 6).map((senderExcuse, index) => ({
+    id: `legacy-excuse-${index}`,
+    situation: "We need a playful excuse to meet right now.",
+    senderExcuse,
+  }));
 }
 
 function MatchPairEditor({
@@ -955,7 +1022,7 @@ function MatchPairEditor({
       </label>
       <label className="upload dedicated-upload">
         ▥<strong>Add your photos</strong>
-        <span>{Math.min(photos.length,6)}/6 memories ready</span>
+        <span>{Math.min(photos.length, 6)}/6 memories ready</span>
         <input
           type="file"
           accept="image/*"
@@ -1350,12 +1417,12 @@ function BondQuestionEditor({
   onConfig: Props["onConfig"];
 }) {
   const fallback = [
-    "Who would accidentally become the villain in your movie?",
-    "What snack would get top billing in your story?",
-    "Which of you causes the surprise plot twists?",
-    "What ridiculous scene sums up your bond?",
-    "If your bond had a superpower, what would it be?",
-    "What would the end-credit blooper show?",
+    "How did your relationship begin, and what changed after that day?",
+    "Which shared memory captures your bond better than any other?",
+    "When life gets difficult, how do the two of you show up for each other?",
+    "What kind of adventure feels most like the two of you?",
+    "Which emotion defines your relationship right now?",
+    "What do you hope the next chapter together feels like?",
   ];
   const questions = parse<string[]>(config.bondQuestions, fallback);
   const answers = parse<string[]>(config.senderBondAnswers, []);
@@ -1391,7 +1458,7 @@ function BondQuestionEditor({
         },
         body: JSON.stringify({
           gameType: mode,
-          relationship: "two people sharing a meaningful bond",
+          relationship: `A real ${config.relationshipType || "meaningful relationship"}; questions must uncover how they met, shared memories, emotional dynamic, conflict style, favourite moments and hopes for the future so an AI can accurately match a ${mode}.`,
           tone: `simple, short, ${config.bondQuestionTone || "Playful"}`,
           count: questionCount,
         }),
@@ -1489,7 +1556,7 @@ function ResponseInbox({
     try {
       const response = await fetch(
         `${api}/api/public/gifts/${giftId}/responses?blockId=${blockId}`,
-        {headers:await authHeaders()},
+        { headers: await authHeaders() },
       );
       if (response.ok) setResponses(await response.json());
     } finally {
@@ -1499,9 +1566,16 @@ function ResponseInbox({
   useEffect(() => {
     if (!giftId) return;
     const controller = new AbortController();
-    void authHeaders().then(headers=>fetch(`${api}/api/public/gifts/${giftId}/responses?blockId=${blockId}`, {
-      signal: controller.signal,headers,
-    }))
+    void authHeaders()
+      .then((headers) =>
+        fetch(
+          `${api}/api/public/gifts/${giftId}/responses?blockId=${blockId}`,
+          {
+            signal: controller.signal,
+            headers,
+          },
+        ),
+      )
       .then((response) => (response.ok ? response.json() : []))
       .then(setResponses)
       .catch(() => {});

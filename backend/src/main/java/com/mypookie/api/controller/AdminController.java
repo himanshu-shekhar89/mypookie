@@ -101,6 +101,7 @@ public class AdminController {
  private void apply(Coupon coupon,CouponRequest request){
   coupon.setCode(request.code().trim().toUpperCase());coupon.setDiscountType(request.discountType());coupon.setDiscountValue(request.discountValue());
   coupon.setMaxDiscountPaise(request.maxDiscountPaise());coupon.setMinOrderPaise(request.minOrderPaise());coupon.setUsageLimit(request.usageLimit());
+  coupon.setCouponType(request.couponType()==null?"STANDARD":request.couponType());coupon.setCommissionPaisePerUse(request.commissionPaisePerUse()==null?0:request.commissionPaisePerUse());
   coupon.setValidFrom(request.validFrom());coupon.setExpiresAt(request.expiresAt());coupon.setActive(request.active());coupon.setUpdatedAt(Instant.now());
  }
  private boolean isSuperAdmin(String email){

@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BuilderLivePreview } from "./BuilderLivePreview";
 import { GiftSoundtrack, type SoundtrackSettings } from "./GiftSoundtrack";
-import { experienceBackgroundStyle, type ExperienceBackground } from "./experienceBackground";
+import {
+  experienceBackgroundStyle,
+  type ExperienceBackground,
+} from "./experienceBackground";
 
 type GiftBlock = {
   instanceId?: string;
@@ -42,9 +45,36 @@ type CompatibilityReport = {
 const api =
   process.env.NEXT_PUBLIC_API_URL ||
   "https://backend-production-22bd.up.railway.app";
-const gameBlocks = new Set(["quiz","thisorthat","emoji","heartcatch","wouldrather","neverhave","truthdare","tapheart","matchpair","wheel","slots","puzzle","scratch","treasure","alwaysyou","excuse","roast","fortune","mysterybox"]);
-function transitionStyle(block:GiftBlock){return block.config?.transitionStyle||(gameBlocks.has(block.id)?"Soft zoom":"None")}
-function transitionClass(block:GiftBlock){return `transition-${transitionStyle(block).toLowerCase().replaceAll(" ","-")}`}
+const gameBlocks = new Set([
+  "quiz",
+  "thisorthat",
+  "emoji",
+  "heartcatch",
+  "wouldrather",
+  "neverhave",
+  "truthdare",
+  "tapheart",
+  "matchpair",
+  "wheel",
+  "slots",
+  "puzzle",
+  "scratch",
+  "treasure",
+  "alwaysyou",
+  "excuse",
+  "roast",
+  "fortune",
+  "mysterybox",
+]);
+function transitionStyle(block: GiftBlock) {
+  return (
+    block.config?.transitionStyle ||
+    (gameBlocks.has(block.id) ? "Soft zoom" : "None")
+  );
+}
+function transitionClass(block: GiftBlock) {
+  return `transition-${transitionStyle(block).toLowerCase().replaceAll(" ", "-")}`;
+}
 
 function parseBlocks(value: string) {
   try {
@@ -57,19 +87,33 @@ function parseBlocks(value: string) {
   }
 }
 
-function parseRecipientGender(value:string){
-  try{
-    const parsed=JSON.parse(value) as {recipientGender?:string};
-    return Array.isArray(parsed)?"":parsed.recipientGender||"";
-  }catch{return ""}
+function parseRecipientGender(value: string) {
+  try {
+    const parsed = JSON.parse(value) as { recipientGender?: string };
+    return Array.isArray(parsed) ? "" : parsed.recipientGender || "";
+  } catch {
+    return "";
+  }
 }
-function parseExperienceSettings(value:string):{soundtrack?:SoundtrackSettings;experienceBackground?:ExperienceBackground}{try{const parsed=JSON.parse(value);return Array.isArray(parsed)?{}:parsed}catch{return {}}}
+function parseExperienceSettings(value: string): {
+  soundtrack?: SoundtrackSettings;
+  experienceBackground?: ExperienceBackground;
+} {
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? {} : parsed;
+  } catch {
+    return {};
+  }
+}
 
 export function PublicGiftExperience({ token }: { token: string }) {
   const [gift, setGift] = useState<PublicGift | null>(null);
   const [error, setError] = useState(false);
-  const [accessPinInput,setAccessPinInput]=useState("");
-  const [accessState,setAccessState]=useState<"idle"|"checking"|"wrong"|"limit">("idle");
+  const [accessPinInput, setAccessPinInput] = useState("");
+  const [accessState, setAccessState] = useState<
+    "idle" | "checking" | "wrong" | "limit"
+  >("idle");
   const [now, setNow] = useState(0);
   const unlockRefetched = useRef(false);
   const [step, setStep] = useState(0);
@@ -87,27 +131,43 @@ export function PublicGiftExperience({ token }: { token: string }) {
   const [ratingState, setRatingState] = useState<
     "idle" | "saving" | "saved" | "error"
   >("idle");
-  const [senderMessage,setSenderMessage]=useState("");
-  const [messageState,setMessageState]=useState<"idle"|"sending"|"sent"|"error">("idle");
-  const openIdRef=useRef("");
-  const openHeaders=useCallback((contentType=false)=>{
-    if(!openIdRef.current){
-      const key=`mypookie-open-${token}`;
-      openIdRef.current=window.sessionStorage.getItem(key)||window.crypto.randomUUID();
-      window.sessionStorage.setItem(key,openIdRef.current);
-    }
-    return contentType?{"Content-Type":"application/json","X-Gift-Open-Id":openIdRef.current}:{"X-Gift-Open-Id":openIdRef.current};
-  },[token]);
+  const [senderMessage, setSenderMessage] = useState("");
+  const [messageState, setMessageState] = useState<
+    "idle" | "sending" | "sent" | "error"
+  >("idle");
+  const openIdRef = useRef("");
+  const openHeaders = useCallback(
+    (contentType = false) => {
+      if (!openIdRef.current) {
+        const key = `mypookie-open-${token}`;
+        openIdRef.current =
+          window.sessionStorage.getItem(key) || window.crypto.randomUUID();
+        window.sessionStorage.setItem(key, openIdRef.current);
+      }
+      return contentType
+        ? {
+            "Content-Type": "application/json",
+            "X-Gift-Open-Id": openIdRef.current,
+          }
+        : { "X-Gift-Open-Id": openIdRef.current };
+    },
+    [token],
+  );
   useEffect(() => {
-    fetch(`${api}/api/public/gifts/${token}`,{headers:openHeaders()})
+    fetch(`${api}/api/public/gifts/${token}`, { headers: openHeaders() })
       .then((response) => {
-        if(response.status===410){setAccessState("limit");throw new Error("limit")}
+        if (response.status === 410) {
+          setAccessState("limit");
+          throw new Error("limit");
+        }
         if (!response.ok) throw new Error();
         return response.json();
       })
       .then(setGift)
-      .catch((reason) => {if(reason?.message!=="limit")setError(true)});
-  }, [token,openHeaders]);
+      .catch((reason) => {
+        if (reason?.message !== "limit") setError(true);
+      });
+  }, [token, openHeaders]);
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 250);
     return () => window.clearInterval(timer);
@@ -120,28 +180,55 @@ export function PublicGiftExperience({ token }: { token: string }) {
     )
       return;
     unlockRefetched.current = true;
-    fetch(`${api}/api/public/gifts/${token}${gift.requiresPin?"/unlock":""}`,gift.requiresPin?{method:"POST",headers:openHeaders(true),body:JSON.stringify({pin:accessPinInput})}:{headers:openHeaders()})
+    fetch(
+      `${api}/api/public/gifts/${token}${gift.requiresPin ? "/unlock" : ""}`,
+      gift.requiresPin
+        ? {
+            method: "POST",
+            headers: openHeaders(true),
+            body: JSON.stringify({ pin: accessPinInput }),
+          }
+        : { headers: openHeaders() },
+    )
       .then((response) => (response.ok ? response.json() : Promise.reject()))
       .then(setGift)
       .catch(() => {
         unlockRefetched.current = false;
       });
-  }, [gift, now, token,accessPinInput,openHeaders]);
-  async function unlockGift(){
-    if(!/^\d{4,8}$/.test(accessPinInput)||accessState==="checking")return;
+  }, [gift, now, token, accessPinInput, openHeaders]);
+  async function unlockGift() {
+    if (!/^\d{4,8}$/.test(accessPinInput) || accessState === "checking") return;
     setAccessState("checking");
-    const response=await fetch(`${api}/api/public/gifts/${token}/unlock`,{method:"POST",headers:openHeaders(true),body:JSON.stringify({pin:accessPinInput})}).catch(()=>null);
-    if(response?.ok){setGift(await response.json());setAccessState("idle");return}
-    setAccessState(response?.status===410?"limit":"wrong");
+    const response = await fetch(`${api}/api/public/gifts/${token}/unlock`, {
+      method: "POST",
+      headers: openHeaders(true),
+      body: JSON.stringify({ pin: accessPinInput }),
+    }).catch(() => null);
+    if (response?.ok) {
+      setGift(await response.json());
+      setAccessState("idle");
+      return;
+    }
+    setAccessState(response?.status === 410 ? "limit" : "wrong");
   }
-  useEffect(()=>{
-    if(introSlide!==1)return;
-    const current=gift?parseBlocks(gift.blocksJson)[step]:null;
-    const seconds=Math.min(2,Math.max(1,Number(current?.config?.transitionDuration)||1.6));
-    const timer=window.setTimeout(()=>setIntroSlide(2),seconds*1000);
-    return()=>window.clearTimeout(timer);
-  },[introSlide,step,gift]);
-  if(accessState==="limit")return <main className="public-gift-loading gift-access-ended"><span>◇</span><h1>This gift has reached its opening limit.</h1><p>The creator chose how many times it could be opened.</p></main>;
+  useEffect(() => {
+    if (introSlide !== 1) return;
+    const current = gift ? parseBlocks(gift.blocksJson)[step] : null;
+    const seconds = Math.min(
+      2,
+      Math.max(1, Number(current?.config?.transitionDuration) || 1.6),
+    );
+    const timer = window.setTimeout(() => setIntroSlide(2), seconds * 1000);
+    return () => window.clearTimeout(timer);
+  }, [introSlide, step, gift]);
+  if (accessState === "limit")
+    return (
+      <main className="public-gift-loading gift-access-ended">
+        <span>◇</span>
+        <h1>This gift has reached its opening limit.</h1>
+        <p>The creator chose how many times it could be opened.</p>
+      </main>
+    );
   if (error)
     return (
       <main className="public-gift-loading">
@@ -157,7 +244,45 @@ export function PublicGiftExperience({ token }: { token: string }) {
         <p>Preparing something beautiful…</p>
       </main>
     );
-  if(gift.requiresPin&&!gift.accessGranted)return <main className={`recipient-preview public-recipient theme-${gift.theme.toLowerCase().replaceAll(" ", "-")}`}><section className="gift-pin-lock"><span>♡</span><small>PRIVATE GIFT FOR {gift.recipientName.toUpperCase()}</small><h1>Enter the gift PIN</h1><p>The creator protected this little world just for you.</p><input autoFocus inputMode="numeric" pattern="[0-9]*" maxLength={8} value={accessPinInput} onChange={event=>{setAccessPinInput(event.target.value.replace(/\D/g,"").slice(0,8));setAccessState("idle")}} onKeyDown={event=>event.key==="Enter"&&void unlockGift()} placeholder="4–8 digit PIN"/><button onClick={()=>void unlockGift()} disabled={accessPinInput.length<4||accessState==="checking"}>{accessState==="checking"?"Opening…":"Open my gift →"}</button>{accessState==="wrong"&&<output>That PIN isn’t correct. Check the shared message and try again.</output>}</section></main>;
+  if (gift.requiresPin && !gift.accessGranted)
+    return (
+      <main
+        className={`recipient-preview public-recipient theme-${gift.theme.toLowerCase().replaceAll(" ", "-")}`}
+      >
+        <section className="gift-pin-lock">
+          <span>♡</span>
+          <small>PRIVATE GIFT FOR {gift.recipientName.toUpperCase()}</small>
+          <h1>Enter the gift PIN</h1>
+          <p>The creator protected this little world just for you.</p>
+          <input
+            autoFocus
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={8}
+            value={accessPinInput}
+            onChange={(event) => {
+              setAccessPinInput(
+                event.target.value.replace(/\D/g, "").slice(0, 8),
+              );
+              setAccessState("idle");
+            }}
+            onKeyDown={(event) => event.key === "Enter" && void unlockGift()}
+            placeholder="4–8 digit PIN"
+          />
+          <button
+            onClick={() => void unlockGift()}
+            disabled={accessPinInput.length < 4 || accessState === "checking"}
+          >
+            {accessState === "checking" ? "Opening…" : "Open my gift →"}
+          </button>
+          {accessState === "wrong" && (
+            <output>
+              That PIN isn’t correct. Check the shared message and try again.
+            </output>
+          )}
+        </section>
+      </main>
+    );
   const reveal = gift.scheduledAt ? new Date(gift.scheduledAt).getTime() : 0;
   if (reveal > now) {
     const difference = reveal - now;
@@ -195,9 +320,14 @@ export function PublicGiftExperience({ token }: { token: string }) {
     );
   }
   const blocks = parseBlocks(gift.blocksJson);
-  const experienceSettings=parseExperienceSettings(gift.blocksJson);
-  const recipientGender=parseRecipientGender(gift.blocksJson);
-  const returnPronoun=recipientGender==="Girl"?"him":recipientGender==="Boy"?"her":"them";
+  const experienceSettings = parseExperienceSettings(gift.blocksJson);
+  const recipientGender = parseRecipientGender(gift.blocksJson);
+  const returnPronoun =
+    recipientGender === "Girl"
+      ? "him"
+      : recipientGender === "Boy"
+        ? "her"
+        : "them";
   const block = blocks[step];
   const currentComplete = complete.includes(step);
   const reportBlock = blocks.find(
@@ -211,7 +341,10 @@ export function PublicGiftExperience({ token }: { token: string }) {
       `${api}/api/public/gifts/${gift!.id}/compatibility-report`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-Recipient-Session": gift!.recipientSession || "" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-Recipient-Session": gift!.recipientSession || "",
+        },
         body: JSON.stringify({
           pin: reportPin,
           blockId: reportBlock.instanceId || reportBlock.id,
@@ -230,22 +363,53 @@ export function PublicGiftExperience({ token }: { token: string }) {
     setRatingState("saving");
     const response = await fetch(`${api}/api/public/gifts/${gift!.id}/rating`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-Recipient-Session": gift.recipientSession || "" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Recipient-Session": gift.recipientSession || "",
+      },
       body: JSON.stringify({ stars: rating, comment: ratingNote }),
     }).catch(() => null);
     setRatingState(response?.ok ? "saved" : "error");
   }
-  async function sendMessageToSender(){
-    if(!senderMessage.trim()||messageState==="sending")return;
+  async function sendMessageToSender() {
+    if (!senderMessage.trim() || messageState === "sending") return;
     setMessageState("sending");
-    const response=await fetch(`${api}/api/public/gifts/${gift!.id}/responses`,{method:"POST",headers:{"Content-Type":"application/json","X-Recipient-Session":gift!.recipientSession||""},body:JSON.stringify({blockId:"final-message",responseType:"FINAL_MESSAGE",contributorName:gift!.recipientName,responseText:senderMessage.trim(),photoUrls:[]})}).catch(()=>null);
-    setMessageState(response?.ok?"sent":"error");
+    const response = await fetch(
+      `${api}/api/public/gifts/${gift!.id}/responses`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Recipient-Session": gift!.recipientSession || "",
+        },
+        body: JSON.stringify({
+          blockId: "final-message",
+          responseType: "FINAL_MESSAGE",
+          contributorName: gift!.recipientName,
+          responseText: senderMessage.trim(),
+          photoUrls: [],
+        }),
+      },
+    ).catch(() => null);
+    setMessageState(response?.ok ? "sent" : "error");
   }
   function finishGift() {
-    void fetch(`${api}/api/public/gifts/${token}/complete`, { method: "POST", headers:{"X-Recipient-Session":gift!.recipientSession||""} });
+    void fetch(`${api}/api/public/gifts/${token}/complete`, {
+      method: "POST",
+      headers: { "X-Recipient-Session": gift!.recipientSession || "" },
+    });
     setFinished(true);
   }
-  function recordProgress(stage:number){void fetch(`${api}/api/public/gifts/${token}/progress`,{method:"POST",headers:{"Content-Type":"application/json","X-Recipient-Session":gift!.recipientSession||""},body:JSON.stringify({stage,totalStages:blocks.length})})}
+  function recordProgress(stage: number) {
+    void fetch(`${api}/api/public/gifts/${token}/progress`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Recipient-Session": gift!.recipientSession || "",
+      },
+      body: JSON.stringify({ stage, totalStages: blocks.length }),
+    });
+  }
   if (finished)
     return (
       <main
@@ -383,8 +547,58 @@ export function PublicGiftExperience({ token }: { token: string }) {
               </>
             )}
           </div>
-          <div className={`recipient-message-back ${messageState==="sent"?"sent":""}`}><small>A NOTE BACK TO THEM</small><h2>{messageState==="sent"?`Sent to ${gift.senderName||"the sender"} ♡`:`Want to send ${gift.senderName||"the sender"} a message?`}</h2>{messageState!=="sent"&&<><p>Optional—tell them what you felt after opening their gift.</p><textarea rows={4} maxLength={1000} value={senderMessage} onChange={event=>setSenderMessage(event.target.value)} placeholder="Write something from the heart…"/><div><span>{senderMessage.length}/1000</span><button onClick={()=>void sendMessageToSender()} disabled={!senderMessage.trim()||messageState==="sending"}>{messageState==="sending"?"Sending…":"Send message"}</button></div>{messageState==="error"&&<output>That message didn’t send. Please try again.</output>}</>}</div>
-          <section className="return-gift-invite"><span>♡</span><div><small>RETURN THE FEELING</small><h2>Want to create a gift for {returnPronoun} too?</h2><p>Make a little world of your own—personalized with memories, games and surprises.</p></div><a href="/">Create a gift <b>→</b></a></section>
+          <div
+            className={`recipient-message-back ${messageState === "sent" ? "sent" : ""}`}
+          >
+            <small>A NOTE BACK TO THEM</small>
+            <h2>
+              {messageState === "sent"
+                ? `Sent to ${gift.senderName || "the sender"} ♡`
+                : `Want to send ${gift.senderName || "the sender"} a message?`}
+            </h2>
+            {messageState !== "sent" && (
+              <>
+                <p>
+                  Optional—tell them what you felt after opening their gift.
+                </p>
+                <textarea
+                  rows={4}
+                  maxLength={1000}
+                  value={senderMessage}
+                  onChange={(event) => setSenderMessage(event.target.value)}
+                  placeholder="Write something from the heart…"
+                />
+                <div>
+                  <span>{senderMessage.length}/1000</span>
+                  <button
+                    onClick={() => void sendMessageToSender()}
+                    disabled={
+                      !senderMessage.trim() || messageState === "sending"
+                    }
+                  >
+                    {messageState === "sending" ? "Sending…" : "Send message"}
+                  </button>
+                </div>
+                {messageState === "error" && (
+                  <output>That message didn’t send. Please try again.</output>
+                )}
+              </>
+            )}
+          </div>
+          <section className="return-gift-invite">
+            <span>♡</span>
+            <div>
+              <small>RETURN THE FEELING</small>
+              <h2>Want to create a gift for {returnPronoun} too?</h2>
+              <p>
+                Make a little world of your own—personalized with memories,
+                games and surprises.
+              </p>
+            </div>
+            <a href="/">
+              Create a gift <b>→</b>
+            </a>
+          </section>
           <button
             className="replay-gift"
             onClick={() => {
@@ -427,45 +641,99 @@ export function PublicGiftExperience({ token }: { token: string }) {
         <div className="preview-count">
           {step + 1} of {blocks.length}
         </div>
-        {activityIntro ? <section className={`moment-slideshow ${introSlide===0?"opening-slide":`moment-teaser ${transitionClass(block)}`}`} style={introSlide===1?{"--transition-duration":`${Math.min(2,Math.max(1,Number(block.config?.transitionDuration)||1.6))}s`} as React.CSSProperties:undefined}>
-          <div className="moment-slide-orbit" aria-hidden="true"><i/><i/><span>{introSlide===0?"♡":block.icon}</span></div>
-          {introSlide===0?<><small>A GIFT FROM {(gift.senderName||"SOMEONE SPECIAL").toUpperCase()}</small><h1>For you, {gift.recipientName}.</h1><p>A little world was made for you. Take it one moment at a time.</p><button onClick={()=>setIntroSlide(transitionStyle(block)!=="None"?1:2)}>Open your gift<span>→</span></button></>:<><small>COMING NEXT</small><h1>{block.name}</h1><p>{block.message}</p><div className="teaser-progress" aria-hidden="true"><i/></div></>}
-        </section> : <div className={`activity-stage-enter ${transitionClass(block)}`}><BuilderLivePreview
-            key={`${block.instanceId || block.id}-${step}`}
-            block={block}
-            name={gift.recipientName}
-            senderName={gift.senderName || "Someone special"}
-            theme={gift.theme}
-            ambience={gift.ambience}
-            giftId={gift.id}
-            recipientSession={gift.recipientSession || undefined}
-            onComplete={() =>
-              setComplete((current) =>
-                current.includes(step) ? current : [...current, step],
-              )
+        {activityIntro ? (
+          <section
+            className={`moment-slideshow ${introSlide === 0 ? "opening-slide" : `moment-teaser ${transitionClass(block)}`}`}
+            style={
+              introSlide === 1
+                ? ({
+                    "--transition-duration": `${Math.min(2, Math.max(1, Number(block.config?.transitionDuration) || 1.6))}s`,
+                  } as React.CSSProperties)
+                : undefined
             }
-            onReward={(reward) => setWins((current) => [...current, reward])}
-          /></div>}
-        {!activityIntro&&<div className="recipient-progress-gate">
-          <button
-            className="primary recipient-next"
-            disabled={!currentComplete}
-            onClick={() => {
-              if (step < blocks.length - 1) {const next=step+1;recordProgress(next+1);setStep(next);setIntroSlide(transitionStyle(blocks[next])!=="None"?1:2);}
-              else finishGift();
-            }}
           >
-            {step < blocks.length - 1
-              ? "Continue to the next moment"
-              : "Finish this experience"}{" "}
-            <span>→</span>
-          </button>
-          <small className={currentComplete ? "ready" : ""}>
-            {currentComplete
-              ? "Moment complete ✓"
-              : "Complete this moment to unlock the next one"}
-          </small>
-        </div>}
+            <div className="moment-slide-orbit" aria-hidden="true">
+              <i />
+              <i />
+              <span>{introSlide === 0 ? "♡" : block.icon}</span>
+            </div>
+            {introSlide === 0 ? (
+              <>
+                <small>
+                  A GIFT FROM{" "}
+                  {(gift.senderName || "SOMEONE SPECIAL").toUpperCase()}
+                </small>
+                <h1>For you, {gift.recipientName}.</h1>
+                <p>
+                  A little world was made for you. Take it one moment at a time.
+                </p>
+                <button
+                  onClick={() =>
+                    setIntroSlide(transitionStyle(block) !== "None" ? 1 : 2)
+                  }
+                >
+                  Open your gift<span>→</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <small>COMING NEXT</small>
+                <h1>{block.name}</h1>
+                <p>{block.message}</p>
+                <div className="teaser-progress" aria-hidden="true">
+                  <i />
+                </div>
+              </>
+            )}
+          </section>
+        ) : (
+          <div className={`activity-stage-enter ${transitionClass(block)}`}>
+            <BuilderLivePreview
+              key={`${block.instanceId || block.id}-${step}`}
+              block={block}
+              name={gift.recipientName}
+              senderName={gift.senderName || "The sender"}
+              theme={gift.theme}
+              ambience={gift.ambience}
+              giftId={gift.id}
+              recipientSession={gift.recipientSession || undefined}
+              onComplete={() =>
+                setComplete((current) =>
+                  current.includes(step) ? current : [...current, step],
+                )
+              }
+              onReward={(reward) => setWins((current) => [...current, reward])}
+            />
+          </div>
+        )}
+        {!activityIntro && (
+          <div className="recipient-progress-gate">
+            <button
+              className="primary recipient-next"
+              disabled={!currentComplete}
+              onClick={() => {
+                if (step < blocks.length - 1) {
+                  const next = step + 1;
+                  recordProgress(next + 1);
+                  setStep(next);
+                  setIntroSlide(
+                    transitionStyle(blocks[next]) !== "None" ? 1 : 2,
+                  );
+                } else finishGift();
+              }}
+            >
+              {step < blocks.length - 1
+                ? "Continue to the next moment"
+                : "Finish this experience"}{" "}
+              <span>→</span>
+            </button>
+            <small className={currentComplete ? "ready" : ""}>
+              {currentComplete
+                ? "Moment complete ✓"
+                : "Complete this moment to unlock the next one"}
+            </small>
+          </div>
+        )}
         {wins.length > 0 && (
           <div className="public-win-strip">
             <span>✦</span>

@@ -582,12 +582,12 @@ const ROOT_ADMIN_EMAILS = new Set([
 ]);
 
 const funBondQuestions = [
-  "Who would accidentally become the villain in your movie?",
-  "What snack would get top billing in your story?",
-  "Which of you causes the surprise plot twists?",
-  "What ridiculous scene sums up your bond?",
-  "If your bond had a superpower, what would it be?",
-  "What would the end-credit blooper show?",
+  "How did your relationship begin, and what changed after that day?",
+  "Which shared memory captures your bond better than any other?",
+  "When life gets difficult, how do you show up for each other?",
+  "What kind of adventure feels most like the two of you?",
+  "Which emotion defines your relationship right now?",
+  "What do you hope the next chapter together feels like?",
 ];
 
 const blockDefaults: Record<string, Record<string, string>> = {
@@ -680,6 +680,9 @@ const blockDefaults: Record<string, Record<string, string>> = {
     scoreTitle: "Official heart-catching score",
     tapImage: "",
     tapImageName: "",
+    avoidImage: "",
+    tapLevels: "1",
+    tapTries: "3",
     tapTargetLabel: "hearts",
   },
   matchpair: { pairPhotos: "[]", matchGrid: "8 cards · 4 pairs" },

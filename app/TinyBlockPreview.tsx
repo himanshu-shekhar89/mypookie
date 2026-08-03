@@ -61,7 +61,12 @@ function randomIndex(length: number) {
     ? globalThis.crypto.getRandomValues(new Uint32Array(1))[0] % length
     : 0;
 }
-function recipientHeaders(session?:string){return {"Content-Type":"application/json","X-Recipient-Session":session||""};}
+function recipientHeaders(session?: string) {
+  return {
+    "Content-Type": "application/json",
+    "X-Recipient-Session": session || "",
+  };
+}
 function shuffle<T>(values: T[]) {
   const next = [...values];
   const random = new Uint32Array(next.length);
@@ -108,8 +113,12 @@ function WouldRather({ config, senderName, onComplete, onReward }: Props) {
   } | null>(null);
   const pointer = useRef<number | null>(null);
   useEffect(() => {
-    const timer=window.setTimeout(()=>{setIndex(0);setPicks([]);setSelected(null)},0);
-    return()=>window.clearTimeout(timer);
+    const timer = window.setTimeout(() => {
+      setIndex(0);
+      setPicks([]);
+      setSelected(null);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [mode, config.pairs]);
   if (index >= pairs.length)
     return (
@@ -234,8 +243,12 @@ function NeverHave({ config, senderName, onComplete, onReward }: Props) {
   const [have, setHave] = useState(0);
   const [selected, setSelected] = useState<boolean | null>(null);
   useEffect(() => {
-    const timer=window.setTimeout(()=>{setIndex(0);setHave(0);setSelected(null)},0);
-    return()=>window.clearTimeout(timer);
+    const timer = window.setTimeout(() => {
+      setIndex(0);
+      setHave(0);
+      setSelected(null);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [mode, config.neverHaveCards, config.statements]);
   if (index >= cards.length)
     return (
@@ -498,10 +511,15 @@ function TruthDare({
 
 function TapHeart({ config, onComplete, onReward }: Props) {
   const duration = Math.min(Math.max(Number(config.duration) || 10, 5), 15);
+  const levels = Math.min(Math.max(Number(config.tapLevels) || 1, 1), 6);
+  const triesAllowed = Math.min(Math.max(Number(config.tapTries) || 3, 1), 10);
   const targetLabel = (config.tapTargetLabel || "hearts").trim() || "hearts";
   const [time, setTime] = useState(duration);
   const [score, setScore] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [level, setLevel] = useState(1);
+  const [tries, setTries] = useState(triesAllowed);
+  const [avoidPosition, setAvoidPosition] = useState({ left: 68, top: 30 });
   const [position, setPosition] = useState({ left: 48, top: 46 });
   const completed = useRef(false);
   useEffect(() => {
@@ -512,6 +530,20 @@ function TapHeart({ config, onComplete, onReward }: Props) {
     );
     return () => window.clearInterval(timer);
   }, [playing]);
+  useEffect(() => {
+    if (!playing) return;
+    const mover = window.setInterval(
+      () => {
+        setPosition({ left: 8 + randomIndex(78), top: 8 + randomIndex(67) });
+        setAvoidPosition({
+          left: 8 + randomIndex(78),
+          top: 8 + randomIndex(67),
+        });
+      },
+      Math.max(360, 1050 - level * 125),
+    );
+    return () => window.clearInterval(mover);
+  }, [playing, level]);
   useEffect(() => {
     if (time !== 0 || !playing || completed.current) return;
     completed.current = true;
@@ -525,13 +557,27 @@ function TapHeart({ config, onComplete, onReward }: Props) {
     setScore(0);
     setTime(duration);
     setPlaying(true);
+    setLevel(1);
+    setTries(triesAllowed);
     playSound("reveal");
   }
   function tap() {
     if (!playing) return;
     setScore((value) => value + 1);
+    setLevel(Math.min(levels, 1 + Math.floor((score + 1) / 5)));
     playSound("tile");
     setPosition({ left: 8 + randomIndex(78), top: 8 + randomIndex(67) });
+  }
+  function tapAvoid() {
+    if (!playing) return;
+    const next = tries - 1;
+    setTries(next);
+    playSound("incorrect");
+    if (next <= 0) {
+      setPlaying(false);
+      onReward?.(`${targetLabel} tapped: ${score} · ran out of tries`);
+      onComplete?.();
+    }
   }
   return (
     <div
@@ -546,7 +592,8 @@ function TapHeart({ config, onComplete, onReward }: Props) {
               : "Ready?"}
         </strong>
         <span>
-          {config.scoreTitle || "Official heart-catching score"} · {score}
+          {config.scoreTitle || "Official heart-catching score"} · {score} ·
+          Level {level}/{levels} · {tries} tries
         </span>
       </header>
       <div>
@@ -557,6 +604,23 @@ function TapHeart({ config, onComplete, onReward }: Props) {
             aria-label={`Tap ${targetLabel}`}
           >
             {config.tapImage ? <img src={config.tapImage} alt="" /> : "♥"}
+          </button>
+        )}
+        {playing && (
+          <button
+            className="avoid-target"
+            style={{
+              left: `${avoidPosition.left}%`,
+              top: `${avoidPosition.top}%`,
+            }}
+            onClick={tapAvoid}
+            aria-label="Do not tap"
+          >
+            {config.avoidImage ? (
+              <img src={config.avoidImage} alt="Do not tap" />
+            ) : (
+              "×"
+            )}
           </button>
         )}
         {!playing && (
@@ -766,20 +830,55 @@ function Constellation({ config, onComplete }: Props) {
       })),
     [],
   );
-  const senderShapes:Record<string,string>={Heart:"18,30 30,18 42,30 50,48 58,30 70,18 82,30",Crown:"18,62 25,28 43,48 55,20 70,48 82,28 88,62",Infinity:"15,48 28,30 45,48 55,58 72,30 86,48 72,66 55,48 45,38 28,66 15,48","Little bear":"25,32 34,24 42,34 58,34 66,24 75,32 70,60 50,72 30,60 25,32"};
-  const senderPoints=senderShapes[config.constellationShape||"Heart"]||senderShapes.Heart;
-  const recipientPoints=chosen.map(index=>`${stars[index].left},${stars[index].top}`).join(" ");
-  const fortunes=["Two paths that keep finding the same sky.","Your differences make a brighter pattern.","A playful chapter is about to begin.","This bond grows strongest through shared adventures."];
-  const fortune=fortunes[chosen.reduce((sum,value)=>sum+value,0)%fortunes.length];
-  function choose(index:number){if(revealed||chosen.includes(index)||chosen.length>=7)return;playSound("tile");setChosen(current=>[...current,index])}
-  function reveal(){if(chosen.length<4)return;setRevealed(true);playSound("win");onComplete?.()}
+  const senderShapes: Record<string, string> = {
+    Heart: "18,30 30,18 42,30 50,48 58,30 70,18 82,30",
+    Crown: "18,62 25,28 43,48 55,20 70,48 82,28 88,62",
+    Infinity:
+      "15,48 28,30 45,48 55,58 72,30 86,48 72,66 55,48 45,38 28,66 15,48",
+    "Little bear":
+      "25,32 34,24 42,34 58,34 66,24 75,32 70,60 50,72 30,60 25,32",
+  };
+  const senderPoints =
+    senderShapes[config.constellationShape || "Heart"] || senderShapes.Heart;
+  const recipientPoints = chosen
+    .map((index) => `${stars[index].left},${stars[index].top}`)
+    .join(" ");
+  const fortunes = [
+    "Two paths that keep finding the same sky.",
+    "Your differences make a brighter pattern.",
+    "A playful chapter is about to begin.",
+    "This bond grows strongest through shared adventures.",
+  ];
+  const fortune =
+    fortunes[chosen.reduce((sum, value) => sum + value, 0) % fortunes.length];
+  function choose(index: number) {
+    if (revealed || chosen.includes(index) || chosen.length >= 7) return;
+    playSound("tile");
+    setChosen((current) => [...current, index]);
+  }
+  function reveal() {
+    if (chosen.length < 4) return;
+    setRevealed(true);
+    playSound("win");
+    onComplete?.();
+  }
   return (
     <div
       className={`constellation-map ${config.skyStyle?.toLowerCase().replaceAll(" ", "-")} ${revealed ? "revealed" : ""}`}
     >
-      <div className="cosmic-orb planet-one"/><div className="cosmic-orb planet-two"/><div className="shooting-star"/>
+      <div className="cosmic-orb planet-one" />
+      <div className="cosmic-orb planet-two" />
+      <div className="shooting-star" />
       {stars.map((star, index) => (
-        <i role="button" aria-label={`Star ${index+1}`} className={chosen.includes(index)?"chosen":""} onClick={()=>choose(index)}
+        <i
+          role="button"
+          tabIndex={0}
+          aria-label={`Star ${index + 1}`}
+          className={chosen.includes(index) ? "chosen" : ""}
+          onClick={() => choose(index)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") choose(index);
+          }}
           key={index}
           style={{
             left: `${star.left}%`,
@@ -789,8 +888,56 @@ function Constellation({ config, onComplete }: Props) {
           }}
         />
       ))}
-      {!revealed&&<><header className="constellation-prompt"><small>DRAW IN THE STARS</small><strong>Choose 4–7 stars to make your constellation</strong><span>{chosen.length}/4 minimum</span></header><svg className="recipient-star-lines" viewBox="0 0 100 100" preserveAspectRatio="none"><polyline points={recipientPoints}/></svg><button className="constellation-reveal" disabled={chosen.length<4} onClick={reveal}>Join our skies ✦</button></>}
-      {revealed&&<div className="constellation-pair"><section><small>FROM THEM</small><svg viewBox="0 0 100 100"><polyline points={senderPoints}/></svg><strong>{config.starName||config.constellationShape||"Their constellation"}</strong></section><section><small>FROM YOU</small><svg viewBox="0 0 100 100"><polyline points={recipientPoints}/></svg><strong>Your constellation</strong></section><p><b>YOUR SKY FORTUNE</b>{fortune}<em>{config.starMessage}</em></p></div>}
+      {!revealed && (
+        <>
+          <header className="constellation-prompt">
+            <small>DRAW IN THE STARS</small>
+            <strong>Choose 4–7 stars to make your constellation</strong>
+            <span>{chosen.length}/4 minimum</span>
+          </header>
+          <svg
+            className="recipient-star-lines"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+          >
+            <polyline points={recipientPoints} />
+          </svg>
+          <button
+            className="constellation-reveal"
+            disabled={chosen.length < 4}
+            onClick={reveal}
+          >
+            Join our skies ✦
+          </button>
+        </>
+      )}
+      {revealed && (
+        <div className="constellation-pair">
+          <section>
+            <small>FROM THEM</small>
+            <svg viewBox="0 0 100 100">
+              <polyline points={senderPoints} />
+            </svg>
+            <strong>
+              {config.starName ||
+                config.constellationShape ||
+                "Their constellation"}
+            </strong>
+          </section>
+          <section>
+            <small>FROM YOU</small>
+            <svg viewBox="0 0 100 100">
+              <polyline points={recipientPoints} />
+            </svg>
+            <strong>Your constellation</strong>
+          </section>
+          <p>
+            <b>YOUR SKY FORTUNE</b>
+            {fortune}
+            <em>{config.starMessage}</em>
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -1494,7 +1641,9 @@ function GroupBoard({ config, giftId, recipientSession, onComplete }: Props) {
   const [viewed, setViewed] = useState<number[]>([0]);
   useEffect(() => {
     if (!giftId) return;
-    fetch(`${api}/api/public/gifts/${giftId}/responses?blockId=groupboard`,{headers:recipientHeaders(recipientSession)})
+    fetch(`${api}/api/public/gifts/${giftId}/responses?blockId=groupboard`, {
+      headers: recipientHeaders(recipientSession),
+    })
       .then((response) => (response.ok ? response.json() : []))
       .then((responses: SavedResponse[]) =>
         setReceived(
@@ -1506,7 +1655,7 @@ function GroupBoard({ config, giftId, recipientSession, onComplete }: Props) {
         ),
       )
       .catch(() => {});
-  }, [giftId,recipientSession]);
+  }, [giftId, recipientSession]);
   const notes = [...starter, ...received];
   const current = notes[index] || starter[0];
   function select(next: number) {
