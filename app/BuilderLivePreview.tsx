@@ -453,7 +453,8 @@ function ScratchSurface({label,colors,onReveal}:{label:string;colors:string[];on
       if(!context)return;
       context.setTransform(ratio,0,0,ratio,0,0);
       const gradient=context.createLinearGradient(0,0,width,height);
-      colors.forEach((color,index)=>gradient.addColorStop(index/Math.max(colors.length-1,1),color));
+      const paintColors=palette.split("|");
+      paintColors.forEach((color,index)=>gradient.addColorStop(index/Math.max(paintColors.length-1,1),color));
       context.fillStyle=gradient;
       context.fillRect(0,0,width,height);
       context.fillStyle="rgba(255,255,255,.22)";

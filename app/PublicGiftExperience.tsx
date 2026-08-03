@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BuilderLivePreview } from "./BuilderLivePreview";
 
 type GiftBlock = {
@@ -87,14 +87,14 @@ export function PublicGiftExperience({ token }: { token: string }) {
   const [senderMessage,setSenderMessage]=useState("");
   const [messageState,setMessageState]=useState<"idle"|"sending"|"sent"|"error">("idle");
   const openIdRef=useRef("");
-  function openHeaders(contentType=false){
+  const openHeaders=useCallback((contentType=false)=>{
     if(!openIdRef.current){
       const key=`mypookie-open-${token}`;
       openIdRef.current=window.sessionStorage.getItem(key)||window.crypto.randomUUID();
       window.sessionStorage.setItem(key,openIdRef.current);
     }
     return contentType?{"Content-Type":"application/json","X-Gift-Open-Id":openIdRef.current}:{"X-Gift-Open-Id":openIdRef.current};
-  }
+  },[token]);
   useEffect(() => {
     fetch(`${api}/api/public/gifts/${token}`,{headers:openHeaders()})
       .then((response) => {
@@ -104,7 +104,7 @@ export function PublicGiftExperience({ token }: { token: string }) {
       })
       .then(setGift)
       .catch((reason) => {if(reason?.message!=="limit")setError(true)});
-  }, [token]);
+  }, [token,openHeaders]);
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 250);
     return () => window.clearInterval(timer);
@@ -123,7 +123,7 @@ export function PublicGiftExperience({ token }: { token: string }) {
       .catch(() => {
         unlockRefetched.current = false;
       });
-  }, [gift, now, token,accessPinInput]);
+  }, [gift, now, token,accessPinInput,openHeaders]);
   async function unlockGift(){
     if(!/^\d{4,8}$/.test(accessPinInput)||accessState==="checking")return;
     setAccessState("checking");
