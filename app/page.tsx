@@ -961,6 +961,9 @@ export default function Home() {
     startMode: "From the beginning",
     startBlockId: "",
     startSeconds: "0",
+    endSeconds: "",
+    fadeInSeconds: "2",
+    fadeOutSeconds: "2",
   });
   const [soundtrackOpen, setSoundtrackOpen] = useState(false);
   const [builderPreviewNonce, setBuilderPreviewNonce] = useState(0);
@@ -3101,11 +3104,68 @@ function SoundtrackEditor({
   blocks: Block[];
   onChange: (patch: Partial<SoundtrackSettings>) => void;
 }) {
+  const previewRef = useRef<HTMLAudioElement>(null);
+  const [duration, setDuration] = useState(0);
+  useEffect(() => {
+    const audio = previewRef.current;
+    if (!audio) return;
+    const shapePreview = () => {
+      const start = Math.max(0, Number(settings.startSeconds) || 0);
+      const endValue = Number(settings.endSeconds) || 0;
+      const end =
+        endValue > start
+          ? Math.min(endValue, audio.duration || endValue)
+          : audio.duration;
+      const fadeIn = Math.max(0, Number(settings.fadeInSeconds) || 0);
+      const fadeOut = Math.max(0, Number(settings.fadeOutSeconds) || 0);
+      if (Number.isFinite(end) && audio.currentTime >= end) {
+        audio.currentTime = start;
+        void audio.play().catch(() => {});
+      }
+      const inGain = fadeIn
+        ? Math.min(1, Math.max(0, (audio.currentTime - start) / fadeIn))
+        : 1;
+      const outGain =
+        fadeOut && Number.isFinite(end)
+          ? Math.min(1, Math.max(0, (end - audio.currentTime) / fadeOut))
+          : 1;
+      audio.volume = 0.65 * Math.min(inGain, outGain);
+    };
+    audio.addEventListener("timeupdate", shapePreview);
+    return () => audio.removeEventListener("timeupdate", shapePreview);
+  }, [
+    settings.startSeconds,
+    settings.endSeconds,
+    settings.fadeInSeconds,
+    settings.fadeOutSeconds,
+  ]);
   const startBlock =
     settings.startBlockId &&
     blocks.some((block) => block.id === settings.startBlockId)
       ? settings.startBlockId
       : blocks[0]?.id || "";
+  function selectAndPreview(template: (typeof soundtrackTemplates)[number]) {
+    onChange({
+      templateId: template.id,
+      audioUrl: template.url,
+      name: template.name,
+      enabled: true,
+      endSeconds: "",
+    });
+    const audio = previewRef.current;
+    if (!audio) return;
+    audio.src = template.url;
+    audio.load();
+    audio.onloadedmetadata = () => {
+      const start = Math.min(
+        Math.max(0, Number(settings.startSeconds) || 0),
+        Math.max(audio.duration - 0.25, 0),
+      );
+      audio.currentTime = start;
+      setDuration(audio.duration || 0);
+      void audio.play().catch(() => {});
+    };
+  }
   return (
     <div className="soundtrack-editor global">
       <div className="soundtrack-summary">
@@ -3139,14 +3199,7 @@ function SoundtrackEditor({
               type="button"
               className={`soundtrack-template-card ${settings.templateId === template.id ? "selected" : ""}`}
               key={template.id}
-              onClick={() =>
-                onChange({
-                  templateId: template.id,
-                  audioUrl: template.url,
-                  name: template.name,
-                  enabled: true,
-                })
-              }
+              onClick={() => selectAndPreview(template)}
             >
               <span>{template.mark}</span>
               <div>
@@ -3158,11 +3211,15 @@ function SoundtrackEditor({
           ))}
         </div>
         <audio
+          ref={previewRef}
           className="soundtrack-template-preview"
           controls
           preload="metadata"
           src={settings.audioUrl}
           aria-label={`Preview ${settings.name}`}
+          onLoadedMetadata={(event) =>
+            setDuration(event.currentTarget.duration || 0)
+          }
         />
         <p className="template-note">
           Music stays soft beneath the experience. Interaction and win sounds
@@ -3200,12 +3257,61 @@ function SoundtrackEditor({
           <input
             type="number"
             min="0"
-            max="600"
+            max={duration || 600}
             value={settings.startSeconds}
-            onChange={(event) => onChange({ startSeconds: event.target.value })}
+            onChange={(event) => {
+              onChange({ startSeconds: event.target.value });
+              if (previewRef.current)
+                previewRef.current.currentTime = Math.max(
+                  0,
+                  Number(event.target.value) || 0,
+                );
+            }}
           />
           <small>seconds</small>
         </label>
+        <label className="field">
+          End song at
+          <input
+            type="number"
+            min={Math.max(1, Number(settings.startSeconds) || 0)}
+            max={duration || 600}
+            value={settings.endSeconds || ""}
+            placeholder={duration ? String(Math.floor(duration)) : "Full song"}
+            onChange={(event) => onChange({ endSeconds: event.target.value })}
+          />
+          <small>seconds · blank plays to the end</small>
+        </label>
+        <div className="style-row">
+          <label className="field">
+            Fade in
+            <input
+              type="number"
+              min="0"
+              max="15"
+              step="0.5"
+              value={settings.fadeInSeconds || "0"}
+              onChange={(event) =>
+                onChange({ fadeInSeconds: event.target.value })
+              }
+            />
+            <small>seconds</small>
+          </label>
+          <label className="field">
+            Fade out
+            <input
+              type="number"
+              min="0"
+              max="15"
+              step="0.5"
+              value={settings.fadeOutSeconds || "0"}
+              onChange={(event) =>
+                onChange({ fadeOutSeconds: event.target.value })
+              }
+            />
+            <small>seconds</small>
+          </label>
+        </div>
       </div>
     </div>
   );

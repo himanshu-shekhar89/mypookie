@@ -9,6 +9,9 @@ export type SoundtrackSettings = {
   startMode: string;
   startBlockId: string;
   startSeconds: string;
+  endSeconds?: string;
+  fadeInSeconds?: string;
+  fadeOutSeconds?: string;
   templateId?: string;
 };
 type SoundtrackBlock = { id: string; name: string };
@@ -60,7 +63,42 @@ export function GiftSoundtrack({
       initialized.current = true;
     }
     void audio.play().catch(() => {});
-  }, [mediaPlaying, playing, ready, settings.enabled, settings.startSeconds]);
+    const updateVolumeAndTrim = () => {
+      const start = Math.max(0, Number(settings.startSeconds) || 0);
+      const configuredEnd = Number(settings.endSeconds) || 0;
+      const end =
+        configuredEnd > start
+          ? Math.min(configuredEnd, audio.duration || configuredEnd)
+          : audio.duration;
+      const fadeIn = Math.max(0, Number(settings.fadeInSeconds) || 0);
+      const fadeOut = Math.max(0, Number(settings.fadeOutSeconds) || 0);
+      if (Number.isFinite(end) && audio.currentTime >= end) {
+        audio.currentTime = start;
+        audio.volume = fadeIn ? 0 : 0.14;
+        return;
+      }
+      const inGain = fadeIn
+        ? Math.min(1, Math.max(0, (audio.currentTime - start) / fadeIn))
+        : 1;
+      const outGain =
+        fadeOut && Number.isFinite(end)
+          ? Math.min(1, Math.max(0, (end - audio.currentTime) / fadeOut))
+          : 1;
+      audio.volume = 0.14 * Math.min(inGain, outGain);
+    };
+    audio.addEventListener("timeupdate", updateVolumeAndTrim);
+    updateVolumeAndTrim();
+    return () => audio.removeEventListener("timeupdate", updateVolumeAndTrim);
+  }, [
+    mediaPlaying,
+    playing,
+    ready,
+    settings.enabled,
+    settings.startSeconds,
+    settings.endSeconds,
+    settings.fadeInSeconds,
+    settings.fadeOutSeconds,
+  ]);
   useEffect(() => {
     initialized.current = false;
   }, [settings.audioUrl, settings.startBlockId, settings.startMode]);
