@@ -11,6 +11,7 @@ public class SecurityConfig {
  @Value("${app.frontend-url}") private String frontendUrl;
  @Bean SecurityFilterChain security(HttpSecurity http) throws Exception {
   return http.csrf(c->c.disable()).cors(c->c.configurationSource(cors()))
+   .headers(h->h.contentTypeOptions(c->{}).frameOptions(f->f.deny()).referrerPolicy(r->r.policy(org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)).permissionsPolicyHeader(p->p.policy("camera=(), geolocation=(), microphone=(self), payment=(self)")))
    .sessionManagement(s->s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
    .authorizeHttpRequests(a->a.requestMatchers("/error","/api/health","/api/catalog/**","/api/public/**","/api/ai/**").permitAll().requestMatchers("/api/admin/**").hasRole("ADMIN").anyRequest().authenticated())
    .addFilterBefore(firebaseFilter, UsernamePasswordAuthenticationFilter.class).build();

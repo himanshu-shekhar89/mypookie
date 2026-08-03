@@ -313,7 +313,7 @@ function MemoryEditor({ config, onConfig }: { config: Record<string,string>; onC
   const items=storedItems.slice(0,maxPages);
   const remaining=Math.max(0,maxPages-items.length);
   async function add(files:FileList|null){if(!files||remaining===0)return;const added=await Promise.all(Array.from(files).slice(0,remaining).map(async(file,index)=>({id:`memory-${Date.now()}-${index}`,image:await imageToDataUrl(file),caption:file.name.replace(/\.[^.]+$/,""),note:"",arrow:"Curve right",animation:"Polaroid pop"})));onConfig("memoryItems",JSON.stringify([...items,...added].slice(0,maxPages)))}
-  async function addCollage(files:FileList|null){if(!files||remaining===0)return;const chosen=Array.from(files).slice(0,4);if(chosen.length<2)return;const images=await Promise.all(chosen.map(imageToDataUrl));const item:MemoryItem={id:`collage-${Date.now()}`,image:images[0],images,layout:images.length===2?"Two-photo collage":images.length===3?"Three-photo collage":"Four-photo grid",caption:"A collage of us",note:"",arrow:"Curve right",animation:"Polaroid pop"};onConfig("memoryItems",JSON.stringify([...items,item].slice(0,maxPages)))}
+  async function addCollage(files:FileList|null){if(!files||remaining===0)return;const chosen=Array.from(files).slice(0,4);if(chosen.length<2)return;const images=await Promise.all(chosen.map(imageToDataUrl));const item:MemoryItem={id:`collage-${crypto.randomUUID()}`,image:images[0],images,layout:images.length===2?"Two-photo collage":images.length===3?"Three-photo collage":"Four-photo grid",caption:"A collage of us",note:"",arrow:"Curve right",animation:"Polaroid pop"};onConfig("memoryItems",JSON.stringify([...items,item].slice(0,maxPages)))}
   async function cover(files:FileList|null){const file=files?.[0];if(file)onConfig("coverImage",await imageToDataUrl(file))}
   function patch(index:number,key:keyof MemoryItem,value:string){onConfig("memoryItems",JSON.stringify(items.map((item,i)=>i===index?{...item,[key]:value}:item)))}
   async function fillCaptions(){
@@ -479,6 +479,7 @@ function VideoUploader({videoName,videoUrl,onConfig}:{videoName?:string;videoUrl
   const [localPreview,setLocalPreview]=useState("");
   const [errorMessage,setErrorMessage]=useState("");
   const lastBlob=useRef<Blob|null>(null);
+  const [retryBlob,setRetryBlob]=useState<Blob|null>(null);
 
   useEffect(()=>()=>{if(localPreview)URL.revokeObjectURL(localPreview)},[localPreview]);
 
@@ -504,6 +505,7 @@ function VideoUploader({videoName,videoUrl,onConfig}:{videoName?:string;videoUrl
     const file=files?.[0];if(!file)return;
     if(file.size>30*1024*1024){setErrorMessage("Video notes must be 30 MB or smaller.");setStatus("error");return}
     lastBlob.current=file;
+    setRetryBlob(file);
     const preview=URL.createObjectURL(file);
     setLocalPreview(current=>{if(current)URL.revokeObjectURL(current);return preview});
     onConfig("videoName",file.name);
@@ -516,6 +518,7 @@ function VideoUploader({videoName,videoUrl,onConfig}:{videoName?:string;videoUrl
     if(localPreview)URL.revokeObjectURL(localPreview);
     setLocalPreview("");
     lastBlob.current=null;
+    setRetryBlob(null);
     setErrorMessage("");
     setStatus("idle");
   }
@@ -524,7 +527,7 @@ function VideoUploader({videoName,videoUrl,onConfig}:{videoName?:string;videoUrl
     {(localPreview||videoUrl)&&<video className="video-preview-mini" src={localPreview||videoUrl} controls playsInline preload="metadata"/>}
     <label className={`video-gallery-upload ${status==="uploading"?"uploading":""}`}><span>▣</span><strong>{status==="uploading"?"Uploading securely…":videoUrl?"Choose a different video":"Choose video from gallery"}</strong><small>{videoName||"MP4, MOV or WebM · maximum 30 MB"}</small><input type="file" accept="video/mp4,video/quicktime,video/webm" onChange={event=>upload(event.target.files)} disabled={status==="uploading"}/></label>
     {videoUrl&&<button className="retake-video" onClick={retake}>Remove video</button>}
-    {status==="error"&&lastBlob.current&&<button className="retake-video" onClick={()=>void storeVideo(lastBlob.current!,videoName||`video-note-${Date.now()}.webm`)}>Save video securely</button>}
+    {status==="error"&&retryBlob&&<button className="retake-video" onClick={()=>void storeVideo(retryBlob,videoName||`video-note-${crypto.randomUUID()}.webm`)}>Save video securely</button>}
     {errorMessage&&<p>{errorMessage}</p>}
   </div>;
 }

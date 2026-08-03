@@ -108,9 +108,8 @@ function WouldRather({ config, senderName, onComplete, onReward }: Props) {
   } | null>(null);
   const pointer = useRef<number | null>(null);
   useEffect(() => {
-    setIndex(0);
-    setPicks([]);
-    setSelected(null);
+    const timer=window.setTimeout(()=>{setIndex(0);setPicks([]);setSelected(null)},0);
+    return()=>window.clearTimeout(timer);
   }, [mode, config.pairs]);
   if (index >= pairs.length)
     return (
@@ -235,9 +234,8 @@ function NeverHave({ config, senderName, onComplete, onReward }: Props) {
   const [have, setHave] = useState(0);
   const [selected, setSelected] = useState<boolean | null>(null);
   useEffect(() => {
-    setIndex(0);
-    setHave(0);
-    setSelected(null);
+    const timer=window.setTimeout(()=>{setIndex(0);setHave(0);setSelected(null)},0);
+    return()=>window.clearTimeout(timer);
   }, [mode, config.neverHaveCards, config.statements]);
   if (index >= cards.length)
     return (

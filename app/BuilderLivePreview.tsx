@@ -182,9 +182,8 @@ function QuizPlay({config,onComplete,onReward}:{config:Record<string,string>;onC
   const [hiddenOptions,setHiddenOptions]=useState<Set<number>>(()=>new Set());
   const hiddenOptionsRef=useRef<Set<number>>(new Set());
   useEffect(()=>{
-    hiddenOptionsRef.current=new Set();
-    setHiddenOptions(new Set());
-    setFeedback("");
+    const timer=window.setTimeout(()=>{hiddenOptionsRef.current=new Set();setHiddenOptions(new Set());setFeedback("")},0);
+    return()=>window.clearTimeout(timer);
   },[index,question?.id,question?.interaction]);
   if(index>=questions.length)return <div className="quiz-finished"><b>{score}/{questions.length}</b><strong>You know this story beautifully ♡</strong><button onClick={()=>{hiddenOptionsRef.current=new Set();setHiddenOptions(new Set());setIndex(0);setScore(0);setFeedback("");setOrder(questions[0]?.options.map((_,optionIndex)=>optionIndex)||[])}}>Play again</button></div>;
   if(!question)return <div className="quiz-finished">Add a question on the right.</div>;

@@ -1,63 +1,48 @@
 package com.mypookie.api.config;
 
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
+import jakarta.servlet.*;
+import jakarta.servlet.http.*;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE + 20)
 public class RateLimitFilter extends OncePerRequestFilter {
- private final Map<String,Window> windows=new HashMap<>();
- private record Rule(String name,int limit,long seconds){}
  private record Window(long startedAt,int count){}
+ private record Rule(String name,int requests,long seconds){}
+ private final ConcurrentHashMap<String,Window> windows=new ConcurrentHashMap<>();
 
- @Override protected void doFilterInternal(HttpServletRequest request,HttpServletResponse response,FilterChain chain)throws ServletException,IOException{
+ @Override protected void doFilterInternal(HttpServletRequest request,HttpServletResponse response,FilterChain chain) throws ServletException,IOException{
   Rule rule=rule(request);
-  if(rule!=null&&!allow(clientIp(request)+":"+rule.name(),rule)){
-   response.setStatus(429);
-   response.setContentType("application/json");
-   response.setHeader("Retry-After",String.valueOf(rule.seconds()));
-   response.getWriter().write("{\"error\":\"Too many requests. Please wait a little and try again.\"}");
-   return;
+  if(rule==null){chain.doFilter(request,response);return;}
+  long now=Instant.now().getEpochSecond();
+  String key=rule.name()+":"+clientIp(request);
+  Window window=windows.compute(key,(ignored,current)->current==null||now-current.startedAt()>=rule.seconds()?new Window(now,1):new Window(current.startedAt(),current.count()+1));
+  long retryAfter=Math.max(1,rule.seconds()-(now-window.startedAt()));
+  response.setHeader("X-RateLimit-Limit",String.valueOf(rule.requests()));
+  response.setHeader("X-RateLimit-Remaining",String.valueOf(Math.max(0,rule.requests()-window.count())));
+  if(window.count()>rule.requests()){
+   response.setStatus(429);response.setHeader("Retry-After",String.valueOf(retryAfter));response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+   response.getWriter().write("{\"error\":\"Too many requests. Please wait and try again.\"}");return;
   }
+  if(windows.size()>20_000)windows.entrySet().removeIf(entry->now-entry.getValue().startedAt()>3600);
   chain.doFilter(request,response);
  }
 
  private Rule rule(HttpServletRequest request){
-  if(!"POST".equalsIgnoreCase(request.getMethod()))return null;
   String path=request.getRequestURI();
-  if(path.startsWith("/api/ai/"))return new Rule("ai",20,60);
-  if(path.endsWith("/compatibility-report"))return new Rule("report",8,60);
-  if(path.contains("/contributions/"))return new Rule("contribution",20,60);
-  if(path.endsWith("/rating"))return new Rule("rating",8,60);
-  if(path.startsWith("/api/public/gifts/")&&path.endsWith("/responses"))return new Rule("response",35,60);
-  if(path.startsWith("/api/media/"))return new Rule("media",12,300);
+  if(path.matches("/api/public/gifts/[^/]+/unlock"))return new Rule("gift-unlock",20,600);
+  if(path.startsWith("/api/public/"))return new Rule("public-api",180,60);
+  if(path.startsWith("/api/ai/"))return new Rule("ai",30,60);
+  if(path.startsWith("/api/media/"))return new Rule("media",30,3600);
+  if(path.startsWith("/api/auth/"))return new Rule("auth",60,600);
+  if(path.startsWith("/api/orders")&& !"GET".equals(request.getMethod()))return new Rule("orders",60,600);
   return null;
  }
-
- private synchronized boolean allow(String key,Rule rule){
-  long now=Instant.now().getEpochSecond();
-  Window current=windows.get(key);
-  if(current==null||now-current.startedAt()>=rule.seconds()){
-   windows.put(key,new Window(now,1));
-   if(windows.size()>10_000)windows.entrySet().removeIf(entry->now-entry.getValue().startedAt()>600);
-   return true;
-  }
-  if(current.count()>=rule.limit())return false;
-  windows.put(key,new Window(current.startedAt(),current.count()+1));
-  return true;
- }
-
  private String clientIp(HttpServletRequest request){
   String forwarded=request.getHeader("X-Forwarded-For");
   if(forwarded!=null&&!forwarded.isBlank())return forwarded.split(",")[0].trim();

@@ -30,3 +30,7 @@
 - CPU or memory saturation.
 - MySQL storage nearing capacity.
 - Backup failure or missing scheduled restore point.
+
+## Known beta limitation
+
+- The pale-pink visual system currently has 37 automated WCAG color-contrast findings on the landing page. Structural serious/critical accessibility checks are enforced in Playwright, but public launch should wait for an approved accessible palette and a manual keyboard/screen-reader review.

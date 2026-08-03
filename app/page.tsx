@@ -1701,23 +1701,6 @@ export default function Home() {
                 <h3>Ananya</h3>
                 <div
                   className="phone-envelope"
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => {
-                    if (heroStage === "closed") {
-                      playSound("envelope");
-                      setHeroStage("open");
-                    }
-                  }}
-                  onKeyDown={(event) => {
-                    if (
-                      (event.key === "Enter" || event.key === " ") &&
-                      heroStage === "closed"
-                    ) {
-                      playSound("envelope");
-                      setHeroStage("open");
-                    }
-                  }}
                 >
                   <div className="phone-card-wrap">
                     <button
