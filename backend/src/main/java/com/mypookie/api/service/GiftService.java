@@ -12,10 +12,12 @@ public class GiftService {
   Gift g=id==null?new Gift():gifts.findById(id).orElseThrow();
   if(id==null){g.setId(UUID.randomUUID().toString());g.setSenderId(senderId);g.setStatus("DRAFT");}
   if(!g.getSenderId().equals(senderId))throw new SecurityException("Not your gift");
-  g.setTitle(r.title());g.setSenderName(r.senderName());g.setRecipientName(r.recipientName());g.setRecipientType(r.recipientType());g.setOccasion(r.occasion());g.setTheme(r.theme());g.setAmbience(r.ambience());g.setBlocksJson(secrets.sanitizeForStorage(r.blocksJson()));g.setScheduledAt(r.scheduledAt());g.setTotalPaise(calculate(r.blocksJson()));g.setUpdatedAt(Instant.now());
+  g.setTitle(r.title());g.setSenderName(r.senderName());g.setRecipientName(r.recipientName());g.setRecipientType(r.recipientType());g.setOccasion(r.occasion());g.setTheme(r.theme());g.setAmbience(r.ambience());g.setBlocksJson(secrets.sanitizeForStorage(r.blocksJson()));g.setScheduledAt(r.scheduledAt());g.setTotalPaise(calculate(r.blocksJson()));g.setTotalSteps(countBlocks(r.blocksJson()));g.setMaxOpenCount(r.maxOpenCount());g.setUpdatedAt(Instant.now());
   if(r.compatibilityPin()!=null&&!r.compatibilityPin().isBlank())g.setCompatibilityPinHash(PINS.encode(r.compatibilityPin()));
+  g.setAccessPinHash(r.accessPin()!=null&&!r.accessPin().isBlank()?PINS.encode(r.accessPin()):null);
   Gift saved=gifts.saveAndFlush(g);secrets.sync(saved.getId(),r.blocksJson());return saved;
  }
+ private int countBlocks(String blocksJson){try{JsonNode root=json.readTree(blocksJson);JsonNode blocks=root.isArray()?root:root.path("blocks");return blocks.isArray()?blocks.size():0;}catch(Exception e){return 0;}}
  private int calculate(String blocksJson){
   try{
    JsonNode root=json.readTree(blocksJson);

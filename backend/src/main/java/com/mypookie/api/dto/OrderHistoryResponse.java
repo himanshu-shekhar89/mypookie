@@ -12,5 +12,15 @@ public record OrderHistoryResponse(
  String couponCode,
  String status,
  Instant createdAt,
- String shareToken
+ String shareToken,
+ Instant openedAt,
+ Instant completedAt,
+ String recipientMessage,
+ String progressStatus,
+ int currentStep,
+ int totalSteps,
+ int openCount,
+ int maxOpenCount,
+ Integer ratingStars,
+ String ratingComment
 ) {}

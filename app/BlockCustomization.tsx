@@ -119,6 +119,7 @@ export function BlockCustomization({ block, giftId, onMessage, onConfig }: { blo
   if (block.id === "puzzle") return <CustomizationSection title="Photo puzzle" hint="Upload the photo they will rebuild">
     <UploadBox label="Choose puzzle photo" note={config.imageName || "JPG or PNG from your gallery"} accept="image/*" onFiles={files=>imageUpload("imageUrl","imageName",files)} />
     <label className="field">Difficulty<select value={config.difficulty} onChange={event=>onConfig("difficulty",event.target.value)}><option>3 × 3 · Sweet and simple</option><option>4 × 4 · A little challenge</option><option>5 × 5 · Puzzle lover</option></select></label>
+    <label className="puzzle-auto-toggle"><input type="checkbox" checked={config.autoSolver==="true"} onChange={event=>onConfig("autoSolver",String(event.target.checked))}/><span>✦</span><strong>Add an Auto Solver<small>The receiver can watch the photo assemble itself and continue automatically.</small></strong></label>
     <label className="field">Success message<input maxLength={70} value={config.successMessage || ""} onChange={event=>onConfig("successMessage",event.target.value)} /></label>
   </CustomizationSection>;
 
@@ -380,6 +381,7 @@ function GiftCardEditor({ config, onConfig }: { config: Record<string,string>; o
     doc.save("mypookie-gift-card.pdf");
   }
   return <CustomizationSection title="Gift card experience" hint="Choose the reveal, content and downloadable card">
+    <p className="gift-card-safe-note"><span>✓</span><strong>Your gift card is safe with us.</strong><small>It stays securely attached to this private gift, ready whenever the recipient returns.</small></p>
     <label className="field">Reveal interaction<select value={config.interaction} onChange={event=>onConfig("interaction",event.target.value)}><option>Flip to reveal</option><option>Scratchable card</option><option>Blur to unblur</option></select></label>
     <label className="field">Brand or gift name<input maxLength={40} value={config.brand||""} onChange={event=>onConfig("brand",event.target.value)}/></label>
     <label className="field">Code or redemption link<input maxLength={80} value={config.code||""} onChange={event=>onConfig("code",event.target.value)}/></label>

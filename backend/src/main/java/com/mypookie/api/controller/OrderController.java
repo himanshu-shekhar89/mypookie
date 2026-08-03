@@ -23,12 +23,16 @@ public class OrderController {
  private final GiftService giftService;
  private final RazorpayService razorpay;
  private final CouponService couponService;
+ private final ExperienceResponseRepository responses;
+ private final GiftRatingRepository ratings;
 
  @GetMapping
  public List<OrderHistoryResponse> mine(@AuthenticationPrincipal FirebaseAuthenticationFilter.UserPrincipal principal){
   var user=users.resolve(principal);
   return orders.findBySenderIdOrderByCreatedAtDesc(user.getId()).stream().map(order->{
    var gift=gifts.findById(order.getGiftId()).orElse(null);
+   var rating=gift==null?null:ratings.findByGiftId(gift.getId()).orElse(null);
+   String progress=gift==null||gift.getOpenedAt()==null?"NOT_OPENED":gift.getCompletedAt()!=null?"COMPLETED":"PARTIALLY_OPENED";
    return new OrderHistoryResponse(
     order.getId(),
     order.getGiftId(),
@@ -39,7 +43,17 @@ public class OrderController {
     order.getCouponCode(),
     order.getStatus(),
     order.getCreatedAt(),
-    gift==null?null:gift.getShareToken()
+    gift==null?null:gift.getShareToken(),
+    gift==null?null:gift.getOpenedAt(),
+    gift==null?null:gift.getCompletedAt(),
+    gift==null?null:responses.findByGiftIdAndBlockIdOrderByCreatedAtAsc(gift.getId(),"final-message").stream().reduce((first,last)->last).map(ExperienceResponse::getResponseText).orElse(null),
+    progress,
+    gift==null?0:gift.getCurrentStep(),
+    gift==null?0:gift.getTotalSteps(),
+    gift==null?0:gift.getOpenCount(),
+    gift==null?0:gift.getMaxOpenCount(),
+    rating==null?null:rating.getStars(),
+    rating==null?null:rating.getComment()
    );
   }).toList();
  }

@@ -11,6 +11,13 @@ public class Gift {
  @Column(nullable=false) private String status; @Column(name="total_paise",nullable=false) private int totalPaise;
  @Column(name="share_token",unique=true) private String shareToken; @Column(name="scheduled_at") private Instant scheduledAt;
  @Column(name="compatibility_pin_hash",length=100) private String compatibilityPinHash;
+ @Column(name="access_pin_hash",length=100) private String accessPinHash;
+ @Column(name="max_open_count",nullable=false) private int maxOpenCount;
+ @Column(name="open_count",nullable=false) private int openCount;
+ @Column(name="current_step",nullable=false) private int currentStep;
+ @Column(name="total_steps",nullable=false) private int totalSteps;
+ @Column(name="opened_at") private Instant openedAt;
+ @Column(name="completed_at") private Instant completedAt;
  @Column(name="created_at",nullable=false) private Instant createdAt=Instant.now();
  @Column(name="updated_at",nullable=false) private Instant updatedAt=Instant.now();
 }

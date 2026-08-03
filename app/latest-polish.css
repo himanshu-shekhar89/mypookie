@@ -1,0 +1,137 @@
+.brand::after {
+  content: "BETA";
+  align-self: flex-start;
+  margin: 1px 0 0 -5px;
+  border: 1px solid #e8b8c7;
+  border-radius: 999px;
+  background: #fff5f8;
+  color: #a33f60;
+  padding: 2px 5px;
+  font: 800 7px/1 Arial, sans-serif;
+  letter-spacing: .08em;
+}
+
+.checkout-success .checkout-home-link {
+  display: block;
+  width: max-content;
+  margin: 18px auto 0;
+  color: #806f76;
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.checkout-success .checkout-home-link:hover {
+  color: var(--berry);
+}
+
+.gift-card-safe-note {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  column-gap: 10px;
+  align-items: center;
+  margin: 12px 0 18px;
+  border: 1px solid #dcebdd;
+  border-radius: 13px;
+  background: #f6fbf7;
+  padding: 12px;
+  color: #355f45;
+}
+
+.gift-card-safe-note > span {
+  grid-row: 1 / 3;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #dff1e3;
+  font-weight: 900;
+}
+
+.gift-card-safe-note strong {
+  font-size: 11px;
+}
+
+.gift-card-safe-note small {
+  margin-top: 3px;
+  color: #688273;
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.live-scratch canvas.scratch-complete,
+.gift-scratch-card canvas.scratch-complete {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.live-scratch canvas,
+.gift-scratch-card canvas {
+  z-index: 2;
+  display: block;
+  min-width: 100%;
+  min-height: 100%;
+  background: transparent;
+}
+
+.live-scratch > div,
+.gift-scratch-card > div {
+  z-index: 1;
+}
+
+.puzzle-move-count {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  min-height: 25px;
+  margin-bottom: 7px;
+  color: var(--muted);
+}
+
+.puzzle-move-count span {
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .12em;
+}
+
+.puzzle-move-count strong {
+  display: grid;
+  place-items: center;
+  min-width: 25px;
+  height: 25px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--rose);
+  box-shadow: 0 5px 14px rgba(53,31,40,.12);
+  font-size: 11px;
+}
+
+.puzzle-complete-photo .puzzle-move-result {
+  margin-top: 7px;
+  border-radius: 999px;
+  background: #fff0f5;
+  color: var(--berry);
+  padding: 6px 10px;
+  font-size: 9px;
+}
+
+.puzzle-auto-toggle {
+  position: relative;
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  align-items: center;
+  gap: 9px;
+  margin: 13px 0;
+  border: 1px solid #e4d8f1;
+  border-radius: 13px;
+  background: #faf7ff;
+  padding: 11px;
+  cursor: pointer;
+}
+.puzzle-auto-toggle input{position:absolute;opacity:0}.puzzle-auto-toggle>span{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:#eee6f8;color:#76539a}.puzzle-auto-toggle strong,.puzzle-auto-toggle small{display:block}.puzzle-auto-toggle strong{font-size:9px}.puzzle-auto-toggle small{margin-top:3px;color:var(--muted);font-size:7px;line-height:1.4}.puzzle-auto-toggle:has(input:checked){border-color:#8e72b5;background:#f5effc;box-shadow:inset 3px 0 #8e72b5}.puzzle-auto-toggle:has(input:checked)>span{background:#76539a;color:#fff}
+.puzzle-actions{display:flex;justify-content:center;gap:8px}.puzzle-auto-solve{margin-top:7px;border:0;border-radius:99px;background:#76539a;color:#fff;padding:7px 11px;font-size:8px;font-weight:900}.live-puzzle-grid.auto-solving>button{transition:background-position .1s,transform .1s}
+.return-gift-invite{display:grid;grid-template-columns:46px 1fr auto;align-items:center;gap:14px;margin:24px 0 4px;padding:18px;border:1px solid #f0d7df;border-radius:22px;background:linear-gradient(135deg,#fff3f7,#fffaf2);text-align:left}.return-gift-invite>span{display:grid;place-items:center;width:46px;height:46px;border-radius:15px;background:#ffe2eb;color:var(--rose);font-size:25px}.return-gift-invite small{color:var(--rose);font-size:7px;font-weight:900;letter-spacing:.13em}.return-gift-invite h2{margin:4px 0 2px;font:800 18px "Baloo 2",sans-serif}.return-gift-invite p{margin:0;color:var(--muted);font-size:8px;line-height:1.5}.return-gift-invite>a{border-radius:99px;background:var(--berry);color:#fff;padding:11px 14px;font-size:9px;font-weight:900;text-decoration:none;white-space:nowrap}.return-gift-invite>a b{margin-left:8px}@media(max-width:650px){.return-gift-invite{grid-template-columns:40px 1fr}.return-gift-invite>a{grid-column:1/-1;text-align:center}}
+.gift-access-settings{display:grid;grid-template-columns:1fr 1fr;gap:12px}.gift-access-settings .checkout-field{margin:0}.gift-access-settings .checkout-field>span{float:right;color:var(--muted);font-size:8px}.gift-pin-lock{display:grid;place-items:center;width:min(440px,92vw);padding:38px;border:1px solid #fff;border-radius:30px;background:#fffaf8e8;box-shadow:0 25px 80px #6937482b;text-align:center}.gift-pin-lock>span{display:grid;place-items:center;width:66px;height:66px;border-radius:21px;background:#ffe6ed;color:var(--rose);font-size:30px}.gift-pin-lock>small{margin-top:18px;color:var(--rose);font-size:8px;font-weight:900;letter-spacing:.14em}.gift-pin-lock h1{margin:9px 0 4px;font:800 31px "Baloo 2",sans-serif}.gift-pin-lock p{margin:0 0 18px;color:var(--muted);font-size:10px}.gift-pin-lock input{width:min(240px,100%);border:1px solid var(--line);border-radius:13px;background:#fff;padding:13px;text-align:center;font-size:17px;font-weight:900;letter-spacing:.22em}.gift-pin-lock button{margin-top:11px;border:0;border-radius:99px;background:var(--berry);color:#fff;padding:11px 18px;font-size:9px;font-weight:900}.gift-pin-lock output{margin-top:9px;color:#b33d59;font-size:8px}.gift-access-ended h1{max-width:540px}@media(max-width:700px){.gift-access-settings{grid-template-columns:1fr}}
+.gift-delivery-status .progress-not_opened{color:#89777e}.gift-delivery-status .progress-partially_opened{color:#a56c25}.gift-delivery-status .progress-completed{color:#278469}.sender-completion-report{margin-top:9px;border:1px solid #dfece6;border-radius:12px;background:#f7fcfa;overflow:hidden}.sender-completion-report summary{display:flex;justify-content:space-between;padding:9px 11px;color:#287a65;font-size:8px;font-weight:900;cursor:pointer;list-style:none}.sender-completion-report summary::-webkit-details-marker{display:none}.sender-completion-report>div{padding:11px;border-top:1px solid #dfece6}.sender-completion-report>div>small{color:#318f77;font-size:6px;font-weight:900;letter-spacing:.12em}.sender-completion-report h4{margin:4px 0 9px;font-size:10px}.report-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}.report-metrics span{padding:7px;border-radius:8px;background:#fff;color:var(--muted);font-size:6px;text-align:center}.report-metrics b{display:block;color:var(--ink);font-size:11px}.sender-completion-report blockquote{margin:7px 0 0;padding:7px;border-left:2px solid #72c5ad;background:#fff;color:#66565d;font-size:7px;line-height:1.5}

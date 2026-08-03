@@ -3,6 +3,7 @@ package com.mypookie.api.controller;
 import com.mypookie.api.model.GiftRating;
 import com.mypookie.api.repository.GiftRatingRepository;
 import com.mypookie.api.repository.GiftRepository;
+import com.mypookie.api.service.RecipientSessionService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.RequiredArgsConstructor;
@@ -19,12 +20,14 @@ import java.util.UUID;
 public class GiftRatingController {
  private final GiftRepository gifts;
  private final GiftRatingRepository ratings;
+ private final RecipientSessionService recipientSessions;
  public record RatingRequest(@Min(1) @Max(5) int stars,@Size(max=500) String comment){}
  public record RatingResult(int stars,String message){}
 
  @PostMapping
- public RatingResult save(@PathVariable String giftId,@Valid @RequestBody RatingRequest request){
+ public RatingResult save(@PathVariable String giftId,@RequestHeader(value=RecipientSessionService.HEADER,required=false) String session,@Valid @RequestBody RatingRequest request){
   gifts.findById(giftId).filter(gift->"PUBLISHED".equals(gift.getStatus())).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND));
+  recipientSessions.require(giftId,session);
   var rating=ratings.findByGiftId(giftId).orElseGet(()->{var value=new GiftRating();value.setId(UUID.randomUUID().toString());value.setGiftId(giftId);return value;});
   rating.setStars(request.stars());
   rating.setComment(request.comment()==null?"":request.comment().trim());

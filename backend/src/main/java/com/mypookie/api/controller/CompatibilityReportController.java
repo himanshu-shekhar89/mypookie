@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mypookie.api.repository.ExperienceResponseRepository;
 import com.mypookie.api.repository.GiftRepository;
+import com.mypookie.api.service.RecipientSessionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -19,6 +20,7 @@ public class CompatibilityReportController {
  private final GiftRepository gifts;
  private final ExperienceResponseRepository responses;
  private final ObjectMapper json;
+ private final RecipientSessionService recipientSessions;
  private static final BCryptPasswordEncoder PINS=new BCryptPasswordEncoder();
 
  public record ReportRequest(String pin,String blockId){}
@@ -26,8 +28,9 @@ public class CompatibilityReportController {
  public record Report(int score,int matches,int total,String label,List<Answer>answers){}
 
  @PostMapping
- public Report report(@PathVariable String giftId,@RequestBody ReportRequest request){
+ public Report report(@PathVariable String giftId,@RequestHeader(value=RecipientSessionService.HEADER,required=false) String session,@RequestBody ReportRequest request){
   var gift=gifts.findById(giftId).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND,"Gift not found."));
+  recipientSessions.require(giftId,session);
   if(gift.getCompatibilityPinHash()==null||request.pin()==null||!PINS.matches(request.pin(),gift.getCompatibilityPinHash()))
    throw new ResponseStatusException(HttpStatus.FORBIDDEN,"That report PIN is not correct.");
   try{

@@ -1,3 +1,3 @@
 package com.mypookie.api.repository;
-import com.mypookie.api.model.Gift; import org.springframework.data.jpa.repository.JpaRepository; import java.util.*;
-public interface GiftRepository extends JpaRepository<Gift,String>{ List<Gift> findBySenderIdOrderByUpdatedAtDesc(String senderId); Optional<Gift> findByShareToken(String token); }
+import com.mypookie.api.model.Gift; import org.springframework.data.jpa.repository.JpaRepository; import org.springframework.data.jpa.repository.Lock; import org.springframework.data.jpa.repository.Query; import org.springframework.data.repository.query.Param; import jakarta.persistence.LockModeType; import java.util.*;
+public interface GiftRepository extends JpaRepository<Gift,String>{ List<Gift> findBySenderIdOrderByUpdatedAtDesc(String senderId); Optional<Gift> findByShareToken(String token); @Lock(LockModeType.PESSIMISTIC_WRITE) @Query("select gift from Gift gift where gift.id=:id") Optional<Gift> findLockedById(@Param("id") String id); }

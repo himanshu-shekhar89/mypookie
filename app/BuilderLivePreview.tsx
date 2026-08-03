@@ -16,7 +16,7 @@ type PreviewBlock = {
 
 const wheelPrizes = ["Movie night", "Breakfast", "A long hug", "Mystery date", "Your choice", "Sweet treat"];
 
-export function BuilderLivePreview({ block, name, senderName, theme, ambience, giftId, onInteract, onComplete, onReward }: { block: PreviewBlock; name: string; senderName?:string; theme: string; ambience: string; giftId?:string; onInteract?: () => void; onComplete?: () => void; onReward?: (reward:string) => void }) {
+export function BuilderLivePreview({ block, name, senderName, theme, ambience, giftId, recipientSession, onInteract, onComplete, onReward }: { block: PreviewBlock; name: string; senderName?:string; theme: string; ambience: string; giftId?:string; recipientSession?:string; onInteract?: () => void; onComplete?: () => void; onReward?: (reward:string) => void }) {
   const [opened, setOpened] = useState(false);
   const [letterStage,setLetterStage]=useState<"closed"|"burst"|"revealed">("closed");
   const [wheelRotation, setWheelRotation] = useState(0);
@@ -90,10 +90,10 @@ export function BuilderLivePreview({ block, name, senderName, theme, ambience, g
         {block.id === "video" && <VideoNotePlay config={config} onComplete={onComplete} />}
         {block.id === "flowers" && <EGiftPreview config={config} onComplete={onComplete} />}
         {block.id === "quiz" && <QuizPlay config={config} onComplete={onComplete} onReward={onReward} />}
-        {block.id === "thisorthat" && <ThisOrThatPlay config={config} giftId={giftId} blockInstanceId={block.instanceId||block.id} recipientName={name} onComplete={onComplete} onReward={onReward} />}
+        {block.id === "thisorthat" && <ThisOrThatPlay config={config} giftId={giftId} recipientSession={recipientSession} blockInstanceId={block.instanceId||block.id} recipientName={name} onComplete={onComplete} onReward={onReward} />}
         {block.id === "emoji" && <EmojiDecoderPlay config={config} onComplete={onComplete} onReward={onReward} />}
         {block.id === "heartcatch" && <HeartCatchPlay config={config} onComplete={onComplete} onReward={onReward} />}
-        {["wouldrather","neverhave","truthdare","tapheart","matchpair","countdownus","constellation","growthring","movie","song","alwaysyou","excuse","roast","fortune","mysterybox","playlist","countdowninvite","groupboard"].includes(block.id) && <TinyBlockPreview id={block.id} blockInstanceId={block.instanceId} config={config} giftId={giftId} recipientName={name} senderName={senderName} onComplete={onComplete} onReward={onReward} />}
+        {["wouldrather","neverhave","truthdare","tapheart","matchpair","countdownus","constellation","growthring","movie","song","alwaysyou","excuse","roast","fortune","mysterybox","playlist","countdowninvite","groupboard"].includes(block.id) && <TinyBlockPreview id={block.id} blockInstanceId={block.instanceId} config={config} giftId={giftId} recipientSession={recipientSession} recipientName={name} senderName={senderName} onComplete={onComplete} onReward={onReward} />}
         {block.id === "wheel" && <div className="live-wheel-scene"><div className="live-wheel-shell"><i className="live-wheel-pointer"/><div className="live-wheel" style={{transform:`rotate(${wheelRotation}deg)`,background:wheelGradient}}>{wheelOptions.map((prize,index)=><span key={`${prize}-${index}`} style={{transform:`rotate(${index*wheelSlice+wheelSlice/2}deg) translateY(-82px)`}}>{prize}</span>)}<b>♡</b></div></div><button onClick={spinWheel} disabled={spinning||wheelSpinCount>=(Number(config.spins)||1)}>{spinning?"Spinning…":wheelSpinCount>=(Number(config.spins)||1)?"No spins left":"Spin the wheel"}</button><output>{wheelResult} · {Math.max((Number(config.spins)||1)-wheelSpinCount,0)} left</output></div>}
         {block.id === "slots" && <SlotMachinePlay config={config} onComplete={onComplete} onReward={onReward} />}
         {block.id === "puzzle" && <PhotoPuzzlePlay key={`${config.difficulty}-${config.imageUrl}`} config={config} onComplete={onComplete} onReward={onReward} />}
@@ -144,7 +144,7 @@ function VideoNotePlay({config,onComplete}:{config:Record<string,string>;onCompl
   return <div className={`video-note-player video-frame-${frameClass} caption-font-${captionFont}`} style={{"--video-caption":config.videoCaptionColor||"#3f3036"} as React.CSSProperties}>{density>0&&<div className={`video-shower shower-${showerClass} ${playing?"active":""}`} aria-hidden="true">{Array.from({length:density},(_,index)=><i key={index} style={{"--x":`${(index*43)%100}%`,"--delay":`${(index%9)*-.32}s`,"--sway":`${(index%2?1:-1)*(18+index%6*6)}px`} as React.CSSProperties}>{showerSymbols[index%showerSymbols.length]}</i>)}</div>}{config.videoUrl?<><div className="video-screen"><video key={config.videoUrl} src={config.videoUrl} controls playsInline preload="metadata" onLoadedMetadata={()=>setFailed(false)} onError={()=>setFailed(true)} onPlay={()=>{setPlaying(true);if(!started){setStarted(true);playSound("reveal")}}} onPause={()=>setPlaying(false)} onEnded={()=>{setPlaying(false);onComplete?.()}}/>{frame==="Retro cam"&&<><span className="retro-rec">● REC</span><span className="retro-date">MYPOOKIE · MEMORY</span><i className="retro-scan"/></>}</div>{failed&&<p className="video-playback-error">This video format cannot play in this browser. Upload an MP4, MOV or WebM file from the editor.</p>}<strong>{config.videoCaption||"A little face-to-face moment, just for you."}</strong><small>Watch to the end to continue</small></>:<div className="video-note-empty"><span>▶</span><strong>Your video note will appear here</strong><small>Choose a finished video from your gallery.</small></div>}</div>;
 }
 
-function ThisOrThatPlay({config,giftId,blockInstanceId,recipientName,onComplete,onReward}:{config:Record<string,string>;giftId?:string;blockInstanceId:string;recipientName:string;onComplete?:()=>void;onReward?:(reward:string)=>void}){
+function ThisOrThatPlay({config,giftId,recipientSession,blockInstanceId,recipientName,onComplete,onReward}:{config:Record<string,string>;giftId?:string;recipientSession?:string;blockInstanceId:string;recipientName:string;onComplete?:()=>void;onReward?:(reward:string)=>void}){
   const rounds=parseJson<ThisOrThatRound[]>(config.thisOrThatRounds,[{prompt:"Our perfect evening",left:"Movie night",right:"Long drive"}]);
   const [index,setIndex]=useState(0);
   const [choices,setChoices]=useState<string[]>([]);
@@ -152,7 +152,7 @@ function ThisOrThatPlay({config,giftId,blockInstanceId,recipientName,onComplete,
   const round=rounds[index];
   async function saveChoices(next:string[]){
     if(!giftId||config.compatibilityEnabled!=="true")return;
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL||"https://backend-production-22bd.up.railway.app"}/api/public/gifts/${giftId}/responses`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({blockId:blockInstanceId,responseType:"THIS_OR_THAT",contributorName:recipientName||"Recipient",responseText:JSON.stringify({choices:next}),photoUrls:[]})}).catch(()=>{});
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL||"https://backend-production-22bd.up.railway.app"}/api/public/gifts/${giftId}/responses`,{method:"POST",headers:{"Content-Type":"application/json","X-Recipient-Session":recipientSession||""},body:JSON.stringify({blockId:blockInstanceId,responseType:"THIS_OR_THAT",contributorName:recipientName||"Recipient",responseText:JSON.stringify({choices:next}),photoUrls:[]})}).catch(()=>{});
   }
   function choose(value:string){playSound("tile");const next=[...choices,value];setChoices(next);if(index===rounds.length-1){void saveChoices(next);playSound("win");onReward?.(`This or that: ${value}`);onComplete?.()}setIndex(current=>current+1)}
   return <div className="this-or-that-play"><div className="quiz-dots">{rounds.map((_,dot)=><i key={dot} className={dot<index?"done":dot===index?"current":""}/>)}</div><small>QUICK CHOICE {index+1}</small><strong>{round.prompt}</strong><div><button onClick={()=>choose(round.left)}>{round.left}</button><span>OR</span><button onClick={()=>choose(round.right)}>{round.right}</button></div></div>;
@@ -289,22 +289,29 @@ function PhotoPuzzlePlay({config,onComplete,onReward}:{config:Record<string,stri
   const [tiles,setTiles]=useState<number[]>(()=>shuffleTiles(size));
   const [picked,setPicked]=useState<number|null>(null);
   const [phase,setPhase]=useState<"playing"|"perfect"|"photo">("playing");
+  const [moves,setMoves]=useState(0);
+  const [autoSolving,setAutoSolving]=useState(false);
+  const autoTimers=useRef<number[]>([]);
+
+  useEffect(()=>()=>autoTimers.current.forEach(timer=>window.clearTimeout(timer)),[]);
 
   const solved=tiles.length===size*size&&tiles.every((tile,index)=>tile===index);
 
   function moveTile(index:number){
-    if(phase!=="playing")return;
+    if(phase!=="playing"||autoSolving)return;
     if(picked===null){setPicked(index);return}
     const distance=Math.abs(Math.floor(picked/size)-Math.floor(index/size))+Math.abs((picked%size)-(index%size));
     if(distance===1){
       const next=[...tiles];
+      const nextMoves=moves+1;
       [next[picked],next[index]]=[next[index],next[picked]];
       setTiles(next);
+      setMoves(nextMoves);
       playSound("tile");
       if(next.every((tile,tileIndex)=>tile===tileIndex)){
         setPhase("perfect");
         playSound("win");
-        onReward?.("Completed the photo puzzle");
+        onReward?.(`Completed the photo puzzle in ${nextMoves} move${nextMoves===1?"":"s"}`);
         onComplete?.();
         window.setTimeout(()=>setPhase("photo"),900);
       }
@@ -312,11 +319,40 @@ function PhotoPuzzlePlay({config,onComplete,onReward}:{config:Record<string,stri
     setPicked(null);
   }
 
-  function reshuffle(){setTiles(shuffleTiles(size));setPicked(null);setPhase("playing")}
+  function finishPuzzle(finalMoves:number,auto=false){
+    setPhase("perfect");
+    setAutoSolving(false);
+    playSound("win");
+    onReward?.(auto?"Auto-solved the photo puzzle":`Completed the photo puzzle in ${finalMoves} move${finalMoves===1?"":"s"}`);
+    onComplete?.();
+    autoTimers.current.push(window.setTimeout(()=>setPhase("photo"),900));
+  }
 
-  if(phase==="photo")return <div className="puzzle-complete-photo"><img src={image} alt="Completed puzzle"/><strong>Perfect! ✦</strong><span>{config.successMessage||"You put this memory back together."}</span><button onClick={reshuffle}>Play again</button></div>;
+  function autoSolve(){
+    if(phase!=="playing"||autoSolving)return;
+    const working=[...tiles];
+    const swaps:Array<[number,number]>=[];
+    for(let target=0;target<working.length;target++){
+      let position=working.indexOf(target);
+      while(Math.floor(position/size)>Math.floor(target/size)){const next=position-size;swaps.push([position,next]);[working[position],working[next]]=[working[next],working[position]];position=next}
+      while(Math.floor(position/size)<Math.floor(target/size)){const next=position+size;swaps.push([position,next]);[working[position],working[next]]=[working[next],working[position]];position=next}
+      while(position>target){const next=position-1;swaps.push([position,next]);[working[position],working[next]]=[working[next],working[position]];position=next}
+      while(position<target){const next=position+1;swaps.push([position,next]);[working[position],working[next]]=[working[next],working[position]];position=next}
+    }
+    setPicked(null);setAutoSolving(true);playSound("reveal");
+    if(!swaps.length){finishPuzzle(moves,true);return}
+    swaps.forEach(([from,to],index)=>autoTimers.current.push(window.setTimeout(()=>{
+      setTiles(current=>{const next=[...current];[next[from],next[to]]=[next[to],next[from]];return next});
+      setMoves(value=>value+1);playSound("tile");
+      if(index===swaps.length-1)finishPuzzle(moves+swaps.length,true);
+    },index*95)));
+  }
 
-  return <div className="live-puzzle"><div className="live-puzzle-reference"><img src={image} alt="Completed puzzle reference"/><small>reference · {size}×{size}</small></div><div><div className={`live-puzzle-grid ${solved?"solved":""}`} style={{gridTemplateColumns:`repeat(${size},1fr)`}}>{tiles.map((tile,index)=><button key={`${tile}-${index}`} className={picked===index?"picked":""} onClick={()=>moveTile(index)} style={{backgroundImage:`url("${image}")`,backgroundSize:`${size*100}% ${size*100}%`,backgroundPosition:`${(tile%size)*100/(size-1)}% ${Math.floor(tile/size)*100/(size-1)}%`}} aria-label={`Puzzle piece ${index+1}`}/>)}{phase==="perfect"&&<div className="live-puzzle-success">Perfect! ✦<small>{config.successMessage||"Memory restored"}</small></div>}</div><button className="puzzle-shuffle" onClick={reshuffle}>↻ Shuffle again</button></div></div>;
+  function reshuffle(){autoTimers.current.forEach(timer=>window.clearTimeout(timer));autoTimers.current=[];setTiles(shuffleTiles(size));setPicked(null);setMoves(0);setAutoSolving(false);setPhase("playing")}
+
+  if(phase==="photo")return <div className="puzzle-complete-photo"><img src={image} alt="Completed puzzle"/><strong>Perfect! ✦</strong><span>{config.successMessage||"You put this memory back together."}</span><b className="puzzle-move-result">Solved in {moves} move{moves===1?"":"s"}</b><button onClick={reshuffle}>Play again</button></div>;
+
+  return <div className="live-puzzle"><div className="live-puzzle-reference"><img src={image} alt="Completed puzzle reference"/><small>reference · {size}×{size}</small></div><div><div className="puzzle-move-count" aria-live="polite"><span>{autoSolving?"AUTO SOLVING":"MOVES"}</span><strong>{moves}</strong></div><div className={`live-puzzle-grid ${solved?"solved":""} ${autoSolving?"auto-solving":""}`} style={{gridTemplateColumns:`repeat(${size},1fr)`}}>{tiles.map((tile,index)=><button disabled={autoSolving} key={`${tile}-${index}`} className={picked===index?"picked":""} onClick={()=>moveTile(index)} style={{backgroundImage:`url("${image}")`,backgroundSize:`${size*100}% ${size*100}%`,backgroundPosition:`${(tile%size)*100/(size-1)}% ${Math.floor(tile/size)*100/(size-1)}%`}} aria-label={`Puzzle piece ${index+1}`}/>)}{phase==="perfect"&&<div className="live-puzzle-success">Perfect! ✦<small>{autoSolving?"Putting your memory together…":`Solved in ${moves} move${moves===1?"":"s"}`}</small></div>}</div><div className="puzzle-actions"><button className="puzzle-shuffle" onClick={reshuffle} disabled={autoSolving}>↻ Shuffle again</button>{config.autoSolver==="true"&&<button className="puzzle-auto-solve" onClick={autoSolve} disabled={autoSolving}>{autoSolving?"Solving…":"✦ Auto-solve"}</button>}</div></div></div>;
 }
 
 function MemoryBook({config,onComplete}:{config:Record<string,string>;onComplete?:()=>void}){
@@ -397,28 +433,46 @@ function ScratchSurface({label,colors,onReveal}:{label:string;colors:string[];on
   const scratching = useRef(false);
   const lastPoint = useRef<{x:number;y:number}|null>(null);
   const [revealed,setRevealed]=useState(false);
+  const touchedCells=useRef(new Set<string>());
+  const revealOnce=useRef(false);
+  const palette=colors.join("|");
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const ratio = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = rect.width * ratio;
-    canvas.height = rect.height * ratio;
-    const context = canvas.getContext("2d");
-    if (!context) return;
-    context.scale(ratio, ratio);
-    const gradient = context.createLinearGradient(0, 0, rect.width, rect.height);
-    colors.forEach((color,index)=>gradient.addColorStop(index/Math.max(colors.length-1,1),color));
-    context.fillStyle = gradient;
-    context.fillRect(0, 0, rect.width, rect.height);
-    context.fillStyle = "rgba(255,255,255,.22)";
-    for(let x=-rect.height;x<rect.width;x+=22)context.fillRect(x,0,6,rect.height);
-    context.fillStyle = "white";
-    context.font = "800 12px Nunito";
-    context.textAlign = "center";
-    context.fillText(label, rect.width / 2, rect.height / 2 + 4);
-  }, [colors,label]);
+    let paintedWidth=0;
+    let paintedHeight=0;
+    function paint(){
+      const rect=canvas.getBoundingClientRect();
+      const width=Math.round(rect.width),height=Math.round(rect.height);
+      if(width<2||height<2||(width===paintedWidth&&height===paintedHeight))return;
+      paintedWidth=width;paintedHeight=height;
+      const ratio=Math.min(window.devicePixelRatio||1,2);
+      canvas.width=Math.round(width*ratio);
+      canvas.height=Math.round(height*ratio);
+      const context=canvas.getContext("2d");
+      if(!context)return;
+      context.setTransform(ratio,0,0,ratio,0,0);
+      const gradient=context.createLinearGradient(0,0,width,height);
+      colors.forEach((color,index)=>gradient.addColorStop(index/Math.max(colors.length-1,1),color));
+      context.fillStyle=gradient;
+      context.fillRect(0,0,width,height);
+      context.fillStyle="rgba(255,255,255,.22)";
+      for(let x=-height;x<width;x+=22)context.fillRect(x,0,6,height);
+      context.fillStyle="white";
+      context.font="800 12px Nunito";
+      context.textAlign="center";
+      context.fillText(label,width/2,height/2+4);
+    }
+    paint();
+    const frame=window.requestAnimationFrame(paint);
+    const retry=window.setTimeout(paint,250);
+    const observer=typeof ResizeObserver!=="undefined"?new ResizeObserver(paint):null;
+    observer?.observe(canvas);
+    return()=>{window.cancelAnimationFrame(frame);window.clearTimeout(retry);observer?.disconnect()};
+  }, [palette,label]);
+
+  function reveal(){if(revealOnce.current)return;revealOnce.current=true;setRevealed(true);playSound("reveal");onReveal?.()}
 
   function scratch(event: React.PointerEvent<HTMLCanvasElement>) {
     if (!scratching.current && event.type === "pointermove") return;
@@ -428,6 +482,8 @@ function ScratchSurface({label,colors,onReveal}:{label:string;colors:string[];on
     const context = canvas.getContext("2d");
     if (!context) return;
     const point={x:event.clientX-rect.left,y:event.clientY-rect.top};
+    const columns=12,rows=6,cellX=Math.floor(point.x/Math.max(rect.width/columns,1)),cellY=Math.floor(point.y/Math.max(rect.height/rows,1));
+    for(let x=cellX-1;x<=cellX+1;x++)for(let y=cellY-1;y<=cellY+1;y++)if(x>=0&&x<columns&&y>=0&&y<rows)touchedCells.current.add(`${x}:${y}`);
     context.save();
     context.globalCompositeOperation = "destination-out";
     context.lineWidth=48;
@@ -439,6 +495,7 @@ function ScratchSurface({label,colors,onReveal}:{label:string;colors:string[];on
     context.restore();
     lastPoint.current=point;
     playSound("scratch");
+    if(touchedCells.current.size/(columns*rows)>=.3)reveal();
   }
 
   function finish(event:React.PointerEvent<HTMLCanvasElement>){
@@ -451,10 +508,10 @@ function ScratchSurface({label,colors,onReveal}:{label:string;colors:string[];on
     const pixels=context.getImageData(0,0,canvas.width,canvas.height).data;
     let clear=0,total=0;
     for(let index=3;index<pixels.length;index+=80){total++;if(pixels[index]===0)clear++}
-    if(!revealed&&clear/Math.max(total,1)>.28){setRevealed(true);playSound("reveal");onReveal?.()}
+    if(!revealed&&clear/Math.max(total,1)>.22)reveal();
   }
 
-  return <canvas className={revealed?"scratch-revealed":""} ref={canvasRef} onPointerDown={event=>{scratching.current=true;lastPoint.current=null;event.currentTarget.setPointerCapture(event.pointerId);scratch(event)}} onPointerMove={scratch} onPointerUp={finish} onPointerCancel={finish}/>;
+  return <canvas width={900} height={350} className={revealed?"scratch-complete":""} ref={canvasRef} onPointerDown={event=>{scratching.current=true;lastPoint.current=null;event.currentTarget.setPointerCapture(event.pointerId);scratch(event)}} onPointerMove={scratch} onPointerUp={finish} onPointerCancel={finish}/>;
 }
 
 function ScratchPreview({ revealText, revealDetail, coating,onComplete,onReward }: { revealText?: string; revealDetail?: string; coating?:string;onComplete?:()=>void;onReward?:(reward:string)=>void }) {
