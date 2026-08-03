@@ -32,6 +32,8 @@ import {
   watchFirebaseAuth,
 } from "./authClient";
 import { playSound } from "./soundFx";
+import { GiftSoundtrack, type SoundtrackSettings } from "./GiftSoundtrack";
+import { defaultExperienceBackground, experienceBackgroundStyle, type ExperienceBackground } from "./experienceBackground";
 
 const transitionGameBlocks = new Set(["quiz","thisorthat","emoji","heartcatch","wouldrather","neverhave","truthdare","tapheart","matchpair","wheel","slots","puzzle","scratch","treasure","alwaysyou","excuse","roast","fortune","mysterybox"]);
 
@@ -902,6 +904,7 @@ export default function Home() {
   const [libraryPreview, setLibraryPreview] = useState<Block | null>(null);
   const [theme, setTheme] = useState("Blush romance");
   const [ambience, setAmbience] = useState("Petals");
+  const [experienceBackground,setExperienceBackground]=useState<ExperienceBackground>(defaultExperienceBackground);
   const [previewStep, setPreviewStep] = useState(0);
   const [previewOrigin, setPreviewOrigin] = useState<"welcome" | "builder">(
     "builder",
@@ -1143,6 +1146,18 @@ export default function Home() {
     );
   }
 
+  async function uploadExperienceBackground(files:FileList|null){
+    const file=files?.[0];if(!file)return;
+    try{
+      const body=new FormData();body.append("file",file);
+      const api=process.env.NEXT_PUBLIC_API_URL||"https://backend-production-22bd.up.railway.app";
+      const response=await fetch(`${api}/api/media/image`,{method:"POST",headers:await authHeaders(),body});
+      if(!response.ok)throw new Error();
+      const result=await response.json() as {url:string};
+      setExperienceBackground(current=>({...current,imageUrl:result.url}));
+    }catch{setSaveState("offline")}
+  }
+
   function launchPreview() {
     setPreviewOrigin("builder");
     setPreviewStep(0);
@@ -1255,6 +1270,7 @@ export default function Home() {
           | {
             blocks?: Block[];
             soundtrack?: typeof soundtrack;
+            experienceBackground?:ExperienceBackground;
             bundleId?: string | null;
             recipientGender?: "Girl"|"Boy"|"Neutral"|"";
           }
@@ -1264,6 +1280,7 @@ export default function Home() {
       setSelected(blocks);
       if (!Array.isArray(parsed)) {
         if (parsed.soundtrack) setSoundtrack(parsed.soundtrack);
+        setExperienceBackground(parsed.experienceBackground||defaultExperienceBackground);
         setSelectedBundleId(parsed.bundleId || null);
         setRecipientGender(parsed.recipientGender || "");
       } else setSelectedBundleId(null);
@@ -1313,6 +1330,7 @@ export default function Home() {
           version: 3,
           blocks: selected,
           soundtrack,
+          experienceBackground,
           bundleId: selectedBundleId,
           recipientGender,
         }),
@@ -2107,6 +2125,7 @@ export default function Home() {
     return (
       <main
         className={`recipient-preview theme-${theme.toLowerCase().replaceAll(" ", "-")}`}
+        style={experienceBackgroundStyle(experienceBackground)}
       >
         {showEffect && (
           <div
@@ -2505,6 +2524,13 @@ export default function Home() {
                   </select>
                 </label>
               </div>
+              <section className="experience-background-editor">
+                <header><span>▧</span><div><small>WHOLE EXPERIENCE</small><strong>Background</strong></div></header>
+                <label className="field">Background theme<select value={experienceBackground.theme} onChange={event=>setExperienceBackground(current=>({...current,theme:event.target.value}))}><option>Theme glow</option><option>Rose clouds</option><option>Golden hour</option><option>Midnight stars</option><option>Paper garden</option></select></label>
+                <label className="field">Personal background image<input type="file" accept="image/*" onChange={event=>void uploadExperienceBackground(event.target.files)}/><small>{experienceBackground.imageUrl?"Personal image selected":"Optional · JPG, PNG or WebP"}</small></label>
+                {experienceBackground.imageUrl&&<button className="remove-experience-background" onClick={()=>setExperienceBackground(current=>({...current,imageUrl:""}))}>Remove personal image</button>}
+                <label className="field">Image overlay<select value={experienceBackground.overlay} onChange={event=>setExperienceBackground(current=>({...current,overlay:event.target.value}))}><option>None</option><option>Soft</option><option>Strong</option></select></label>
+              </section>
               <div className="customizer-live-note">
                 <i /> You’re editing the live preview
               </div>
@@ -2747,16 +2773,6 @@ function SignInPopup({
   );
 }
 
-type SoundtrackSettings = {
-  enabled: boolean;
-  templateId: string;
-  audioUrl: string;
-  name: string;
-  startMode: string;
-  startBlockId: string;
-  startSeconds: string;
-};
-
 const soundtrackTemplates = [
   {
     id: "warm-sunset",
@@ -2896,81 +2912,6 @@ function SoundtrackEditor({
           <small>seconds</small>
         </label>
       </div>
-    </div>
-  );
-}
-
-function GiftSoundtrack({
-  settings,
-  blocks,
-  step,
-}: {
-  settings: SoundtrackSettings;
-  blocks: Block[];
-  step: number;
-}) {
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const initialized = useRef(false);
-  const [playing, setPlaying] = useState(false);
-  const startIndex =
-    settings.startMode === "From a specific block"
-      ? Math.max(
-          0,
-          blocks.findIndex(
-            (block) => block.id === (settings.startBlockId || blocks[0]?.id),
-          ),
-        )
-      : 0;
-  const ready = step >= startIndex;
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (!settings.enabled || !playing || !ready) {
-      audio.pause();
-      return;
-    }
-    audio.volume = 0.14;
-    if (!initialized.current) {
-      const seek = Math.max(0, Number(settings.startSeconds) || 0);
-      if (Number.isFinite(audio.duration))
-        audio.currentTime = Math.min(seek, Math.max(audio.duration - 0.25, 0));
-      else audio.currentTime = seek;
-      initialized.current = true;
-    }
-    void audio.play().catch(() => {});
-  }, [playing, ready, settings.enabled, settings.startSeconds]);
-
-  useEffect(() => {
-    initialized.current = false;
-  }, [settings.audioUrl, settings.startBlockId, settings.startMode]);
-
-  if (!settings.enabled) return null;
-  const target = blocks[startIndex]?.name || "the first block";
-  return (
-    <div className={`recipient-soundtrack ${playing ? "playing" : ""}`}>
-      <button
-        disabled={!settings.audioUrl}
-        onClick={() => setPlaying((value) => !value)}
-        aria-label={playing ? "Pause soundtrack" : "Play soundtrack"}
-      >
-        {playing ? "Ⅱ" : "♫"}
-      </button>
-      <div>
-        <strong>{settings.name || "Soothing soundtrack"}</strong>
-        <small>
-          {playing && !ready
-            ? `Queued for ${target}`
-            : playing
-              ? "Soft background · SFX stay louder"
-              : settings.startMode === "From a specific block"
-                ? `Starts at ${target}`
-                : "Tap to play softly"}
-        </small>
-      </div>
-      {settings.audioUrl && (
-        <audio ref={audioRef} src={settings.audioUrl} loop preload="metadata" />
-      )}
     </div>
   );
 }

@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BuilderLivePreview } from "./BuilderLivePreview";
+import { GiftSoundtrack, type SoundtrackSettings } from "./GiftSoundtrack";
+import { experienceBackgroundStyle, type ExperienceBackground } from "./experienceBackground";
 
 type GiftBlock = {
   instanceId?: string;
@@ -61,6 +63,7 @@ function parseRecipientGender(value:string){
     return Array.isArray(parsed)?"":parsed.recipientGender||"";
   }catch{return ""}
 }
+function parseExperienceSettings(value:string):{soundtrack?:SoundtrackSettings;experienceBackground?:ExperienceBackground}{try{const parsed=JSON.parse(value);return Array.isArray(parsed)?{}:parsed}catch{return {}}}
 
 export function PublicGiftExperience({ token }: { token: string }) {
   const [gift, setGift] = useState<PublicGift | null>(null);
@@ -192,6 +195,7 @@ export function PublicGiftExperience({ token }: { token: string }) {
     );
   }
   const blocks = parseBlocks(gift.blocksJson);
+  const experienceSettings=parseExperienceSettings(gift.blocksJson);
   const recipientGender=parseRecipientGender(gift.blocksJson);
   const returnPronoun=recipientGender==="Girl"?"him":recipientGender==="Boy"?"her":"them";
   const block = blocks[step];
@@ -410,7 +414,15 @@ export function PublicGiftExperience({ token }: { token: string }) {
   return (
     <main
       className={`recipient-preview public-recipient theme-${gift.theme.toLowerCase().replaceAll(" ", "-")}`}
+      style={experienceBackgroundStyle(experienceSettings.experienceBackground)}
     >
+      {experienceSettings.soundtrack && (
+        <GiftSoundtrack
+          settings={experienceSettings.soundtrack}
+          blocks={blocks}
+          step={step}
+        />
+      )}
       <div className="recipient-experience-shell">
         <div className="preview-count">
           {step + 1} of {blocks.length}

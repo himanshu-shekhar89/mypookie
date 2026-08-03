@@ -144,3 +144,44 @@
 .welcome-page .lab-title small{color:#76525e}
 .welcome-page .lever-hint{color:#76545f}
 .welcome-page .puzzle-tools{color:#765f67}
+
+/* Keep each slot lever built around one physical pivot, including while pulled. */
+.real-lever{width:82px;height:126px;overflow:visible}
+.real-lever:before{left:13px;top:20px;height:82px;transform-origin:6.5px 76px}
+.real-lever b{left:5px;top:3px;transform-origin:15px 95px}
+.real-lever.pulled:before{transform:rotate(105deg)}
+.real-lever.pulled b{transform:rotate(105deg)}
+.slot-machine-lever{width:92px;height:136px;overflow:visible;flex:0 0 92px}
+.slot-machine-lever:before{left:15px;top:22px;height:88px;transform-origin:6.5px 81px}
+.slot-machine-lever b{left:7px;top:4px;transform-origin:15px 101px}
+.slot-machine-lever.pulled:before{transform:rotate(105deg)}
+.slot-machine-lever.pulled b{transform:rotate(105deg)}
+
+/* A personal letter can now hold a real note instead of only a short caption. */
+.letter-reveal-scene{min-height:490px}
+.letter-reveal-scene .envelope-3d{width:min(540px,90vw);height:430px}
+.letter-reveal-scene .letter-sheet{left:18px;right:18px;top:0;min-height:370px;max-height:405px;padding:38px 42px;justify-content:flex-start;overflow:auto}
+.letter-reveal-scene .letter-sheet p{font-size:24px;line-height:1.55;white-space:pre-wrap}
+.letter-reveal-scene.letter-copy-long .letter-sheet p{font-size:21px;line-height:1.5}
+.letter-reveal-scene.letter-copy-max .letter-sheet p{font-size:17px;line-height:1.48}
+.letter-reveal-scene .letter-sheet small{margin-top:20px}
+
+/* Additional sender-selectable Memory Lane page entrances. */
+.scrapbook-page.page-page-curl{animation:memoryPageCurl .7s cubic-bezier(.2,.85,.25,1) both;transform-origin:left center}
+.scrapbook-page.page-photo-scatter img{animation:memoryPhotoScatter .72s cubic-bezier(.15,.9,.25,1.15) both}
+.scrapbook-page.page-crossfade{animation:memoryCrossfade .7s ease both}
+.scrapbook-page.page-flip-book{animation:memoryFlipBook .65s cubic-bezier(.2,.8,.25,1) both;transform-origin:left center}
+.scrapbook-page.page-wash-reveal{animation:memoryWashReveal .9s ease both}
+.scrapbook-page.page-ken-burns img{animation:memoryKenBurns 5s ease-out both}
+@keyframes memoryPageCurl{from{opacity:.2;transform:perspective(1100px) rotateY(-55deg) skewY(2deg)}to{opacity:1;transform:none}}
+@keyframes memoryPhotoScatter{from{opacity:0;transform:translate(35px,-24px) rotate(9deg) scale(.76)}to{opacity:1;transform:none}}
+@keyframes memoryCrossfade{from{opacity:0;filter:blur(9px)}to{opacity:1;filter:none}}
+@keyframes memoryFlipBook{from{opacity:.15;transform:perspective(1000px) rotateY(-82deg)}to{opacity:1;transform:none}}
+@keyframes memoryWashReveal{from{opacity:0;clip-path:inset(0 100% 0 0);filter:saturate(.3)}to{opacity:1;clip-path:inset(0);filter:none}}
+@keyframes memoryKenBurns{from{opacity:.5;transform:scale(1.12) translate(-2%,1%)}to{opacity:1;transform:scale(1)}}
+
+/* Experience background controls. */
+.experience-background-editor{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:18px;background:#fffafc}
+.experience-background-editor h4,.experience-background-editor>p{grid-column:1/-1;margin:0}.experience-background-editor h4{font-size:12px}.experience-background-editor>p{color:var(--muted);font-size:8px;line-height:1.5}.experience-background-editor .field{margin:0}.experience-background-editor button{align-self:end;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--berry);padding:11px;font-size:8px;font-weight:900}
+@media(max-width:700px){.experience-background-editor{grid-template-columns:1fr}.experience-background-editor h4,.experience-background-editor>p{grid-column:auto}.letter-reveal-scene{min-height:430px}.letter-reveal-scene .envelope-3d{height:380px}.letter-reveal-scene .letter-sheet{min-height:330px;max-height:355px;padding:28px 25px}.letter-reveal-scene .letter-sheet p{font-size:19px}.letter-reveal-scene.letter-copy-long .letter-sheet p{font-size:17px}.letter-reveal-scene.letter-copy-max .letter-sheet p{font-size:15px}}
+@media(prefers-reduced-motion:reduce){.scrapbook-page.page-page-curl,.scrapbook-page.page-crossfade,.scrapbook-page.page-flip-book,.scrapbook-page.page-wash-reveal,.scrapbook-page.page-photo-scatter img,.scrapbook-page.page-ken-burns img{animation:none}}
