@@ -12,6 +12,17 @@ export type SoundtrackSettings = {
   endSeconds?: string;
   fadeInSeconds?: string;
   fadeOutSeconds?: string;
+  fadeIn?: boolean;
+  fadeOut?: boolean;
+  loop?: boolean;
+  allowMultiple?: boolean;
+  tracks?: Array<{
+    id: string;
+    name: string;
+    url: string;
+    startSeconds?: string;
+    endSeconds?: string;
+  }>;
   templateId?: string;
 };
 type SoundtrackBlock = { id: string; name: string };
@@ -29,6 +40,17 @@ export function GiftSoundtrack({
   const initialized = useRef(false);
   const [playing, setPlaying] = useState(false);
   const [mediaPlaying, setMediaPlaying] = useState(false);
+  const [trackIndex, setTrackIndex] = useState(0);
+  const tracks = settings.tracks?.length
+    ? settings.tracks
+    : [
+        {
+          id: settings.templateId || "soundtrack",
+          name: settings.name,
+          url: settings.audioUrl,
+        },
+      ];
+  const activeTrack = tracks[Math.min(trackIndex, tracks.length - 1)];
   const startIndex =
     settings.startMode === "From a specific block"
       ? Math.max(
@@ -56,7 +78,10 @@ export function GiftSoundtrack({
     }
     audio.volume = 0.14;
     if (!initialized.current) {
-      const seek = Math.max(0, Number(settings.startSeconds) || 0);
+      const seek = Math.max(
+        0,
+        Number(activeTrack.startSeconds ?? settings.startSeconds) || 0,
+      );
       audio.currentTime = Number.isFinite(audio.duration)
         ? Math.min(seek, Math.max(audio.duration - 0.25, 0))
         : seek;
@@ -64,17 +89,29 @@ export function GiftSoundtrack({
     }
     void audio.play().catch(() => {});
     const updateVolumeAndTrim = () => {
-      const start = Math.max(0, Number(settings.startSeconds) || 0);
-      const configuredEnd = Number(settings.endSeconds) || 0;
+      const start = Math.max(
+        0,
+        Number(activeTrack.startSeconds ?? settings.startSeconds) || 0,
+      );
+      const configuredEnd =
+        Number(activeTrack.endSeconds ?? settings.endSeconds) || 0;
       const end =
         configuredEnd > start
           ? Math.min(configuredEnd, audio.duration || configuredEnd)
           : audio.duration;
-      const fadeIn = Math.max(0, Number(settings.fadeInSeconds) || 0);
-      const fadeOut = Math.max(0, Number(settings.fadeOutSeconds) || 0);
+      const fadeIn = settings.fadeIn === false ? 0 : 2;
+      const fadeOut = settings.fadeOut === false ? 0 : 2;
       if (Number.isFinite(end) && audio.currentTime >= end) {
-        audio.currentTime = start;
-        audio.volume = fadeIn ? 0 : 0.14;
+        if (settings.loop) {
+          audio.currentTime = start;
+          audio.volume = fadeIn ? 0 : 0.14;
+        } else if (trackIndex < tracks.length - 1) {
+          initialized.current = false;
+          setTrackIndex((value) => value + 1);
+        } else {
+          audio.pause();
+          setPlaying(false);
+        }
         return;
       }
       const inGain = fadeIn
@@ -96,12 +133,17 @@ export function GiftSoundtrack({
     settings.enabled,
     settings.startSeconds,
     settings.endSeconds,
-    settings.fadeInSeconds,
-    settings.fadeOutSeconds,
+    settings.fadeIn,
+    settings.fadeOut,
+    settings.loop,
+    activeTrack.startSeconds,
+    activeTrack.endSeconds,
+    trackIndex,
+    tracks.length,
   ]);
   useEffect(() => {
     initialized.current = false;
-  }, [settings.audioUrl, settings.startBlockId, settings.startMode]);
+  }, [activeTrack.url, settings.startBlockId, settings.startMode]);
   if (!settings.enabled) return null;
   const target = blocks[startIndex]?.name || "the first block";
   return (
@@ -109,14 +151,14 @@ export function GiftSoundtrack({
       className={`recipient-soundtrack ${playing && !mediaPlaying ? "playing" : ""}`}
     >
       <button
-        disabled={!settings.audioUrl}
+        disabled={!activeTrack.url}
         onClick={() => setPlaying((value) => !value)}
         aria-label={playing ? "Pause soundtrack" : "Play soundtrack"}
       >
         {playing && !mediaPlaying ? "Ⅱ" : "♫"}
       </button>
       <div>
-        <strong>{settings.name || "Soothing soundtrack"}</strong>
+        <strong>{activeTrack.name || "Soothing soundtrack"}</strong>
         <small>
           {mediaPlaying
             ? "Paused for this voice or video"
@@ -129,8 +171,8 @@ export function GiftSoundtrack({
                   : "Tap to play softly"}
         </small>
       </div>
-      {settings.audioUrl && (
-        <audio ref={audioRef} src={settings.audioUrl} loop preload="metadata" />
+      {activeTrack.url && (
+        <audio ref={audioRef} src={activeTrack.url} preload="metadata" />
       )}
     </div>
   );

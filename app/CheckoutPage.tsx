@@ -130,7 +130,9 @@ export function CheckoutPage({
       block.id === "thisorthat" &&
       block.config?.compatibilityEnabled === "true",
   );
-  const pinValid = (!compatibilityEnabled || /^\d{4,6}$/.test(compatibilityPin)) && (!accessPin || /^\d{4,8}$/.test(accessPin));
+  const pinValid =
+    (!compatibilityEnabled || /^\d{4,6}$/.test(compatibilityPin)) &&
+    (!accessPin || /^\d{4,8}$/.test(accessPin));
   const discount = (quote?.discountPaise || 0) / 100;
   const total = quote ? quote.totalPaise / 100 : subtotal;
 
@@ -257,7 +259,7 @@ export function CheckoutPage({
     const when = revealAt
       ? `It opens on ${new Intl.DateTimeFormat([], { dateStyle: "long", timeStyle: "short" }).format(new Date(revealAt))}.`
       : "It is ready to open now.";
-    const whatsappText = `A little surprise for ${name}\n\n${senderName} made you a beautiful ${occasion.toLowerCase()} experience on mypookie.\n${when}${accessPin?`\nGift PIN: ${accessPin}`:""}\n\nOpen your private gift here:\n${shareLink}`;
+    const whatsappText = `A little surprise for ${name}\n\n${senderName} made you a beautiful ${occasion.toLowerCase()} experience on mypookie.\n${when}${accessPin ? `\nGift PIN: ${accessPin}` : ""}\n\nOpen your private gift here:\n${shareLink}`;
     async function copyLink() {
       await navigator.clipboard.writeText(shareLink);
       playSound("correct");
@@ -310,7 +312,12 @@ export function CheckoutPage({
     <main className="checkout-page">
       <header className="checkout-header">
         <button className="brand">
-          <span className="brand-heart">♥</span> mypookie.
+          <img
+            className="brand-logo-mark"
+            src="/mypookie-logo-mark.svg"
+            alt=""
+          />{" "}
+          mypookie.
         </button>
         <button onClick={onBack}>← Back to editor</button>
       </header>
@@ -378,12 +385,27 @@ export function CheckoutPage({
           <div className="gift-access-settings">
             <label className="checkout-field">
               Gift opening PIN <span>Optional</span>
-              <input inputMode="numeric" pattern="[0-9]*" maxLength={8} value={accessPin} onChange={event=>onAccessPin(event.target.value.replace(/\D/g,"").slice(0,8))} placeholder="4–8 digits" />
-              <small>Only someone with this PIN can open the gift. It will be included in your WhatsApp message.</small>
+              <input
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={8}
+                value={accessPin}
+                onChange={(event) =>
+                  onAccessPin(event.target.value.replace(/\D/g, "").slice(0, 8))
+                }
+                placeholder="4–8 digits"
+              />
+              <small>
+                Only someone with this PIN can open the gift. It will be
+                included in your WhatsApp message.
+              </small>
             </label>
             <label className="checkout-field">
               How many times can it be opened?
-              <select value={maxOpenCount} onChange={event=>onMaxOpenCount(Number(event.target.value))}>
+              <select
+                value={maxOpenCount}
+                onChange={(event) => onMaxOpenCount(Number(event.target.value))}
+              >
                 <option value={0}>Unlimited</option>
                 <option value={1}>Once</option>
                 <option value={2}>2 times</option>

@@ -964,6 +964,19 @@ export default function Home() {
     endSeconds: "",
     fadeInSeconds: "2",
     fadeOutSeconds: "2",
+    fadeIn: true,
+    fadeOut: true,
+    loop: false,
+    allowMultiple: false,
+    tracks: [
+      {
+        id: "until-i-found-you",
+        name: "Until I Found You",
+        url: "/music/until-i-found-you.mp3",
+        startSeconds: "0",
+        endSeconds: "",
+      },
+    ],
   });
   const [soundtrackOpen, setSoundtrackOpen] = useState(false);
   const [builderPreviewNonce, setBuilderPreviewNonce] = useState(0);
@@ -1700,7 +1713,12 @@ export default function Home() {
         )}
         <nav className="nav">
           <button className="brand" onClick={() => setScreen("welcome")}>
-            <span className="brand-heart">♥</span> mypookie.
+            <img
+              className="brand-logo-mark"
+              src="/mypookie-logo-mark.svg"
+              alt=""
+            />{" "}
+            mypookie.
           </button>
           <div className="nav-links">
             <a href="#how">How it works</a>
@@ -1895,7 +1913,12 @@ export default function Home() {
         </section>
         <footer className="site-footer">
           <a className="brand" href="/">
-            <span className="brand-heart">♥</span> mypookie.
+            <img
+              className="brand-logo-mark"
+              src="/mypookie-logo-mark.svg"
+              alt=""
+            />{" "}
+            mypookie.
           </a>
           <p>Private little worlds, made for the people who matter.</p>
           <div>
@@ -1919,7 +1942,12 @@ export default function Home() {
         {signInPopup}
         <header className="nav catalog-nav">
           <button className="brand" onClick={() => setScreen("welcome")}>
-            <span className="brand-heart">♥</span> mypookie.
+            <img
+              className="brand-logo-mark"
+              src="/mypookie-logo-mark.svg"
+              alt=""
+            />{" "}
+            mypookie.
           </button>
           <div className="nav-links">
             <a href="/#how">How it works</a>
@@ -2293,7 +2321,12 @@ export default function Home() {
             ← <span>Back</span>
           </button>
           <button className="brand" onClick={() => setScreen("welcome")}>
-            <span className="brand-heart">♥</span> mypookie.
+            <img
+              className="brand-logo-mark"
+              src="/mypookie-logo-mark.svg"
+              alt=""
+            />{" "}
+            mypookie.
           </button>
         </div>
         <div className="gift-title">
@@ -3106,6 +3139,7 @@ function SoundtrackEditor({
 }) {
   const previewRef = useRef<HTMLAudioElement>(null);
   const [duration, setDuration] = useState(0);
+  const [editOpen, setEditOpen] = useState(false);
   useEffect(() => {
     const audio = previewRef.current;
     if (!audio) return;
@@ -3116,8 +3150,8 @@ function SoundtrackEditor({
         endValue > start
           ? Math.min(endValue, audio.duration || endValue)
           : audio.duration;
-      const fadeIn = Math.max(0, Number(settings.fadeInSeconds) || 0);
-      const fadeOut = Math.max(0, Number(settings.fadeOutSeconds) || 0);
+      const fadeIn = settings.fadeIn === false ? 0 : 2;
+      const fadeOut = settings.fadeOut === false ? 0 : 2;
       if (Number.isFinite(end) && audio.currentTime >= end) {
         audio.currentTime = start;
         void audio.play().catch(() => {});
@@ -3136,8 +3170,8 @@ function SoundtrackEditor({
   }, [
     settings.startSeconds,
     settings.endSeconds,
-    settings.fadeInSeconds,
-    settings.fadeOutSeconds,
+    settings.fadeIn,
+    settings.fadeOut,
   ]);
   const startBlock =
     settings.startBlockId &&
@@ -3145,12 +3179,43 @@ function SoundtrackEditor({
       ? settings.startBlockId
       : blocks[0]?.id || "";
   function selectAndPreview(template: (typeof soundtrackTemplates)[number]) {
+    const currentTracks = settings.tracks || [];
+    const alreadySelected = currentTracks.some(
+      (track) => track.id === template.id,
+    );
+    const selectedTrack = currentTracks.find(
+      (track) => track.id === template.id,
+    );
+    const tracks = settings.allowMultiple
+      ? alreadySelected
+        ? currentTracks
+        : [
+            ...currentTracks,
+            {
+              id: template.id,
+              name: template.name,
+              url: template.url,
+              startSeconds: "0",
+              endSeconds: "",
+            },
+          ]
+      : [
+          {
+            id: template.id,
+            name: template.name,
+            url: template.url,
+            startSeconds: "0",
+            endSeconds: "",
+          },
+        ];
     onChange({
       templateId: template.id,
       audioUrl: template.url,
       name: template.name,
       enabled: true,
-      endSeconds: "",
+      startSeconds: selectedTrack?.startSeconds || "0",
+      endSeconds: selectedTrack?.endSeconds || "",
+      tracks,
     });
     const audio = previewRef.current;
     if (!audio) return;
@@ -3193,125 +3258,225 @@ function SoundtrackEditor({
             <small>The recipient can always pause or mute it.</small>
           </div>
         </label>
+        <div className="soundtrack-choice-options">
+          <label>
+            <input
+              type="checkbox"
+              checked={Boolean(settings.allowMultiple)}
+              onChange={(event) =>
+                onChange({
+                  allowMultiple: event.target.checked,
+                  tracks: event.target.checked
+                    ? settings.tracks || [
+                        {
+                          id: settings.templateId || "soundtrack",
+                          name: settings.name,
+                          url: settings.audioUrl,
+                        },
+                      ]
+                    : [
+                        (settings.tracks || [])[0] || {
+                          id: settings.templateId || "soundtrack",
+                          name: settings.name,
+                          url: settings.audioUrl,
+                        },
+                      ],
+                })
+              }
+            />
+            <span>Add multiple songs</span>
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={Boolean(settings.loop)}
+              onChange={(event) => onChange({ loop: event.target.checked })}
+            />
+            <span>Play on loop</span>
+          </label>
+        </div>
         <div className="soundtrack-template-grid">
           {soundtrackTemplates.map((template) => (
-            <button
-              type="button"
-              className={`soundtrack-template-card ${settings.templateId === template.id ? "selected" : ""}`}
+            <div
+              className={`soundtrack-template-card ${(settings.tracks || []).some((track) => track.id === template.id) || settings.templateId === template.id ? "selected" : ""}`}
               key={template.id}
-              onClick={() => selectAndPreview(template)}
             >
-              <span>{template.mark}</span>
-              <div>
-                <strong>{template.name}</strong>
-                <small>{template.mood}</small>
-              </div>
-              <b>{settings.templateId === template.id ? "✓" : "Choose"}</b>
-            </button>
+              <button
+                type="button"
+                className="soundtrack-template-main"
+                onClick={() => selectAndPreview(template)}
+              >
+                <span>{template.mark}</span>
+                <span>
+                  <strong>{template.name}</strong>
+                  <small>{template.mood}</small>
+                </span>
+              </button>
+              <button
+                type="button"
+                className="soundtrack-template-action"
+                aria-label={
+                  settings.templateId === template.id
+                    ? `Edit ${template.name}`
+                    : `Choose ${template.name}`
+                }
+                onClick={() =>
+                  settings.templateId === template.id
+                    ? setEditOpen(true)
+                    : selectAndPreview(template)
+                }
+              >
+                {settings.templateId === template.id
+                  ? "✎ Edit"
+                  : (settings.tracks || []).some(
+                        (track) => track.id === template.id,
+                      )
+                    ? "✓ Added"
+                    : "Choose"}
+              </button>
+            </div>
           ))}
         </div>
-        <audio
-          ref={previewRef}
-          className="soundtrack-template-preview"
-          controls
-          preload="metadata"
-          src={settings.audioUrl}
-          aria-label={`Preview ${settings.name}`}
-          onLoadedMetadata={(event) =>
-            setDuration(event.currentTarget.duration || 0)
-          }
-        />
-        <p className="template-note">
-          Music stays soft beneath the experience. Interaction and win sounds
-          always play louder.
-        </p>
-        <label className="field">
-          When should it begin?
-          <select
-            value={settings.startMode}
-            onChange={(event) => onChange({ startMode: event.target.value })}
-          >
-            <option>From the beginning</option>
-            <option>From a specific block</option>
-          </select>
-        </label>
-        {settings.startMode === "From a specific block" && (
-          <label className="field">
-            Start at block
-            <select
-              value={startBlock}
-              onChange={(event) =>
-                onChange({ startBlockId: event.target.value })
+        {editOpen && (
+          <section className="soundtrack-clip-editor">
+            <header>
+              <div>
+                <small>EDIT SELECTED SONG</small>
+                <strong>{settings.name}</strong>
+              </div>
+              <button onClick={() => setEditOpen(false)}>Done</button>
+            </header>
+            <audio
+              ref={previewRef}
+              className="soundtrack-template-preview"
+              controls
+              preload="metadata"
+              src={settings.audioUrl}
+              aria-label={`Preview ${settings.name}`}
+              onLoadedMetadata={(event) =>
+                setDuration(event.currentTarget.duration || 0)
               }
-            >
-              {blocks.map((block, index) => (
-                <option value={block.id} key={block.id}>
-                  {index + 1}. {block.name}
-                </option>
-              ))}
-            </select>
-          </label>
+            />
+            <p className="template-note">
+              Music stays soft beneath the experience. Interaction and win
+              sounds always play louder.
+            </p>
+            <label className="field">
+              When should it begin?
+              <select
+                value={settings.startMode}
+                onChange={(event) =>
+                  onChange({ startMode: event.target.value })
+                }
+              >
+                <option>From the beginning</option>
+                <option>From a specific block</option>
+              </select>
+            </label>
+            {settings.startMode === "From a specific block" && (
+              <label className="field">
+                Start at block
+                <select
+                  value={startBlock}
+                  onChange={(event) =>
+                    onChange({ startBlockId: event.target.value })
+                  }
+                >
+                  {blocks.map((block, index) => (
+                    <option value={block.id} key={block.id}>
+                      {index + 1}. {block.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <div className="soundtrack-trim">
+              <div className="trim-times">
+                <span>{Math.floor(Number(settings.startSeconds) || 0)}s</span>
+                <span>
+                  {Math.floor(Number(settings.endSeconds) || duration || 0)}s
+                </span>
+              </div>
+              <div className="dual-range">
+                <input
+                  aria-label="Song start"
+                  type="range"
+                  min="0"
+                  max={duration || 600}
+                  value={settings.startSeconds}
+                  onChange={(event) => {
+                    onChange({
+                      startSeconds: event.target.value,
+                      tracks: settings.tracks?.map((track) =>
+                        track.id === settings.templateId
+                          ? { ...track, startSeconds: event.target.value }
+                          : track,
+                      ),
+                    });
+                    if (previewRef.current)
+                      previewRef.current.currentTime = Math.max(
+                        0,
+                        Number(event.target.value) || 0,
+                      );
+                  }}
+                />
+                <input
+                  aria-label="Song end"
+                  type="range"
+                  min="0"
+                  max={duration || 600}
+                  value={settings.endSeconds || Math.floor(duration || 0)}
+                  onChange={(event) =>
+                    onChange({
+                      endSeconds: String(
+                        Math.max(
+                          Number(event.target.value),
+                          Number(settings.startSeconds) + 1,
+                        ),
+                      ),
+                      tracks: settings.tracks?.map((track) =>
+                        track.id === settings.templateId
+                          ? {
+                              ...track,
+                              endSeconds: String(
+                                Math.max(
+                                  Number(event.target.value),
+                                  Number(settings.startSeconds) + 1,
+                                ),
+                              ),
+                            }
+                          : track,
+                      ),
+                    })
+                  }
+                />
+              </div>
+              <small>Drag either end to choose the part that plays.</small>
+            </div>
+            <div className="soundtrack-effect-toggles">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={settings.fadeIn !== false}
+                  onChange={(event) =>
+                    onChange({ fadeIn: event.target.checked })
+                  }
+                />
+                <span>Fade in</span>
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={settings.fadeOut !== false}
+                  onChange={(event) =>
+                    onChange({ fadeOut: event.target.checked })
+                  }
+                />
+                <span>Fade out</span>
+              </label>
+            </div>
+          </section>
         )}
-        <label className="field">
-          Start song at
-          <input
-            type="number"
-            min="0"
-            max={duration || 600}
-            value={settings.startSeconds}
-            onChange={(event) => {
-              onChange({ startSeconds: event.target.value });
-              if (previewRef.current)
-                previewRef.current.currentTime = Math.max(
-                  0,
-                  Number(event.target.value) || 0,
-                );
-            }}
-          />
-          <small>seconds</small>
-        </label>
-        <label className="field">
-          End song at
-          <input
-            type="number"
-            min={Math.max(1, Number(settings.startSeconds) || 0)}
-            max={duration || 600}
-            value={settings.endSeconds || ""}
-            placeholder={duration ? String(Math.floor(duration)) : "Full song"}
-            onChange={(event) => onChange({ endSeconds: event.target.value })}
-          />
-          <small>seconds · blank plays to the end</small>
-        </label>
-        <div className="style-row">
-          <label className="field">
-            Fade in
-            <input
-              type="number"
-              min="0"
-              max="15"
-              step="0.5"
-              value={settings.fadeInSeconds || "0"}
-              onChange={(event) =>
-                onChange({ fadeInSeconds: event.target.value })
-              }
-            />
-            <small>seconds</small>
-          </label>
-          <label className="field">
-            Fade out
-            <input
-              type="number"
-              min="0"
-              max="15"
-              step="0.5"
-              value={settings.fadeOutSeconds || "0"}
-              onChange={(event) =>
-                onChange({ fadeOutSeconds: event.target.value })
-              }
-            />
-            <small>seconds</small>
-          </label>
-        </div>
       </div>
     </div>
   );
