@@ -67,6 +67,13 @@ public class OrderController {
   return Map.of("couponCode",quote.code(),"subtotalPaise",gift.getTotalPaise(),"discountPaise",quote.discountPaise(),"totalPaise",Math.max(0,gift.getTotalPaise()-quote.discountPaise()));
  }
 
+ @PostMapping("/coupon-quote")
+ public Map<String,Object> couponQuote(@AuthenticationPrincipal FirebaseAuthenticationFilter.UserPrincipal principal,@Valid @RequestBody CouponQuoteRequest request){
+  users.resolve(principal);
+  var quote=couponService.quote(request.couponCode(),request.subtotalPaise());
+  return Map.of("couponCode",quote.code(),"subtotalPaise",request.subtotalPaise(),"discountPaise",quote.discountPaise(),"totalPaise",Math.max(0,request.subtotalPaise()-quote.discountPaise()));
+ }
+
  @PostMapping
  public PaymentOrderResponse create(@AuthenticationPrincipal FirebaseAuthenticationFilter.UserPrincipal principal,@Valid @RequestBody OrderRequest request){
   var user=users.resolve(principal);

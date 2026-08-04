@@ -1589,29 +1589,35 @@ export default function Home() {
   }
 
   async function quoteCoupon(coupon: string) {
-    const id = giftId || (await saveDraft());
-    if (!id) return null;
     try {
       const api =
         process.env.NEXT_PUBLIC_API_URL ||
         "https://backend-production-22bd.up.railway.app";
-      const response = await fetch(`${api}/api/orders/quote`, {
+      const response = await fetch(`${api}/api/orders/coupon-quote`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...(await authHeaders()),
         },
-        body: JSON.stringify({ giftId: id, couponCode: coupon }),
+        body: JSON.stringify({ couponCode: coupon, subtotalPaise: subtotal * 100 }),
       });
-      if (!response.ok) return null;
+      if (!response.ok) {
+        const problem = (await response.json().catch(() => null)) as
+          | { detail?: string; message?: string }
+          | null;
+        throw new Error(
+          problem?.detail || problem?.message || "This coupon could not be applied.",
+        );
+      }
       return (await response.json()) as {
         couponCode: string;
         subtotalPaise: number;
         discountPaise: number;
         totalPaise: number;
       };
-    } catch {
-      return null;
+    } catch (error) {
+      if (error instanceof Error) throw error;
+      throw new Error("This coupon could not be applied. Please try again.");
     }
   }
 

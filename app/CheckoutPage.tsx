@@ -145,20 +145,29 @@ export function CheckoutPage({
       return;
     }
     setQuoting(true);
-    const result = await onQuote(code);
-    setQuoting(false);
-    if (result && result.couponCode) {
-      setApplied(result.couponCode);
-      setQuote(result);
-      setCouponMessage(
-        `${result.couponCode} applied — you saved ₹${result.discountPaise / 100}.`,
-      );
-    } else {
+    try {
+      const result = await onQuote(code);
+      if (result && result.couponCode) {
+        setApplied(result.couponCode);
+        setQuote(result);
+        setCouponMessage(
+          `${result.couponCode} applied — you saved ₹${result.discountPaise / 100}.`,
+        );
+      } else {
+        setApplied("");
+        setQuote(null);
+        setCouponMessage("This coupon could not be applied.");
+      }
+    } catch (error) {
       setApplied("");
       setQuote(null);
       setCouponMessage(
-        "That coupon is invalid, expired or not eligible for this order.",
+        error instanceof Error
+          ? error.message
+          : "This coupon could not be applied. Please try again.",
       );
+    } finally {
+      setQuoting(false);
     }
   }
 
