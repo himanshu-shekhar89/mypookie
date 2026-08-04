@@ -181,6 +181,14 @@
   scrollbar-color: rgba(183, 48, 92, 0.35) transparent;
   scrollbar-width: thin;
 }
+.letter-reveal-scene.letter-copy-extra .letter-sheet p {
+  font-size: 14px !important;
+  line-height: 1.35 !important;
+}
+.letter-reveal-scene.letter-copy-full .letter-sheet p {
+  font-size: 12px !important;
+  line-height: 1.28 !important;
+}
 .letter-reveal-scene .letter-sheet small {
   position: relative;
   z-index: 2;

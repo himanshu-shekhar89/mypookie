@@ -204,7 +204,7 @@ export function BuilderLivePreview({
       >
         {block.id === "letter" && (
           <div
-            className={`letter-reveal-scene effect-${letterEffect} stage-${letterStage} envelope-${envelopeStyle} seal-${sealStyle} page-${pageStyle} font-${fontStyle} ${block.message.length > 200 ? "letter-copy-max" : block.message.length > 140 ? "letter-copy-long" : ""}`}
+            className={`letter-reveal-scene effect-${letterEffect} stage-${letterStage} envelope-${envelopeStyle} seal-${sealStyle} page-${pageStyle} font-${fontStyle} ${block.message.length > 650 ? "letter-copy-full" : block.message.length > 450 ? "letter-copy-extra" : block.message.length > 200 ? "letter-copy-max" : block.message.length > 140 ? "letter-copy-long" : ""}`}
             style={
               {
                 "--letter-ink": config.letterColor || "#3f3036",

@@ -770,6 +770,7 @@ function QuizEditor({
         body: JSON.stringify({
           relationship: "two people who care deeply about each other",
           tone: "playful, romantic and sweet",
+          topic: config.aiThemePrompt || "",
         }),
       });
       if (!response.ok) throw new Error();
@@ -1065,6 +1066,7 @@ function ThisOrThatEditor({
           relationship: "two people who care about each other",
           tone,
           count,
+          topic: config.aiThemePrompt || "",
         }),
       });
       if (!response.ok) throw new Error();
