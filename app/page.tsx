@@ -1917,7 +1917,7 @@ export default function Home() {
             <a href="/privacy">Privacy Policy</a>
             <a href="/refund-policy">Refund / Cancellation</a>
             <a href="/contact">Contact Us</a>
-            <a href="/careers">Careers</a>
+            <a href="https://www.mypookie.store/careers">Careers</a>
           </div>
           <small>
             © 2026 mypookie. · Personalized digital purchases are non-refundable
