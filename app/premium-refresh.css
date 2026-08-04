@@ -168,9 +168,28 @@
   color: #6f4e23;
 }
 
-/* The closing should feel like part of the letter, not fine print. */
+/* Keep long letters readable without pushing the sender's closing off the paper. */
+.letter-reveal-scene .letter-sheet {
+  overflow: hidden !important;
+}
+.letter-reveal-scene .letter-sheet p {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  padding-right: 8px;
+  scrollbar-color: rgba(183, 48, 92, 0.35) transparent;
+  scrollbar-width: thin;
+}
 .letter-reveal-scene .letter-sheet small {
-  margin-top: 22px;
+  position: relative;
+  z-index: 2;
+  display: block;
+  flex: 0 0 auto;
+  width: 100%;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(63, 48, 54, 0.14);
   color: var(--letter-ink, #3f3036) !important;
   font:
     700 16px/1.3 "Caveat",
@@ -179,7 +198,8 @@
 }
 @media (max-width: 700px) {
   .letter-reveal-scene .letter-sheet small {
-    margin-top: 16px;
+    margin-top: 10px;
+    padding-top: 8px;
     font-size: 14px;
   }
 }
