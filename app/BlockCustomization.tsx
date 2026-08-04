@@ -599,6 +599,7 @@ type QuizQuestion = {
   question: string;
   options: { text: string; image: string }[];
   correctIndex: number;
+  correctIndices?: number[];
   interaction: "floating" | "normal";
 };
 type MemoryItem = {
@@ -654,7 +655,10 @@ function EGiftEditor({
             className={config.effect === label ? "active" : ""}
             onClick={() => {
               onConfig("effect", label);
-              if (!config.celebrationTitle || effects.includes(config.celebrationTitle))
+              if (
+                !config.celebrationTitle ||
+                effects.includes(config.celebrationTitle)
+              )
                 onConfig("celebrationTitle", label);
             }}
           >
@@ -830,7 +834,18 @@ function QuizEditor({
         : question.correctIndex > optionIndex
           ? question.correctIndex - 1
           : question.correctIndex;
-    patchQuestion(questionIndex, { options, correctIndex });
+    const correctIndices = (
+      question.correctIndices?.length
+        ? question.correctIndices
+        : [question.correctIndex]
+    )
+      .filter((index) => index !== optionIndex)
+      .map((index) => (index > optionIndex ? index - 1 : index));
+    patchQuestion(questionIndex, {
+      options,
+      correctIndex: correctIndices[0] ?? correctIndex,
+      correctIndices: correctIndices.length ? correctIndices : [0],
+    });
   }
 
   return (
@@ -881,14 +896,34 @@ function QuizEditor({
                 <div className="option-editor" key={oIndex}>
                   <button
                     className={
-                      question.correctIndex === oIndex ? "correct" : ""
+                      (question.correctIndices?.length
+                        ? question.correctIndices
+                        : [question.correctIndex]
+                      ).includes(oIndex)
+                        ? "correct"
+                        : ""
                     }
-                    onClick={() =>
-                      patchQuestion(qIndex, { correctIndex: oIndex })
-                    }
-                    title="Mark as desired answer"
+                    onClick={() => {
+                      const current = question.correctIndices?.length
+                        ? question.correctIndices
+                        : [question.correctIndex];
+                      const next = current.includes(oIndex)
+                        ? current.filter((index) => index !== oIndex)
+                        : [...current, oIndex];
+                      if (!next.length) return;
+                      patchQuestion(qIndex, {
+                        correctIndex: next[0],
+                        correctIndices: next,
+                      });
+                    }}
+                    title="Mark or unmark as a correct answer"
                   >
-                    {question.correctIndex === oIndex ? "✓" : "○"}
+                    {(question.correctIndices?.length
+                      ? question.correctIndices
+                      : [question.correctIndex]
+                    ).includes(oIndex)
+                      ? "✓"
+                      : "○"}
                   </button>
                   {option.image ? (
                     <img src={option.image} alt="Option" />
@@ -1537,16 +1572,14 @@ function MemoryEditor({
     if (!files.length || remaining === 0) return;
     setUploadingMemories(true);
     const added = await Promise.all(
-      files
-        .slice(0, remaining)
-        .map(async (file, index) => ({
-          id: `memory-${Date.now()}-${index}`,
-          image: await imageToDataUrl(file),
-          caption: file.name.replace(/\.[^.]+$/, ""),
-          note: "",
-          arrow: "Curve right",
-          animation: "Polaroid pop",
-        })),
+      files.slice(0, remaining).map(async (file, index) => ({
+        id: `memory-${Date.now()}-${index}`,
+        image: await imageToDataUrl(file),
+        caption: file.name.replace(/\.[^.]+$/, ""),
+        note: "",
+        arrow: "Curve right",
+        animation: "Polaroid pop",
+      })),
     );
     onConfig(
       "memoryItems",
@@ -1786,14 +1819,49 @@ function MemoryEditor({
           onFiles={chooseMemoryFiles}
         />
       </div>
-      {uploadingMemories && <div className="memory-upload-progress"><i/><span>Preparing and uploading your photos…</span></div>}
+      {uploadingMemories && (
+        <div className="memory-upload-progress">
+          <i />
+          <span>Preparing and uploading your photos…</span>
+        </div>
+      )}
       {pendingBatch.length > 1 && (
         <section className="memory-batch-choice">
-          <header><div><small>{pendingBatch.length} PHOTOS SELECTED</small><strong>How should these appear?</strong></div><button onClick={clearPendingBatch}>×</button></header>
-          <div className="memory-batch-thumbnails">{pendingBatch.map((item)=><img key={`${item.file.name}-${item.file.lastModified}`} src={item.preview} alt={item.file.name}/>)}</div>
+          <header>
+            <div>
+              <small>{pendingBatch.length} PHOTOS SELECTED</small>
+              <strong>How should these appear?</strong>
+            </div>
+            <button onClick={clearPendingBatch}>×</button>
+          </header>
+          <div className="memory-batch-thumbnails">
+            {pendingBatch.map((item) => (
+              <img
+                key={`${item.file.name}-${item.file.lastModified}`}
+                src={item.preview}
+                alt={item.file.name}
+              />
+            ))}
+          </div>
           <div className="memory-batch-actions">
-            <button onClick={()=>void uploadSingles(pendingBatch.map(item=>item.file))}><span>▱ ▱</span><strong>Separate pages</strong><small>One photo on each page</small></button>
-            <button onClick={()=>void uploadCollage(pendingBatch.map(item=>item.file))}><span>▦</span><strong>One collage</strong><small>Combine up to four photos</small></button>
+            <button
+              onClick={() =>
+                void uploadSingles(pendingBatch.map((item) => item.file))
+              }
+            >
+              <span>▱ ▱</span>
+              <strong>Separate pages</strong>
+              <small>One photo on each page</small>
+            </button>
+            <button
+              onClick={() =>
+                void uploadCollage(pendingBatch.map((item) => item.file))
+              }
+            >
+              <span>▦</span>
+              <strong>One collage</strong>
+              <small>Combine up to four photos</small>
+            </button>
           </div>
         </section>
       )}
@@ -1898,11 +1966,16 @@ function MemoryEditor({
                       <button
                         type="button"
                         key={label}
-                        className={(item.animation || "Polaroid pop") === label ? "active" : ""}
+                        className={
+                          (item.animation || "Polaroid pop") === label
+                            ? "active"
+                            : ""
+                        }
                         onClick={() => patch(index, "animation", label)}
                         title={label}
                       >
-                        <i>{icon}</i><small>{label}</small>
+                        <i>{icon}</i>
+                        <small>{label}</small>
                       </button>
                     ))}
                   </div>

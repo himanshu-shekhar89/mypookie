@@ -458,6 +458,7 @@ type QuizQuestion = {
   question: string;
   options: { text: string; image: string }[];
   correctIndex: number;
+  correctIndices?: number[];
   interaction: "floating" | "normal";
 };
 type MemoryItem = {
@@ -951,6 +952,11 @@ function QuizPlay({
     () => questions[0]?.options.map((_, optionIndex) => optionIndex) || [],
   );
   const question = questions[index];
+  const correctIndices = question
+    ? question.correctIndices?.length
+      ? question.correctIndices
+      : [question.correctIndex]
+    : [];
   const [hiddenOptions, setHiddenOptions] = useState<Set<number>>(
     () => new Set(),
   );
@@ -1001,7 +1007,7 @@ function QuizPlay({
     const next = new Set(hiddenOptionsRef.current);
     let changed = false;
     buttons.forEach(({ optionIndex, rect }) => {
-      if (optionIndex === question.correctIndex) return;
+      if (correctIndices.includes(optionIndex)) return;
       const nearestX = Math.max(rect.left, Math.min(pointer.x, rect.right));
       const nearestY = Math.max(rect.top, Math.min(pointer.y, rect.bottom));
       if (
@@ -1022,13 +1028,13 @@ function QuizPlay({
   function answer(optionIndex: number) {
     if (
       question.interaction === "floating" &&
-      optionIndex !== question.correctIndex
+      !correctIndices.includes(optionIndex)
     ) {
       playSound("incorrect");
       setFeedback("That answer is playing hard to catch ✦");
       return;
     }
-    const correct = optionIndex === question.correctIndex;
+    const correct = correctIndices.includes(optionIndex);
     playSound(correct ? "correct" : "incorrect");
     setFeedback(
       correct ? "Perfect — you got it! ♡" : "Not quite, but that was cute.",
@@ -1077,7 +1083,7 @@ function QuizPlay({
           const option = question.options[optionIndex];
           const wrongFloat =
             question.interaction === "floating" &&
-            optionIndex !== question.correctIndex;
+            !correctIndices.includes(optionIndex);
           const hidden =
             question.interaction === "floating" &&
             hiddenOptions.has(optionIndex);
@@ -1085,7 +1091,7 @@ function QuizPlay({
             <button
               data-option={optionIndex}
               key={optionIndex}
-              className={`${optionIndex === question.correctIndex ? "desired" : ""} ${wrongFloat ? "vanishing-wrong" : ""} ${hidden ? "quiz-option-hidden" : ""}`}
+              className={`${correctIndices.includes(optionIndex) ? "desired" : ""} ${wrongFloat ? "vanishing-wrong" : ""} ${hidden ? "quiz-option-hidden" : ""}`}
               onClick={() => answer(optionIndex)}
             >
               {option.image && <img src={option.image} alt="" />}
@@ -1268,6 +1274,7 @@ function PhotoPuzzlePlay({
   );
   const [moves, setMoves] = useState(0);
   const [autoSolving, setAutoSolving] = useState(false);
+  const [portrait, setPortrait] = useState(false);
   const autoTimers = useRef<number[]>([]);
 
   useEffect(
@@ -1403,9 +1410,20 @@ function PhotoPuzzlePlay({
     );
 
   return (
-    <div className="live-puzzle">
+    <div
+      className={`live-puzzle ${portrait ? "portrait-puzzle" : "landscape-puzzle"}`}
+    >
       <div className="live-puzzle-reference">
-        <img src={image} alt="Completed puzzle reference" />
+        <img
+          src={image}
+          alt="Completed puzzle reference"
+          onLoad={(event) =>
+            setPortrait(
+              event.currentTarget.naturalHeight >
+                event.currentTarget.naturalWidth * 1.08,
+            )
+          }
+        />
         <small>
           reference · {size}×{size}
         </small>
@@ -1627,6 +1645,17 @@ function TreasurePlay({
   const [showHint, setShowHint] = useState(false);
   const [stage, setStage] = useState<"clue" | "answer">("clue");
   const current = clues[index];
+  function advance() {
+    if (index === clues.length - 1) {
+      onReward?.(config.finalSurprise || "Treasure hunt completed");
+      onComplete?.();
+    }
+    setIndex((value) => value + 1);
+    setAnswer("");
+    setMessage("");
+    setShowHint(false);
+    setStage("clue");
+  }
   if (index >= clues.length)
     return (
       <div className="treasure-winner">
@@ -1656,16 +1685,8 @@ function TreasurePlay({
       setMessage("Correct! Next clue unlocked ✦");
       if (index === clues.length - 1) {
         playSound("win");
-        onReward?.(config.finalSurprise || "Treasure hunt completed");
-        onComplete?.();
       }
-      window.setTimeout(() => {
-        setIndex((value) => value + 1);
-        setAnswer("");
-        setMessage("");
-        setShowHint(false);
-        setStage("clue");
-      }, 650);
+      window.setTimeout(advance, 650);
     } else {
       playSound("incorrect");
       setMessage(`The correct answer was: ${current.answer}`);
@@ -1716,6 +1737,11 @@ function TreasurePlay({
             <button onClick={check}>Check →</button>
           </div>
           <output>{message}</output>
+          {message.startsWith("The correct answer was:") && (
+            <button className="treasure-continue" onClick={advance}>
+              Continue to the next moment →
+            </button>
+          )}
         </div>
       )}
     </div>

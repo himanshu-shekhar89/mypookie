@@ -294,6 +294,18 @@ export function TinyBlockCustomization({
           max={10}
           onConfig={onConfig}
         />
+        <label className="field">
+          Cookie design
+          <select
+            value={config.cookieDesign || "Classic golden"}
+            onChange={(event) => onConfig("cookieDesign", event.target.value)}
+          >
+            <option>Classic golden</option>
+            <option>Pink velvet</option>
+            <option>Chocolate dipped</option>
+            <option>Starry lavender</option>
+          </select>
+        </label>
       </Section>
     );
   if (id === "fortune")
@@ -1105,7 +1117,7 @@ function AlwaysYouEditor({
   return (
     <Section
       title="The Answer Was Always You"
-      hint="Add up to seven joke questions—every option is secretly right"
+      hint="Add up to seven playful questions with affectionate answer choices"
     >
       <div className="tiny-editor-list always-you-editor">
         {questions.map((item, index) => (
@@ -1245,12 +1257,46 @@ function GrowthRingEditor({
     "The day our story really began",
     "The adventure we still laugh about",
     "The moment I knew this bond was special",
+    "A challenge that made us stronger",
+    "The chapter I hope we grow into next",
   ];
   const memories = parse<string[]>(config.growthSenderMemories, fallback).slice(
     0,
-    3,
+    5,
   );
-  const values = Array.from({ length: 3 }, (_, index) => memories[index] || "");
+  const values = Array.from({ length: 5 }, (_, index) => memories[index] || "");
+  const [refreshing, setRefreshing] = useState(false);
+  async function refreshGrowthQuestions() {
+    setRefreshing(true);
+    try {
+      const response = await fetch(`${api}/api/ai/playful-prompts`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(await authHeaders()),
+        },
+        body: JSON.stringify({
+          gameType: "growthring",
+          relationship:
+            "a meaningful bond told through milestones, challenges, memories and hopes",
+          tone: "easy, warm, specific relationship questions",
+          count: 5,
+        }),
+      });
+      if (!response.ok) throw new Error();
+      const data = (await response.json()) as {
+        items?: Array<{ prompt?: string }>;
+      };
+      const prompts = (data.items || [])
+        .map((item) => item.prompt?.trim())
+        .filter(Boolean)
+        .slice(0, 5);
+      if (prompts.length)
+        onConfig("growthSenderMemories", JSON.stringify(prompts));
+    } finally {
+      setRefreshing(false);
+    }
+  }
   const update = (index: number, value: string) =>
     onConfig(
       "growthSenderMemories",
@@ -1261,8 +1307,17 @@ function GrowthRingEditor({
   return (
     <Section
       title="Our Growing Story"
-      hint="You each add three memories; together they become an animated relationship timeline"
+      hint="You each answer five AI-guided milestones; together they become an animated relationship timeline"
     >
+      <button
+        className="add-collection-item compact"
+        onClick={() => void refreshGrowthQuestions()}
+        disabled={refreshing}
+      >
+        {refreshing
+          ? "Creating questions…"
+          : "✦ Refresh five questions with AI"}
+      </button>
       <div className="bond-question-editor">
         {values.map((memory, index) => (
           <label className="field" key={index}>
@@ -1279,13 +1334,13 @@ function GrowthRingEditor({
         ))}
       </div>
       <p className="tiny-editor-note">
-        The recipient answers the same three prompts. Their moments and yours
+        The recipient answers the same five prompts. Their moments and yours
         then bloom into one shared timeline.
       </p>
       <ResponseInbox
         giftId={giftId}
         blockId={instanceId || "growthring"}
-        title="Their three memories"
+        title="Their growth-ring answers"
       />
     </Section>
   );
@@ -1482,6 +1537,13 @@ function BondQuestionEditor({
   }
   return (
     <div className="bond-question-editor">
+      <div className="bond-required-note">
+        <strong>You need to answer these questions.</strong>
+        <span>
+          They are quick, easy situations about your bond; the recipient answers
+          the same set before AI creates the reveal.
+        </span>
+      </div>
       <div className="bond-how">
         <span>1</span>
         <p>You answer these now.</p>

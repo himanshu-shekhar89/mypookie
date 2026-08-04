@@ -6,6 +6,200 @@
   object-fit: contain;
   filter: drop-shadow(0 5px 10px rgba(156, 49, 87, 0.22));
 }
+
+/* Sender block preview can expand without leaving the editor. */
+.sender-block-fullscreen {
+  position: fixed;
+  z-index: 120;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  max-width: none !important;
+  padding: 28px;
+  background: radial-gradient(circle at 50% 40%, #fff, #fae9ef 70%);
+  overflow: auto;
+}
+.sender-block-fullscreen .builder-live-card {
+  width: min(1180px, 96vw);
+  min-height: min(860px, 92vh);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.close-block-fullscreen {
+  position: fixed;
+  z-index: 125;
+  right: 24px;
+  top: 20px;
+  border: 1px solid #e2cfd7;
+  border-radius: 99px;
+  background: #fff;
+  padding: 11px 16px;
+  font-size: 10px;
+  font-weight: 900;
+  box-shadow: 0 10px 28px #5b304326;
+}
+
+/* Portrait puzzles keep their natural proportions and use more of the stage. */
+.live-puzzle.portrait-puzzle {
+  grid-template-columns: minmax(170px, 250px) minmax(300px, 440px);
+  width: min(720px, 100%);
+}
+.live-puzzle.portrait-puzzle .live-puzzle-reference img,
+.live-puzzle.portrait-puzzle .live-puzzle-grid {
+  aspect-ratio: 4/5;
+}
+.live-puzzle.portrait-puzzle .live-puzzle-reference img {
+  object-fit: contain;
+}
+.public-recipient .live-puzzle.portrait-puzzle {
+  grid-template-columns: minmax(220px, 300px) minmax(360px, 500px);
+  max-width: 900px;
+}
+.public-recipient .live-puzzle.portrait-puzzle .live-puzzle-grid {
+  width: min(47vh, 500px);
+}
+
+/* Smooth page turns with a visible middle frame instead of a hard content jump. */
+.memory-book .scrapbook-page {
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+  transition:
+    transform 0.42s cubic-bezier(0.22, 0.72, 0.24, 1),
+    opacity 0.3s ease !important;
+}
+.memory-book .scrapbook-page.turn-forward.turning {
+  transform: perspective(1400px) rotateY(-72deg) !important;
+  opacity: 0.34 !important;
+}
+.memory-book .scrapbook-page.turn-backward.turning {
+  transform: perspective(1400px) rotateY(72deg) !important;
+  opacity: 0.34 !important;
+}
+
+/* Keep the excuse lever connected through its pull. */
+.excuse-lever i {
+  left: 29px !important;
+  bottom: 25px !important;
+  height: 112px !important;
+  transform-origin: 50% 100% !important;
+}
+.excuse-lever b {
+  left: 12px !important;
+  top: auto !important;
+  bottom: 119px !important;
+}
+.excuse-lever.pulled i {
+  transform: rotate(58deg) !important;
+}
+.excuse-lever.pulled b {
+  transform: translate(51px, 68px) !important;
+}
+
+/* Fortune cookie variants and a fuller crack celebration. */
+.fortune-cookie.design-pink-velvet > div i {
+  background: linear-gradient(145deg, #ffb4c8, #c95178);
+}
+.fortune-cookie.design-chocolate-dipped > div i {
+  background: linear-gradient(145deg, #e7b76f 0 55%, #6e3d2e 56%);
+}
+.fortune-cookie.design-starry-lavender > div i {
+  background: linear-gradient(145deg, #d8c4ff, #7552a6);
+}
+.fortune-sparkles {
+  position: absolute;
+  z-index: 4;
+  width: 260px;
+  height: 180px;
+  pointer-events: none;
+}
+.fortune-sparkles i {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  font-style: normal;
+  color: #e7a83e;
+  opacity: 0;
+}
+.fortune-cookie.cracked .fortune-sparkles i {
+  animation: cookieSpark 1s ease-out both;
+}
+.fortune-cookie.cracked .fortune-sparkles i:nth-child(2) {
+  animation-delay: 0.08s;
+  --x: -78px;
+  --y: -58px;
+}
+.fortune-cookie.cracked .fortune-sparkles i:nth-child(3) {
+  animation-delay: 0.12s;
+  --x: 82px;
+  --y: -50px;
+}
+.fortune-cookie.cracked .fortune-sparkles i:nth-child(4) {
+  animation-delay: 0.18s;
+  --x: -65px;
+  --y: 42px;
+}
+.fortune-cookie.cracked .fortune-sparkles i:nth-child(5) {
+  animation-delay: 0.22s;
+  --x: 75px;
+  --y: 48px;
+}
+@keyframes cookieSpark {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.3) rotate(0);
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--x, 0), var(--y, -80px)) scale(1.4) rotate(180deg);
+  }
+}
+.bond-required-note {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 12px;
+  padding: 12px;
+  border-radius: 13px;
+  background: #fff1d6;
+  color: #6f4e23;
+}
+.bond-required-note strong {
+  font-size: 9px;
+}
+.bond-required-note span {
+  font-size: 7px;
+  line-height: 1.5;
+}
+.treasure-continue {
+  width: 100%;
+  margin-top: 8px;
+  border: 0;
+  border-radius: 99px;
+  background: var(--berry);
+  color: #fff;
+  padding: 10px;
+  font-size: 8px;
+  font-weight: 900;
+}
+@media (max-width: 700px) {
+  .sender-block-fullscreen {
+    padding: 12px;
+  }
+  .sender-block-fullscreen .builder-live-card {
+    min-height: calc(100dvh - 24px);
+  }
+  .live-puzzle.portrait-puzzle,
+  .public-recipient .live-puzzle.portrait-puzzle {
+    grid-template-columns: 92px minmax(0, 1fr);
+  }
+  .public-recipient .live-puzzle.portrait-puzzle .live-puzzle-grid {
+    width: min(64vw, 360px);
+  }
+}
 .soundtrack-template-card {
   grid-template-columns: minmax(0, 1fr) auto;
 }

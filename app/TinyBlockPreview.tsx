@@ -852,12 +852,12 @@ function Constellation({ config, onComplete }: Props) {
   const fortune =
     fortunes[chosen.reduce((sum, value) => sum + value, 0) % fortunes.length];
   function choose(index: number) {
-    if (revealed || chosen.includes(index) || chosen.length >= 7) return;
+    if (revealed || chosen.includes(index)) return;
     playSound("tile");
     setChosen((current) => [...current, index]);
   }
   function reveal() {
-    if (chosen.length < 4) return;
+    if (chosen.length < 2) return;
     setRevealed(true);
     playSound("win");
     onComplete?.();
@@ -892,8 +892,8 @@ function Constellation({ config, onComplete }: Props) {
         <>
           <header className="constellation-prompt">
             <small>DRAW IN THE STARS</small>
-            <strong>Choose 4–7 stars to make your constellation</strong>
-            <span>{chosen.length}/4 minimum</span>
+            <strong>Choose as many stars as feel right</strong>
+            <span>{chosen.length} selected · connect at least two</span>
           </header>
           <svg
             className="recipient-star-lines"
@@ -904,7 +904,7 @@ function Constellation({ config, onComplete }: Props) {
           </svg>
           <button
             className="constellation-reveal"
-            disabled={chosen.length < 4}
+            disabled={chosen.length < 2}
             onClick={reveal}
           >
             Join our skies ✦
@@ -954,8 +954,10 @@ function GrowthRing({
     "The day our story began",
     "Our funniest adventure",
     "When this bond felt unbreakable",
-  ]).slice(0, 3);
-  const [answers, setAnswers] = useState(["", "", ""]);
+    "A challenge that made us stronger",
+    "The chapter we are growing into next",
+  ]).slice(0, 5);
+  const [answers, setAnswers] = useState(() => sender.map(() => ""));
   const [revealed, setRevealed] = useState(false);
   const [saving, setSaving] = useState(false);
   async function reveal() {
@@ -986,7 +988,7 @@ function GrowthRing({
       <div className="growth-memory-form">
         <span>∞</span>
         <small>ADD YOUR SIDE OF THE STORY</small>
-        <strong>Which three moments grew this bond?</strong>
+        <strong>Which moments grew this bond?</strong>
         {answers.map((answer, index) => (
           <label key={index}>
             <b>{index + 1}</b>
@@ -1275,7 +1277,7 @@ function AlwaysYou({ config, onComplete, onReward }: Props) {
     window.setTimeout(() => {
       if (index >= questions.length - 1) {
         playSound("win");
-        onReward?.(`${questions.length} answers—and every one was you`);
+        onReward?.(`Completed ${questions.length} little questions`);
         onComplete?.();
       } else {
         setIndex((value) => value + 1);
@@ -1286,7 +1288,7 @@ function AlwaysYou({ config, onComplete, onReward }: Props) {
   return (
     <div className="always-you-quiz">
       <small>
-        OBVIOUS ANSWER {index + 1} OF {questions.length}
+        LITTLE QUESTION {index + 1} OF {questions.length}
       </small>
       <strong>{current.question}</strong>
       <div>
@@ -1297,11 +1299,11 @@ function AlwaysYou({ config, onComplete, onReward }: Props) {
             className={selected === answer ? "selected" : ""}
           >
             {answer}
-            {selected && <span> ✓ correct</span>}
+            {selected === answer && <span> ✓ chosen</span>}
           </button>
         ))}
       </div>
-      {selected && <p>Correct. Somehow, the answer is still you. ♡</p>}
+      {selected && <p>Choice saved. On to the next little question. ♡</p>}
     </div>
   );
 }
@@ -1486,9 +1488,16 @@ function FortuneCookie({ config, onComplete, onReward }: Props) {
   }
   return (
     <button
-      className={`fortune-cookie ${fortune ? "cracked" : ""}`}
+      className={`fortune-cookie design-${(config.cookieDesign || "Classic golden").toLowerCase().replaceAll(" ", "-")} ${fortune ? "cracked" : ""}`}
       onClick={crack}
     >
+      <span className="fortune-sparkles" aria-hidden="true">
+        <i>✦</i>
+        <i>♡</i>
+        <i>✧</i>
+        <i>⋆</i>
+        <i>✦</i>
+      </span>
       <div>
         <i />
         <i />

@@ -354,16 +354,6 @@ const activities: Block[] = [
     message: "A very serious quiz with one obvious conclusion.",
   },
   {
-    id: "flowers",
-    icon: "✦",
-    name: "Celebration scene",
-    description: "Elegant full-screen light, petals and sparkles",
-    price: 29,
-    color: "pink",
-    category: "Celebrations & gifts",
-    message: "A beautiful celebration, just for you.",
-  },
-  {
     id: "calendar",
     icon: "▣",
     name: "Unlock calendar",
@@ -980,6 +970,7 @@ export default function Home() {
   });
   const [soundtrackOpen, setSoundtrackOpen] = useState(false);
   const [builderPreviewNonce, setBuilderPreviewNonce] = useState(0);
+  const [blockPreviewFullscreen, setBlockPreviewFullscreen] = useState(false);
   const [revealAt, setRevealAt] = useState("");
   const [compatibilityPin, setCompatibilityPin] = useState("");
   const [accessPin, setAccessPin] = useState("");
@@ -2529,6 +2520,12 @@ export default function Home() {
                 >
                   ↻ Restart activity
                 </button>
+                <button
+                  onClick={() => setBlockPreviewFullscreen(true)}
+                  aria-label={`Preview ${activeBlock.name} full screen`}
+                >
+                  ⛶ Full screen
+                </button>
                 <span className="live-badge">
                   <i /> Interactive
                 </span>
@@ -2536,7 +2533,18 @@ export default function Home() {
             )}
           </div>
           {activeBlock ? (
-            <div className="builder-transition-preview-stage">
+            <div
+              className={`builder-transition-preview-stage ${blockPreviewFullscreen ? "sender-block-fullscreen" : ""}`}
+            >
+              {blockPreviewFullscreen && (
+                <button
+                  className="close-block-fullscreen"
+                  onClick={() => setBlockPreviewFullscreen(false)}
+                  aria-label="Exit full screen preview"
+                >
+                  × Exit preview
+                </button>
+              )}
               {builderTransitionPreview ? (
                 <section
                   className={`builder-transition-demo moment-slideshow moment-teaser transition-${(activeBlock.config?.transitionStyle || (transitionGameBlocks.has(activeBlock.id) ? "Soft zoom" : "None")).toLowerCase().replaceAll(" ", "-")}`}
