@@ -83,6 +83,29 @@ type User = {
   role: string;
   createdAt: string;
 };
+type CareerCampaign = {
+  id: string;
+  title: string;
+  summary: string;
+  active: boolean;
+  defaultDiscountPercent: number;
+  defaultCommissionPaise: number;
+  monthlyEarningCapPaise: number;
+};
+type CareerApplication = {
+  id: string;
+  fullName: string;
+  email: string;
+  platform: string;
+  socialHandle: string;
+  screenshotUrl: string;
+  audienceSize: number | null;
+  pitch: string | null;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  couponId: string | null;
+  adminNote: string | null;
+  createdAt: string;
+};
 type Tab =
   | "overview"
   | "coupons"
@@ -91,6 +114,7 @@ type Tab =
   | "gifts"
   | "orders"
   | "users"
+  | "careers"
   | "settings";
 type CouponForm = {
   code: string;
@@ -155,6 +179,12 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
   const [gifts, setGifts] = useState<Gift[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [careerCampaign, setCareerCampaign] = useState<CareerCampaign | null>(
+    null,
+  );
+  const [careerApplications, setCareerApplications] = useState<
+    CareerApplication[]
+  >([]);
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState("");
   const [couponForm, setCouponForm] = useState(emptyCoupon);
@@ -172,6 +202,8 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
         giftRows,
         orderRows,
         userRows,
+        careerCampaignRow,
+        careerApplicationRows,
       ] = await Promise.all([
         request<Overview>("/api/admin/overview"),
         request<Coupon[]>("/api/admin/coupons"),
@@ -180,6 +212,8 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
         request<Gift[]>("/api/admin/gifts"),
         request<Order[]>("/api/admin/orders"),
         request<User[]>("/api/admin/users"),
+        request<CareerCampaign>("/api/admin/careers/campaign"),
+        request<CareerApplication[]>("/api/admin/careers/applications"),
       ]);
       setOverview(summary);
       setCoupons(couponRows);
@@ -188,6 +222,8 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
       setGifts(giftRows);
       setOrders(orderRows);
       setUsers(userRows);
+      setCareerCampaign(careerCampaignRow);
+      setCareerApplications(careerApplicationRows);
       setAuthState("ready");
     } catch (error) {
       setAuthState(
@@ -337,6 +373,72 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
       );
     }
   }
+  async function saveCareerCampaign() {
+    if (!careerCampaign) return;
+    setLoading(true);
+    try {
+      await request("/api/admin/careers/campaign", {
+        method: "PUT",
+        body: JSON.stringify(careerCampaign),
+      });
+      setNotice("Careers campaign updated.");
+      await load();
+    } finally {
+      setLoading(false);
+    }
+  }
+  async function decideCareer(
+    application: CareerApplication,
+    decision: "approve" | "reject",
+  ) {
+    setLoading(true);
+    setNotice("");
+    try {
+      if (decision === "approve") {
+        const base =
+          application.socialHandle
+            .replace(/^@/, "")
+            .replace(/[^a-z0-9]/gi, "")
+            .toUpperCase()
+            .slice(0, 14) || "POOKIE";
+        await request(
+          `/api/admin/careers/applications/${application.id}/approve`,
+          {
+            method: "POST",
+            body: JSON.stringify({
+              couponCode: `${base}${application.id.slice(0, 4).toUpperCase()}`,
+              discountPercent: careerCampaign?.defaultDiscountPercent || 10,
+              commissionPaisePerUse:
+                careerCampaign?.defaultCommissionPaise || 1000,
+              adminNote: "Approved through careers console",
+            }),
+          },
+        );
+        setNotice(
+          `${application.fullName} approved and influencer coupon created.`,
+        );
+      } else {
+        await request(
+          `/api/admin/careers/applications/${application.id}/reject`,
+          {
+            method: "POST",
+            body: JSON.stringify({
+              adminNote:
+                "Application did not meet the current campaign criteria.",
+            }),
+          },
+        );
+        setNotice(`${application.fullName}'s application was declined.`);
+      }
+      await load();
+    } catch {
+      setNotice(
+        "Decision could not be saved. The generated coupon may already exist—edit the handle or create one manually.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
   const nav = useMemo(
     () =>
       [
@@ -347,6 +449,7 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
         { id: "gifts", icon: "♡", label: "Gifts" },
         { id: "orders", icon: "₹", label: "Orders" },
         { id: "users", icon: "◎", label: "Users" },
+        { id: "careers", icon: "↗", label: "Careers" },
         { id: "settings", icon: "⚙", label: "Integrations" },
       ] as { id: Tab; icon: string; label: string }[],
     [],
@@ -941,6 +1044,176 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
                     <small>Managed by root admin</small>
                   )}
                 </div>
+              ))}
+            </div>
+          </section>
+        )}
+        {tab === "careers" && careerCampaign && (
+          <section className="admin-section careers-admin">
+            <div className="admin-section-head">
+              <div>
+                <small>PARTNER PROGRAM</small>
+                <h2>Careers campaign</h2>
+                <p>
+                  Control applications and automatically issue tracked
+                  influencer coupons.
+                </p>
+              </div>
+              <a href="/careers" target="_blank">
+                View public page ↗
+              </a>
+            </div>
+            <div className="career-campaign-editor">
+              <label>
+                Campaign title
+                <input
+                  value={careerCampaign.title}
+                  onChange={(e) =>
+                    setCareerCampaign({
+                      ...careerCampaign,
+                      title: e.target.value,
+                    })
+                  }
+                />
+              </label>
+              <label className="wide">
+                Public description
+                <textarea
+                  value={careerCampaign.summary}
+                  onChange={(e) =>
+                    setCareerCampaign({
+                      ...careerCampaign,
+                      summary: e.target.value,
+                    })
+                  }
+                />
+              </label>
+              <label>
+                Default customer discount %
+                <input
+                  type="number"
+                  min="1"
+                  max="90"
+                  value={careerCampaign.defaultDiscountPercent}
+                  onChange={(e) =>
+                    setCareerCampaign({
+                      ...careerCampaign,
+                      defaultDiscountPercent: Number(e.target.value),
+                    })
+                  }
+                />
+              </label>
+              <label>
+                Commission per paid sale ₹
+                <input
+                  type="number"
+                  min="0"
+                  value={careerCampaign.defaultCommissionPaise / 100}
+                  onChange={(e) =>
+                    setCareerCampaign({
+                      ...careerCampaign,
+                      defaultCommissionPaise: Number(e.target.value) * 100,
+                    })
+                  }
+                />
+              </label>
+              <label>
+                Public monthly potential ₹
+                <input
+                  type="number"
+                  min="1"
+                  value={careerCampaign.monthlyEarningCapPaise / 100}
+                  onChange={(e) =>
+                    setCareerCampaign({
+                      ...careerCampaign,
+                      monthlyEarningCapPaise: Number(e.target.value) * 100,
+                    })
+                  }
+                />
+              </label>
+              <label className="career-active">
+                <input
+                  type="checkbox"
+                  checked={careerCampaign.active}
+                  onChange={(e) =>
+                    setCareerCampaign({
+                      ...careerCampaign,
+                      active: e.target.checked,
+                    })
+                  }
+                />
+                <span>Accepting applications</span>
+              </label>
+              <button disabled={loading} onClick={saveCareerCampaign}>
+                Save campaign
+              </button>
+            </div>
+            <div className="admin-section-head career-applicant-head">
+              <div>
+                <small>APPLICATIONS</small>
+                <h2>
+                  {
+                    careerApplications.filter(
+                      (item) => item.status === "PENDING",
+                    ).length
+                  }{" "}
+                  awaiting review
+                </h2>
+              </div>
+            </div>
+            <div className="career-applications">
+              {careerApplications.length === 0 && <p>No applications yet.</p>}
+              {careerApplications.map((application) => (
+                <article key={application.id}>
+                  <a
+                    href={application.screenshotUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <img
+                      src={application.screenshotUrl}
+                      alt={`${application.socialHandle} profile screenshot`}
+                    />
+                    <span>Open screenshot ↗</span>
+                  </a>
+                  <div>
+                    <small>
+                      {application.platform} · {application.status}
+                    </small>
+                    <h3>{application.fullName}</h3>
+                    <strong>{application.socialHandle}</strong>
+                    <p>
+                      {application.email}
+                      {application.audienceSize != null
+                        ? ` · ${application.audienceSize.toLocaleString("en-IN")} followers`
+                        : ""}
+                    </p>
+                    {application.pitch && (
+                      <blockquote>{application.pitch}</blockquote>
+                    )}
+                    {application.couponId && (
+                      <b className="career-approved">
+                        Influencer coupon issued
+                      </b>
+                    )}
+                  </div>
+                  {application.status === "PENDING" && (
+                    <footer>
+                      <button
+                        disabled={loading}
+                        onClick={() => decideCareer(application, "approve")}
+                      >
+                        Approve + issue code
+                      </button>
+                      <button
+                        disabled={loading}
+                        onClick={() => decideCareer(application, "reject")}
+                      >
+                        Decline
+                      </button>
+                    </footer>
+                  )}
+                </article>
               ))}
             </div>
           </section>

@@ -1,0 +1,306 @@
+.careers-page {
+  min-height: 100vh;
+  background: #fffaf9;
+  color: #30212d;
+  font-family: "Nunito", sans-serif;
+}
+.careers-page nav {
+  height: 82px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 max(6vw, 24px);
+  border-bottom: 1px solid #f0e1e5;
+}
+.careers-page nav > a:last-child {
+  color: #755e68;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+.career-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #30212d;
+  text-decoration: none;
+}
+.career-brand img {
+  width: 38px;
+  height: 38px;
+}
+.career-brand b {
+  font: 800 25px "Baloo 2";
+}
+.career-brand small {
+  border: 1px solid #f19ab1;
+  border-radius: 10px;
+  padding: 2px 5px;
+  color: #bc4868;
+  font-size: 8px;
+}
+.career-hero {
+  padding: 90px max(8vw, 28px);
+  background:
+    radial-gradient(circle at 76% 24%, #f4e9ff, transparent 30%),
+    radial-gradient(circle at 12% 80%, #ffdce7, transparent 34%);
+}
+.career-hero > span,
+.career-role small,
+.career-how > small,
+.career-apply > div > small {
+  color: #bd3b64;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.17em;
+}
+.career-hero h1 {
+  max-width: 850px;
+  margin: 16px 0;
+  font: 800 clamp(46px, 7vw, 92px)/0.93 "Baloo 2";
+}
+.career-hero h1 em {
+  color: #bd315c;
+  font-style: normal;
+}
+.career-hero p {
+  max-width: 650px;
+  color: #75616a;
+  font:
+    18px/1.65 Georgia,
+    serif;
+}
+.career-hero > a {
+  display: inline-block;
+  margin-top: 26px;
+  border-radius: 99px;
+  background: #30212d;
+  color: white;
+  padding: 14px 22px;
+  font-weight: 900;
+  text-decoration: none;
+}
+.career-role {
+  display: grid;
+  grid-template-columns: 1.4fr 0.8fr;
+  gap: 38px;
+  padding: 80px max(8vw, 28px);
+}
+.career-role h2,
+.career-how h2,
+.career-apply h2 {
+  margin: 10px 0;
+  font: 800 clamp(32px, 4vw, 56px)/1 "Baloo 2";
+}
+.career-role > div > p {
+  max-width: 700px;
+  color: #79666e;
+  font:
+    17px/1.7 Georgia,
+    serif;
+}
+.career-platforms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 25px;
+}
+.career-platforms span {
+  border: 1px solid #ead9df;
+  border-radius: 99px;
+  background: #fff;
+  padding: 9px 13px;
+  font-size: 12px;
+  font-weight: 800;
+}
+.career-role aside {
+  align-self: start;
+  border-radius: 26px;
+  background: #30212d;
+  color: #fff;
+  padding: 32px;
+}
+.career-role aside small {
+  color: #ff9db8;
+}
+.career-role aside strong {
+  display: block;
+  margin: 10px 0;
+  font: 800 38px "Baloo 2";
+}
+.career-role aside p {
+  color: #d9cbd1;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.career-how {
+  padding: 80px max(8vw, 28px);
+  background: #f8edf1;
+}
+.career-how > div {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 30px;
+}
+.career-how article {
+  min-height: 210px;
+  border: 1px solid #ead9df;
+  border-radius: 22px;
+  background: #fff;
+  padding: 24px;
+}
+.career-how article > b {
+  color: #c43d66;
+  font: 800 15px "Baloo 2";
+}
+.career-how h3 {
+  margin: 35px 0 6px;
+  font: 800 21px "Baloo 2";
+}
+.career-how article p {
+  color: #79666e;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.career-apply {
+  display: grid;
+  grid-template-columns: 0.75fr 1.25fr;
+  gap: 60px;
+  padding: 90px max(8vw, 28px);
+}
+.career-apply > div > p,
+.career-apply li {
+  color: #79666e;
+  line-height: 1.7;
+}
+.career-apply ul {
+  padding-left: 20px;
+}
+.career-apply form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  padding: 28px;
+  border: 1px solid #eadde2;
+  border-radius: 25px;
+  background: #fff;
+  box-shadow: 0 20px 60px #62334512;
+}
+.career-apply label {
+  color: #6e5962;
+  font-size: 11px;
+  font-weight: 900;
+}
+.career-apply input,
+.career-apply select,
+.career-apply textarea {
+  width: 100%;
+  margin-top: 6px;
+  border: 1px solid #e7dbe0;
+  border-radius: 12px;
+  background: #fffdfd;
+  padding: 12px;
+  font: 13px "Nunito";
+}
+.career-apply textarea {
+  min-height: 105px;
+  resize: vertical;
+}
+.career-wide {
+  grid-column: 1/-1;
+}
+.career-upload {
+  display: grid;
+  place-items: center;
+  border: 1px dashed #da9caf;
+  border-radius: 16px;
+  padding: 23px;
+  text-align: center;
+  cursor: pointer;
+}
+.career-upload input {
+  display: none;
+}
+.career-upload > span {
+  font-size: 25px;
+  color: #bf3b63;
+}
+.career-upload small {
+  margin-top: 4px;
+  color: #9b858e;
+}
+.career-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-weight: 600 !important;
+}
+.career-consent input {
+  width: auto;
+  margin: 2px 0;
+}
+.career-apply button {
+  border: 0;
+  border-radius: 13px;
+  background: #bd315c;
+  color: #fff;
+  padding: 14px;
+  font-weight: 900;
+}
+.career-apply button:disabled {
+  opacity: 0.5;
+}
+.career-apply output {
+  border-radius: 10px;
+  background: #fff0f4;
+  color: #a52e52;
+  padding: 11px;
+  font-size: 12px;
+}
+.careers-page footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 30px max(8vw, 28px);
+  background: #30212d;
+  color: #d5c5cc;
+  font-size: 12px;
+}
+.careers-page footer div {
+  display: flex;
+  gap: 18px;
+}
+.careers-page footer a {
+  color: inherit;
+  text-decoration: none;
+}
+@media (max-width: 850px) {
+  .career-role,
+  .career-apply {
+    grid-template-columns: 1fr;
+  }
+  .career-how > div {
+    grid-template-columns: 1fr 1fr;
+  }
+  .career-apply form {
+    grid-template-columns: 1fr;
+  }
+  .career-wide {
+    grid-column: auto;
+  }
+}
+@media (max-width: 520px) {
+  .career-hero {
+    padding-top: 60px;
+  }
+  .career-how > div {
+    grid-template-columns: 1fr;
+  }
+  .career-apply form {
+    padding: 18px;
+  }
+  .careers-page footer {
+    gap: 20px;
+    flex-direction: column;
+  }
+}

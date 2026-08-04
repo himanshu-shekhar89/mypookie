@@ -27,6 +27,8 @@ public class AdminController {
  private final AppUserRepository users;
  private final ExperienceResponseRepository responses;
  private final ContributionInviteRepository invites;
+ private final CareerCampaignRepository careerCampaigns;
+ private final CareerApplicationRepository careerApplications;
  private final RazorpayService razorpay;
  @Value("${app.auth.firebase-enabled:false}") private boolean firebaseEnabled;
  @Value("${app.groq.api-key:}") private String groqKey;
@@ -98,6 +100,37 @@ public class AdminController {
  @GetMapping("/invites")
  public List<ContributionInvite> invites(){return invites.findAll().stream().sorted(Comparator.comparing(ContributionInvite::getCreatedAt).reversed()).limit(200).toList();}
 
+ @GetMapping("/careers/campaign")
+ public CareerCampaign careerCampaign(){return careerCampaigns.findById("social-promotional").orElseThrow();}
+
+ @PutMapping("/careers/campaign")
+ public CareerCampaign updateCareerCampaign(@Valid @RequestBody CareerCampaignUpdate request){
+  var campaign=careerCampaign();campaign.setTitle(request.title().trim());campaign.setSummary(request.summary().trim());campaign.setActive(request.active());
+  campaign.setDefaultDiscountPercent(request.defaultDiscountPercent());campaign.setDefaultCommissionPaise(request.defaultCommissionPaise());
+  campaign.setMonthlyEarningCapPaise(request.monthlyEarningCapPaise());campaign.setUpdatedAt(Instant.now());return careerCampaigns.save(campaign);
+ }
+
+ @GetMapping("/careers/applications")
+ public List<CareerApplication> careerApplications(){return careerApplications.findAllByOrderByCreatedAtDesc();}
+
+ @PostMapping("/careers/applications/{id}/approve")
+ public CareerApplication approveCareerApplication(@PathVariable String id,@Valid @RequestBody CareerApproval request){
+  var application=careerApplications.findById(id).orElseThrow();
+  if("APPROVED".equals(application.getStatus()))return application;
+  String code=request.couponCode().trim().toUpperCase();
+  if(coupons.findByCodeIgnoreCase(code).isPresent())throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Coupon code already exists");
+  var coupon=new Coupon();coupon.setId(UUID.randomUUID().toString());coupon.setCode(code);coupon.setDiscountType("PERCENT");
+  coupon.setDiscountValue(request.discountPercent());coupon.setMinOrderPaise(0);coupon.setCouponType("INFLUENCER");
+  coupon.setCommissionPaisePerUse(request.commissionPaisePerUse());coupon.setActive(true);coupon.setUpdatedAt(Instant.now());coupons.save(coupon);
+  application.setCouponId(coupon.getId());application.setStatus("APPROVED");application.setAdminNote(request.adminNote());application.setUpdatedAt(Instant.now());
+  return careerApplications.save(application);
+ }
+
+ @PostMapping("/careers/applications/{id}/reject")
+ public CareerApplication rejectCareerApplication(@PathVariable String id,@RequestBody CareerDecision request){
+  var application=careerApplications.findById(id).orElseThrow();application.setStatus("REJECTED");application.setAdminNote(request.adminNote());application.setUpdatedAt(Instant.now());return careerApplications.save(application);
+ }
+
  private void apply(Coupon coupon,CouponRequest request){
   coupon.setCode(request.code().trim().toUpperCase());coupon.setDiscountType(request.discountType());coupon.setDiscountValue(request.discountValue());
   coupon.setMaxDiscountPaise(request.maxDiscountPaise());coupon.setMinOrderPaise(request.minOrderPaise());coupon.setUsageLimit(request.usageLimit());
@@ -112,4 +145,7 @@ public class AdminController {
  public record ActivityUpdate(@jakarta.validation.constraints.NotBlank String name,@jakarta.validation.constraints.NotBlank String description,@jakarta.validation.constraints.PositiveOrZero int pricePaise,boolean active){}
  public record BundleUpdate(@jakarta.validation.constraints.NotBlank String name,@jakarta.validation.constraints.NotBlank String description,@jakarta.validation.constraints.PositiveOrZero int pricePaise,@jakarta.validation.constraints.NotBlank String activityIds,@jakarta.validation.constraints.Pattern(regexp="Lover|Friend|Parents|Sibling|Other") String recipientType,boolean active){}
  public record RoleUpdate(String role){}
+ public record CareerCampaignUpdate(@jakarta.validation.constraints.NotBlank String title,@jakarta.validation.constraints.NotBlank String summary,boolean active,@jakarta.validation.constraints.Min(1) @jakarta.validation.constraints.Max(90) int defaultDiscountPercent,@jakarta.validation.constraints.PositiveOrZero int defaultCommissionPaise,@jakarta.validation.constraints.Positive int monthlyEarningCapPaise){}
+ public record CareerApproval(@jakarta.validation.constraints.Pattern(regexp="[A-Za-z0-9_-]{4,30}") String couponCode,@jakarta.validation.constraints.Min(1) @jakarta.validation.constraints.Max(90) int discountPercent,@jakarta.validation.constraints.PositiveOrZero int commissionPaisePerUse,String adminNote){}
+ public record CareerDecision(String adminNote){}
 }
