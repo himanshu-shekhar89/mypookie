@@ -1720,6 +1720,7 @@ export default function Home() {
           <div className="nav-links">
             <a href="#how">How it works</a>
             <a href="#ideas">Gift ideas</a>
+            <a href="/invitations">Invitations</a>
             <a href="#pricing">Pricing</a>
           </div>
           <AccountMenu
@@ -1924,6 +1925,7 @@ export default function Home() {
             <a href="/refund-policy">Refund / Cancellation</a>
             <a href="/contact">Contact Us</a>
             <a href="https://www.mypookie.store/careers">Careers</a>
+            <a href="/invitations">Wedding Invitations</a>
           </div>
           <small>
             © 2026 mypookie. · Personalized digital purchases are non-refundable
@@ -1950,6 +1952,7 @@ export default function Home() {
           <div className="nav-links">
             <a href="/#how">How it works</a>
             <a href="/#ideas">Gift ideas</a>
+            <a href="/invitations">Invitations</a>
             <a href="/#pricing">Pricing</a>
           </div>
           <AccountMenu

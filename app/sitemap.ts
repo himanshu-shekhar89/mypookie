@@ -3,9 +3,10 @@ import type { MetadataRoute } from "next";
 const siteUrl = "https://www.mypookie.store";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const lastModified = new Date("2026-08-03");
+  const lastModified = new Date("2026-08-12");
   return [
     { url: siteUrl, lastModified, changeFrequency: "weekly", priority: 1 },
+    { url: `${siteUrl}/invitations`, lastModified, changeFrequency: "weekly", priority: 0.9 },
     {
       url: `${siteUrl}/personalized-online-gifts`,
       lastModified,
