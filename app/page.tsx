@@ -1720,6 +1720,7 @@ export default function Home() {
           <div className="nav-links">
             <a href="#how">How it works</a>
             <a href="#ideas">Gift ideas</a>
+            <a className="nav-celebrations" href="/celebrations">Celebrations <span>new</span></a>
             <a href="/invitations">Invitations</a>
             <a href="#pricing">Pricing</a>
           </div>
@@ -1773,6 +1774,7 @@ export default function Home() {
             </div>
           </div>
           <div className="hero-art">
+            <img className="home-keepsake-art" src="/home/keepsake-hero.png" alt="A personalized gift made from photos, flowers, a letter and a phone" />
             <div className="orbit orbit-one" />
             <div className="orbit orbit-two" />
             <div className={`phone phone-stage-${heroStage}`}>
@@ -1854,6 +1856,7 @@ export default function Home() {
                 <strong>A surprise awaits</strong>
               </div>
             </div>
+            <div className="home-made-note"><small>MADE FROM YOUR MEMORIES</small><strong>not picked from a shelf</strong></div>
           </div>
         </section>
         <section
@@ -1881,6 +1884,25 @@ export default function Home() {
               <b>Try it →</b>
             </button>
           ))}
+        </section>
+        <section className="home-celebrations" id="celebrations">
+          <div className="home-celebrations-copy">
+            <div className="section-kicker">CELEBRATIONS, MADE PERSONAL</div>
+            <h2>Every date has a story.<br /><em>Make yours unforgettable.</em></h2>
+            <p>Start with a beautifully designed occasion, then fill it with the tiny things only the two of you understand.</p>
+            <div className="home-celebration-chips"><span>Birthdays</span><span>Anniversaries</span><span>Friendship</span><span>Festivals</span></div>
+            <a className="home-celebration-cta" href="/celebrations">Explore celebrations <b>→</b></a>
+          </div>
+          <div className="home-celebrations-art">
+            <div className="home-art-halo" />
+            <img src="/home/celebration-postcards.png" alt="Illustrated postcards for birthdays, anniversaries, Raksha Bandhan and friendship" />
+            <a className="festival-float-card" href="/celebrations/rakhi-bhai-dooj"><span>✦ FESTIVAL SPOTLIGHT</span><strong>Raksha Bandhan<br />& Bhai Dooj</strong><small>Explore the sibling theme →</small></a>
+          </div>
+        </section>
+        <section className="home-feeling-strip" aria-label="Ways to make a gift feel personal">
+          <article><i>✉</i><div><small>SAY IT BEAUTIFULLY</small><strong>Letters that unfold</strong><p>Write what a store-bought card never could.</p></div></article>
+          <article><i>▦</i><div><small>MAKE IT PLAYFUL</small><strong>Memories they unlock</strong><p>Photos become puzzles, games and tiny reveals.</p></div></article>
+          <article><i>♫</i><div><small>SET THE MOOD</small><strong>A world that sounds like you</strong><p>Add the song that belongs to your story.</p></div></article>
         </section>
         <LandingShowcase />
         <section className="how" id="how">
@@ -1926,6 +1948,7 @@ export default function Home() {
             <a href="/contact">Contact Us</a>
             <a href="https://www.mypookie.store/careers">Careers</a>
             <a href="/invitations">Wedding Invitations</a>
+            <a href="/celebrations">Celebrations</a>
           </div>
           <small>
             © 2026 mypookie. · Personalized digital purchases are non-refundable
