@@ -39,6 +39,7 @@ export function GiftSoundtrack({
   const audioRef = useRef<HTMLAudioElement>(null);
   const initialized = useRef(false);
   const [playing, setPlaying] = useState(false);
+  const [playbackError, setPlaybackError] = useState(false);
   const [mediaPlaying, setMediaPlaying] = useState(false);
   const [trackIndex, setTrackIndex] = useState(0);
   const tracks = settings.tracks?.length
@@ -144,6 +145,26 @@ export function GiftSoundtrack({
   useEffect(() => {
     initialized.current = false;
   }, [activeTrack.url, settings.startBlockId, settings.startMode]);
+  async function togglePlayback() {
+    const audio = audioRef.current;
+    if (!audio || !activeTrack.url) return;
+    if (playing) {
+      audio.pause();
+      setPlaying(false);
+      setPlaybackError(false);
+      return;
+    }
+    setPlaybackError(false);
+    setPlaying(true);
+    if (!ready || mediaPlaying) return;
+    audio.volume = 0.14;
+    try {
+      await audio.play();
+    } catch {
+      setPlaying(false);
+      setPlaybackError(true);
+    }
+  }
   if (!settings.enabled) return null;
   const target = blocks[startIndex]?.name || "the first block";
   return (
@@ -152,7 +173,7 @@ export function GiftSoundtrack({
     >
       <button
         disabled={!activeTrack.url}
-        onClick={() => setPlaying((value) => !value)}
+        onClick={togglePlayback}
         aria-label={playing ? "Pause soundtrack" : "Play soundtrack"}
       >
         {playing && !mediaPlaying ? "Ⅱ" : "♫"}
@@ -160,7 +181,9 @@ export function GiftSoundtrack({
       <div>
         <strong>{activeTrack.name || "Soothing soundtrack"}</strong>
         <small>
-          {mediaPlaying
+          {playbackError
+            ? "Tap again to allow audio"
+            : mediaPlaying
             ? "Paused for this voice or video"
             : playing && !ready
               ? `Queued for ${target}`

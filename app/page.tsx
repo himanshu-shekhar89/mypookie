@@ -3262,6 +3262,10 @@ function SoundtrackEditor({
     if (!audio) return;
     audio.src = template.url;
     audio.load();
+    // Start inside the user's click gesture. Waiting for metadata first can
+    // make Safari and mobile Chrome treat this as blocked autoplay.
+    const playback = audio.play();
+    if (playback) void playback.catch(() => {});
     audio.onloadedmetadata = () => {
       const start = Math.min(
         Math.max(0, Number(settings.startSeconds) || 0),
@@ -3269,7 +3273,6 @@ function SoundtrackEditor({
       );
       audio.currentTime = start;
       setDuration(audio.duration || 0);
-      void audio.play().catch(() => {});
     };
   }
   return (
