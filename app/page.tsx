@@ -2026,7 +2026,18 @@ export default function Home() {
                           ? "✦"
                           : "+"}
                 </span>
-                {r}
+                <strong>{r}</strong>
+                <small>
+                  {r === "Lover"
+                    ? "romantic & close"
+                    : r === "Friend"
+                      ? "joyful & nostalgic"
+                      : r === "Parents"
+                        ? "warm & grateful"
+                        : r === "Sibling"
+                          ? "playful & personal"
+                          : "make it your own"}
+                </small>
               </button>
             ))}
           </div>
@@ -2078,6 +2089,19 @@ export default function Home() {
               </select>
             </label>
           </div>
+          <aside className="catalog-story-preview" aria-label="Your gift story preview">
+            <div className="catalog-preview-orbit" />
+            <span className="catalog-preview-number">01</span>
+            <small>A LITTLE WORLD FOR</small>
+            <h2>{name || "Someone special"}</h2>
+            <img src="/letters/envelopes/blush-botanical.webp" alt="A handmade sealed envelope" />
+            <div>
+              <b>{recipient}</b>
+              <span>·</span>
+              <b>{occasion}</b>
+            </div>
+            <p>Letters, memories, games and one beautiful final surprise.</p>
+          </aside>
         </section>
         <section className="creation-choice">
           <div className="choice-heading">
@@ -2116,6 +2140,8 @@ export default function Home() {
             {visibleBundles.map((b, index) => (
               <article className={`bundle bundle-${index}`} key={b.id}>
                 <div className="bundle-art">
+                  <b className="bundle-number">0{index + 1}</b>
+                  <small>{b.ids.length} MOMENTS</small>
                   <span>
                     {index === 0
                       ? recipient === "Parents"
