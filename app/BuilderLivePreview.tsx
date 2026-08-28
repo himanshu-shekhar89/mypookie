@@ -237,6 +237,12 @@ export function BuilderLivePreview({
               }
             >
               <span className="envelope-card">
+                <img
+                  className="generated-envelope-art"
+                  src="/letters/keepsake-envelope-v2.webp"
+                  alt=""
+                  aria-hidden="true"
+                />
                 <span className="envelope-face envelope-front">
                   <i className="envelope-stamp">
                     {stampSymbols[config.stampStyle || "Rose stamp"]}
@@ -261,8 +267,16 @@ export function BuilderLivePreview({
                 </span>
               </span>
               <article className="letter-sheet">
-                <p>{block.message.slice(0, 800)}</p>
-                <small>{config.signoff || "— sent with love"}</small>
+                <img
+                  className="generated-letter-paper"
+                  src="/letters/botanical-letter-paper-v2.webp"
+                  alt=""
+                  aria-hidden="true"
+                />
+                <div className="letter-copy">
+                  <p>{block.message.slice(0, 800)}</p>
+                  <small>{config.signoff || "— sent with love"}</small>
+                </div>
               </article>
             </button>
             <small className="letter-effect-caption">
