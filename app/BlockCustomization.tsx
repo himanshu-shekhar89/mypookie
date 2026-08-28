@@ -11,6 +11,21 @@ type CustomBlock = {
   config?: Record<string, string>;
 };
 
+const envelopeChoices = [
+  ["Blush satin", "/letters/envelopes/blush-botanical.webp"],
+  ["Ivory airmail", "/letters/envelopes/ivory-airmail.webp"],
+  ["Midnight velvet", "/letters/envelopes/midnight-velvet.webp"],
+  ["Kraft keepsake", "/letters/envelopes/kraft-keepsake.webp"],
+  ["Floral garden", "/letters/envelopes/blush-botanical.webp"],
+] as const;
+const letterPageChoices = [
+  ["Classic cream", "/letters/pages/classic-cream.webp"],
+  ["Lined notebook", "/letters/pages/lined-notebook.webp"],
+  ["Vintage parchment", "/letters/pages/vintage-parchment.webp"],
+  ["Floral border", "/letters/botanical-letter-paper-v2.webp"],
+  ["Polaroid note", "/letters/pages/classic-cream.webp"],
+] as const;
+
 function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -125,35 +140,11 @@ export function BlockCustomization({
             placeholder="— sent with love"
           />
         </label>
+        <div className="letter-art-picker">
+          <fieldset><legend>Choose an envelope</legend><div>{envelopeChoices.map(([label, image]) => <button type="button" key={label} className={(config.envelopeStyle || "Blush satin") === label ? "active" : ""} onClick={() => onConfig("envelopeStyle", label)}><img src={image} alt="" /><span>{label}</span><b>✓</b></button>)}</div></fieldset>
+          <fieldset><legend>Choose letter paper</legend><div>{letterPageChoices.map(([label, image]) => <button type="button" key={label} className={(config.pageType || "Classic cream") === label ? "active" : ""} onClick={() => onConfig("pageType", label)}><img src={image} alt="" /><span>{label}</span><b>✓</b></button>)}</div></fieldset>
+        </div>
         <div className="letter-customization-grid">
-          <label className="field">
-            Envelope style
-            <select
-              value={config.envelopeStyle || "Blush satin"}
-              onChange={(event) =>
-                onConfig("envelopeStyle", event.target.value)
-              }
-            >
-              <option>Blush satin</option>
-              <option>Ivory airmail</option>
-              <option>Midnight velvet</option>
-              <option>Kraft keepsake</option>
-              <option>Floral garden</option>
-            </select>
-          </label>
-          <label className="field">
-            Letter page
-            <select
-              value={config.pageType || "Classic cream"}
-              onChange={(event) => onConfig("pageType", event.target.value)}
-            >
-              <option>Classic cream</option>
-              <option>Lined notebook</option>
-              <option>Vintage parchment</option>
-              <option>Floral border</option>
-              <option>Polaroid note</option>
-            </select>
-          </label>
           <label className="field">
             Letter font
             <select

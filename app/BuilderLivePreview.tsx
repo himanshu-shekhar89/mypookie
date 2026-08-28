@@ -24,6 +24,21 @@ const wheelPrizes = [
   "Sweet treat",
 ];
 
+const envelopeArtwork: Record<string, string> = {
+  "Blush satin": "/letters/envelopes/blush-botanical.webp",
+  "Ivory airmail": "/letters/envelopes/ivory-airmail.webp",
+  "Midnight velvet": "/letters/envelopes/midnight-velvet.webp",
+  "Kraft keepsake": "/letters/envelopes/kraft-keepsake.webp",
+  "Floral garden": "/letters/envelopes/blush-botanical.webp",
+};
+const letterPageArtwork: Record<string, string> = {
+  "Classic cream": "/letters/pages/classic-cream.webp",
+  "Lined notebook": "/letters/pages/lined-notebook.webp",
+  "Vintage parchment": "/letters/pages/vintage-parchment.webp",
+  "Floral border": "/letters/botanical-letter-paper-v2.webp",
+  "Polaroid note": "/letters/pages/classic-cream.webp",
+};
+
 export function BuilderLivePreview({
   block,
   name,
@@ -239,6 +254,15 @@ export function BuilderLivePreview({
               <span className="envelope-card">
                 <img
                   className="generated-envelope-art"
+                  src={
+                    envelopeArtwork[config.envelopeStyle || "Blush satin"] ||
+                    envelopeArtwork["Blush satin"]
+                  }
+                  alt=""
+                  aria-hidden="true"
+                />
+                <img
+                  className="generated-envelope-open-art"
                   src="/letters/keepsake-envelope-v2.webp"
                   alt=""
                   aria-hidden="true"
@@ -269,7 +293,10 @@ export function BuilderLivePreview({
               <article className="letter-sheet">
                 <img
                   className="generated-letter-paper"
-                  src="/letters/botanical-letter-paper-v2.webp"
+                  src={
+                    letterPageArtwork[config.pageType || "Classic cream"] ||
+                    letterPageArtwork["Classic cream"]
+                  }
                   alt=""
                   aria-hidden="true"
                 />
