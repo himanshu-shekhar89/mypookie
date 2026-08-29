@@ -23,13 +23,15 @@ const templates = [
   { emoji: "📸", label: "For the family archivist", title: "From tiny fights to big memories", tone: "Nostalgic" },
 ];
 
+const builderHref = "/?start=celebration&recipient=Sibling&occasion=Raksha%20Bandhan";
+
 export default function RakhiBhaiDoojPage() {
   return (
     <main className="rb-page">
       <nav className="rb-nav">
         <Link className="rb-brand" href="/"><span>♥</span>mypookie.</Link>
         <div className="rb-nav-links"><a href="#ideas">Gift ideas</a><a href="#how">How it works</a></div>
-        <Link className="rb-small-cta" href="/">Create a surprise <b>→</b></Link>
+        <Link className="rb-small-cta" href={builderHref}>Create a surprise <b>→</b></Link>
       </nav>
 
       <section className="rb-hero">
@@ -39,7 +41,7 @@ export default function RakhiBhaiDoojPage() {
           <h1>For the one who knows <em>every version</em> of you.</h1>
           <p>Turn your inside jokes, childhood photos and unsaid thank-yous into one little interactive world made just for your sibling.</p>
           <div className="rb-actions">
-            <Link className="rb-primary" href="/">Make their surprise <span>→</span></Link>
+            <Link className="rb-primary" href={builderHref}>Make their surprise <span>→</span></Link>
             <a className="rb-text-link" href="#ideas">See what you can add ↓</a>
           </div>
           <div className="rb-proof"><span>⚡ Ready in minutes</span><span>🔒 Shared with one private link</span><span>₹ Starts small, feels priceless</span></div>
@@ -69,12 +71,12 @@ export default function RakhiBhaiDoojPage() {
           <div className="rb-thread"><i /><b>♥</b><i /></div>
           <div className="rb-petal p1">✿</div><div className="rb-petal p2">✿</div><div className="rb-petal p3">✦</div>
         </div>
-        <div className="rb-ritual-copy"><span className="rb-kicker">THE DIGITAL SHAGUN</span><h2>The ritual stays.<br />The surprise gets an upgrade.</h2><ol><li><b>1</b><span><strong>Choose their vibe</strong><small>Sweet, silly, nostalgic—or all three.</small></span></li><li><b>2</b><span><strong>Add your shared world</strong><small>Letters, photos, voice notes, puzzles and games.</small></span></li><li><b>3</b><span><strong>Send one beautiful link</strong><small>Schedule it for the morning or rescue a last-minute gift.</small></span></li></ol><Link className="rb-primary" href="/">Start creating <span>→</span></Link></div>
+        <div className="rb-ritual-copy"><span className="rb-kicker">THE DIGITAL SHAGUN</span><h2>The ritual stays.<br />The surprise gets an upgrade.</h2><ol><li><b>1</b><span><strong>Choose their vibe</strong><small>Sweet, silly, nostalgic—or all three.</small></span></li><li><b>2</b><span><strong>Add your shared world</strong><small>Letters, photos, voice notes, puzzles and games.</small></span></li><li><b>3</b><span><strong>Send one beautiful link</strong><small>Schedule it for the morning or rescue a last-minute gift.</small></span></li></ol><Link className="rb-primary" href={builderHref}>Start creating <span>→</span></Link></div>
       </section>
 
       <section className="rb-templates">
         <header><span className="rb-kicker">START WITH A FEELING</span><h2>Which sibling story is yours?</h2></header>
-        <div className="rb-template-grid">{templates.map(template => <article key={template.title}><div><span>{template.emoji}</span><small>{template.tone}</small></div><p>{template.label}</p><h3>{template.title}</h3><Link href="/">Use this idea <span>→</span></Link></article>)}</div>
+        <div className="rb-template-grid">{templates.map(template => <article key={template.title}><div><span>{template.emoji}</span><small>{template.tone}</small></div><p>{template.label}</p><h3>{template.title}</h3><Link href={builderHref}>Use this idea <span>→</span></Link></article>)}</div>
       </section>
 
       <section className="rb-final">
@@ -82,7 +84,7 @@ export default function RakhiBhaiDoojPage() {
         <span className="rb-kicker">NO COURIER. NO PANIC.</span>
         <h2>Made with memories.<br />Delivered in a moment.</h2>
         <p>Perfect for the sibling next door—or in another time zone.</p>
-        <Link className="rb-primary" href="/">Create a sibling surprise <span>→</span></Link>
+        <Link className="rb-primary" href={builderHref}>Create a sibling surprise <span>→</span></Link>
         <img src="/celebrations/rakhi-animal-stickers.png" alt="" aria-hidden="true" />
       </section>
 

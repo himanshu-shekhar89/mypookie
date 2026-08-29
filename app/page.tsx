@@ -989,6 +989,25 @@ export default function Home() {
   const [catalogActivities, setCatalogActivities] =
     useState<Block[]>(activities);
   const [catalogBundles, setCatalogBundles] = useState(bundles);
+  const deepLinkApplied = useRef(false);
+
+  useEffect(() => {
+    if (!browserReady || deepLinkApplied.current) return;
+    if (urlParams?.get("start") !== "celebration") return;
+    deepLinkApplied.current = true;
+    const requestedRecipient = urlParams.get("recipient");
+    if (
+      requestedRecipient === "Lover" ||
+      requestedRecipient === "Friend" ||
+      requestedRecipient === "Parents" ||
+      requestedRecipient === "Sibling" ||
+      requestedRecipient === "Other"
+    )
+      setRecipient(requestedRecipient);
+    setOccasion(urlParams.get("occasion") || "Raksha Bandhan");
+    setTheme("Golden celebration");
+    setScreen("catalog");
+  }, [browserReady, urlParams]);
 
   const subtotal = useMemo(() => {
     const base = selectedBundleId
@@ -2086,6 +2105,8 @@ export default function Home() {
                 <option>Anniversary</option>
                 <option>I’m sorry</option>
                 <option>Congratulations</option>
+                <option>Raksha Bandhan</option>
+                <option>Bhai Dooj</option>
               </select>
             </label>
           </div>
