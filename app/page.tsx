@@ -2125,16 +2125,20 @@ export default function Home() {
                 customized.
               </p>
             </div>
-            <button
-              className="scratch-link"
-              onClick={() => {
-                setSelected([]);
-                setSelectedBundleId(null);
-                setScreen("builder");
-              }}
-            >
-              Build from scratch <span>→</span>
-            </button>
+            <div className="choice-action">
+              <small>KNOW EXACTLY WHAT YOU WANT?</small>
+              <button
+                className="scratch-link"
+                onClick={() => {
+                  setSelected([]);
+                  setSelectedBundleId(null);
+                  setScreen("builder");
+                }}
+              >
+                <b>＋</b> Build from scratch <span>→</span>
+              </button>
+              <em>Start with an empty canvas</em>
+            </div>
           </div>
           <div className="bundle-grid">
             {visibleBundles.map((b, index) => (
@@ -2142,6 +2146,17 @@ export default function Home() {
                 <div className="bundle-art">
                   <b className="bundle-number">0{index + 1}</b>
                   <small>{b.ids.length} MOMENTS</small>
+                  <img
+                    className="bundle-cover"
+                    src={
+                      index === 0
+                        ? "/letters/envelopes/blush-botanical.webp"
+                        : index === 1
+                          ? "/letters/envelopes/kraft-keepsake.webp"
+                          : "/letters/envelopes/midnight-velvet.webp"
+                    }
+                    alt=""
+                  />
                   <span>
                     {index === 0
                       ? recipient === "Parents"
