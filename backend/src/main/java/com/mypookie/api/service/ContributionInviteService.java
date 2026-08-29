@@ -17,17 +17,21 @@ import java.util.*;
 public class ContributionInviteService {
  private static final Duration CLAIM_WINDOW=Duration.ofMinutes(30);
  private final ContributionInviteRepository invites;
+ private final ContributionClaimRepository claims;
  private final GiftRepository gifts;
  private final ExperienceResponseRepository responses;
  private final ObjectMapper json;
 
  public ContributionInvite issue(String giftId){
+  var current=invites.findByGiftIdAndStatusOrderByCreatedAtDesc(giftId,"ACTIVE").stream()
+   .filter(item->item.getExpiresAt().isAfter(Instant.now())).findFirst();
+  if(current.isPresent())return current.get();
   var invite=new ContributionInvite();
   invite.setId(UUID.randomUUID().toString());
   invite.setGiftId(giftId);
   invite.setToken(randomToken());
-  invite.setStatus("CREATED");
-  invite.setExpiresAt(Instant.now().plus(Duration.ofDays(7)));
+  invite.setStatus("ACTIVE");
+  invite.setExpiresAt(Instant.now().plus(Duration.ofDays(30)));
   return invites.save(invite);
  }
 
@@ -36,16 +40,20 @@ public class ContributionInviteService {
   var invite=locked(token);
   var now=Instant.now();
   expireIfNeeded(invite,now);
-  if("USED".equals(invite.getStatus())||"EXPIRED".equals(invite.getStatus()))throw gone("This contribution link has expired.");
-  if("CREATED".equals(invite.getStatus())){
-   invite.setStatus("CLAIMED");
-   invite.setClaimToken(randomToken());
-   invite.setClaimedAt(now);
-  }else if(!Objects.equals(invite.getClaimToken(),presentedClaim)){
-   throw gone("This one-time contribution link has already been opened.");
+  if(!"ACTIVE".equals(invite.getStatus()))throw gone("This contribution room has expired.");
+  ContributionClaim claim=null;
+  if(presentedClaim!=null)claim=claims.findByClaimTokenForUpdate(presentedClaim).orElse(null);
+  if(claim==null||!Objects.equals(claim.getInviteId(),invite.getId())||!"ACTIVE".equals(claim.getStatus())||claim.getExpiresAt().isBefore(now)){
+   claim=new ContributionClaim();
+   claim.setId(UUID.randomUUID().toString());
+   claim.setInviteId(invite.getId());
+   claim.setClaimToken(randomToken());
+   claim.setStatus("ACTIVE");
+   claim.setExpiresAt(now.plus(CLAIM_WINDOW));
+   claims.save(claim);
   }
   var gift=gifts.findById(invite.getGiftId()).orElseThrow();
-  return new ClaimResult(gift.getRecipientName(),gift.getOccasion(),invite.getClaimToken(),invite.getClaimedAt().plus(CLAIM_WINDOW));
+  return new ClaimResult(gift.getRecipientName(),gift.getOccasion(),claim.getClaimToken(),claim.getExpiresAt());
  }
 
  @Transactional
@@ -53,11 +61,9 @@ public class ContributionInviteService {
   var invite=locked(token);
   var now=Instant.now();
   expireIfNeeded(invite,now);
-  if(!"CLAIMED".equals(invite.getStatus())||!Objects.equals(invite.getClaimToken(),request.claimToken()))throw gone("This contribution link is no longer active.");
-  if(invite.getClaimedAt().plus(CLAIM_WINDOW).isBefore(now)){
-   invite.setStatus("EXPIRED");
-   throw gone("This contribution session expired. Ask the sender for a fresh link.");
-  }
+  if(!"ACTIVE".equals(invite.getStatus()))throw gone("This contribution room is no longer active.");
+  var claim=claims.findByClaimTokenForUpdate(request.claimToken()).orElseThrow(()->gone("This contribution session is no longer active."));
+  if(!Objects.equals(claim.getInviteId(),invite.getId())||!"ACTIVE".equals(claim.getStatus())||claim.getExpiresAt().isBefore(now))throw gone("You have already submitted from this link, or this session expired.");
   try{
    var response=new ExperienceResponse();
    response.setId(UUID.randomUUID().toString());
@@ -68,9 +74,8 @@ public class ContributionInviteService {
    response.setResponseText(request.responseText().trim());
    response.setPhotoUrls(json.writeValueAsString(request.photoUrls()==null?List.of():request.photoUrls()));
    responses.save(response);
-   invite.setStatus("USED");
-   invite.setUsedAt(now);
-   invite.setClaimToken(null);
+   claim.setStatus("USED");
+   claim.setUsedAt(now);
   }catch(Exception error){
    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"The contribution could not be saved.",error);
   }
@@ -81,7 +86,7 @@ public class ContributionInviteService {
  }
 
  private void expireIfNeeded(ContributionInvite invite,Instant now){
-  if(invite.getExpiresAt().isBefore(now)||("CLAIMED".equals(invite.getStatus())&&invite.getClaimedAt().plus(CLAIM_WINDOW).isBefore(now)))invite.setStatus("EXPIRED");
+  if(invite.getExpiresAt().isBefore(now))invite.setStatus("EXPIRED");
  }
 
  private String randomToken(){return UUID.randomUUID().toString().replace("-","")+UUID.randomUUID().toString().replace("-","");}

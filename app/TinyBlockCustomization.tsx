@@ -1707,14 +1707,29 @@ function GroupBoardEditor({
       setCreating(false);
     }
   }
+  async function shareRoom(target: "native" | "instagram") {
+    if (!link) return;
+    const shareData = {
+      title: "Add your message to our mypookie surprise",
+      text: "Leave a message, memory or photo for the group surprise ♡",
+      url: link,
+    };
+    if (navigator.share) {
+      await navigator.share(shareData).catch(() => {});
+      return;
+    }
+    await navigator.clipboard.writeText(link);
+    setCopied(true);
+    if (target === "instagram") window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
+  }
   return (
     <Section
       title="Group Message Board"
-      hint="Create a fresh, single-use invitation for every person"
+      hint="One reusable room link for everyone you invite"
     >
       {giftId ? (
         <div className="contributor-link single-use">
-          <small>ONE PERSON · ONE MESSAGE · ONE OPEN</small>
+          <small>ONE ROOM · MANY PEOPLE · ONE MESSAGE EACH</small>
           {link ? (
             <>
               <div>
@@ -1729,13 +1744,11 @@ function GroupBoardEditor({
                   {copied ? "Copied ✓" : "Copy link"}
                 </button>
               </div>
-              <button
-                className="fresh-invite"
-                onClick={createInvite}
-                disabled={creating}
-              >
-                {creating ? "Creating…" : "＋ Create another person’s link"}
-              </button>
+              <div className="contribution-share-row">
+                <a href={`https://wa.me/?text=${encodeURIComponent(`Add your message to our surprise ♡ ${link}`)}`} target="_blank" rel="noreferrer">WhatsApp</a>
+                <button onClick={() => void shareRoom("instagram")}>Instagram</button>
+                <button onClick={() => void shareRoom("native")}>Share…</button>
+              </div>
             </>
           ) : (
             <button
@@ -1745,21 +1758,20 @@ function GroupBoardEditor({
             >
               {creating
                 ? "Creating secure link…"
-                : "Create one-time contribution link →"}
+                : "Create shared contribution room →"}
             </button>
           )}
           <p>
-            Send this link to only one person. The first browser claims it, and
-            submission closes it immediately.
+            Share this same link with everyone. After someone submits, it closes
+            only on their browser and stays open for the rest of the group.
           </p>
           {inviteError && <output>{inviteError}</output>}
         </div>
       ) : (
         <div className="response-inbox empty">
-          <strong>One-time contribution links</strong>
+          <strong>Shared contribution room</strong>
           <span>
-            Save the draft first, then create a separate private link for each
-            person.
+            Save the draft first, then create one link for everyone.
           </span>
         </div>
       )}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import "./rakhi.css";
+import RakhiRitual from "./RakhiRitual";
 
 export const metadata: Metadata = {
   title: "Raksha Bandhan & Bhai Dooj Gifts | mypookie.",
@@ -54,6 +55,8 @@ export default function RakhiBhaiDoojPage() {
       </section>
 
       <div className="rb-marquee" aria-hidden="true"><span>ROASTS</span><i>✦</i><span>OLD PHOTOS</span><i>✦</i><span>SECRET NOTES</span><i>✦</i><span>SIBLING QUIZZES</span><i>✦</i><span>BIG FEELINGS</span></div>
+
+      <RakhiRitual />
 
       <section className="rb-moments" id="ideas">
         <header><span className="rb-kicker">BUILD IT YOUR WAY</span><h2>Equal parts <em>mischief</em> and meaning.</h2><p>Pick a few moments. We turn them into a surprise they tap, play and feel.</p></header>
