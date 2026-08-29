@@ -2101,6 +2101,19 @@ export default function Home() {
               <b>{occasion}</b>
             </div>
             <p>Letters, memories, games and one beautiful final surprise.</p>
+            <div className="catalog-preview-build">
+              <small>MAKE IT ENTIRELY YOURS</small>
+              <button
+                className="scratch-link"
+                onClick={() => {
+                  setSelected([]);
+                  setSelectedBundleId(null);
+                  setScreen("builder");
+                }}
+              >
+                <b>＋</b> Build from scratch <span>→</span>
+              </button>
+            </div>
           </aside>
         </section>
         <section className="creation-choice">
@@ -2124,20 +2137,6 @@ export default function Home() {
                 Each bundle has a different mood and can still be completely
                 customized.
               </p>
-            </div>
-            <div className="choice-action">
-              <small>KNOW EXACTLY WHAT YOU WANT?</small>
-              <button
-                className="scratch-link"
-                onClick={() => {
-                  setSelected([]);
-                  setSelectedBundleId(null);
-                  setScreen("builder");
-                }}
-              >
-                <b>＋</b> Build from scratch <span>→</span>
-              </button>
-              <em>Start with an empty canvas</em>
             </div>
           </div>
           <div className="bundle-grid">
@@ -2707,93 +2706,6 @@ export default function Home() {
                 onMessage={updateMessage}
                 onConfig={updateBlockConfig}
               />
-              <section className="block-transition-editor">
-                <header>
-                  <span>↝</span>
-                  <div>
-                    <small>BEFORE THIS MOMENT</small>
-                    <strong>Recipient transition</strong>
-                  </div>
-                </header>
-                <div className="transition-choice-grid">
-                  {[
-                    ["None", "—"],
-                    ["Soft zoom", "◎"],
-                    ["Slide up", "↑"],
-                    ["Curtain reveal", "◫"],
-                    ["Dreamy blur", "◌"],
-                    ["Sparkle burst", "✦"],
-                  ].map(([label, icon]) => {
-                    const chosen =
-                      (activeBlock.config?.transitionStyle ||
-                        (transitionGameBlocks.has(activeBlock.id)
-                          ? "Soft zoom"
-                          : "None")) === label;
-                    return (
-                      <button
-                        key={label}
-                        className={chosen ? "active" : ""}
-                        onClick={() =>
-                          updateBlockConfig("transitionStyle", label)
-                        }
-                      >
-                        <i>{icon}</i>
-                        <span>{label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-                {(activeBlock.config?.transitionStyle ||
-                  (transitionGameBlocks.has(activeBlock.id)
-                    ? "Soft zoom"
-                    : "None")) !== "None" && (
-                  <label className="field">
-                    Duration
-                    <select
-                      value={activeBlock.config?.transitionDuration || "1.6"}
-                      onChange={(event) =>
-                        updateBlockConfig(
-                          "transitionDuration",
-                          event.target.value,
-                        )
-                      }
-                    >
-                      <option value="1">1 second</option>
-                      <option value="1.3">1.3 seconds</option>
-                      <option value="1.6">1.6 seconds</option>
-                      <option value="2">2 seconds</option>
-                    </select>
-                  </label>
-                )}
-                {(activeBlock.config?.transitionStyle ||
-                  (transitionGameBlocks.has(activeBlock.id)
-                    ? "Soft zoom"
-                    : "None")) !== "None" && (
-                  <button
-                    className="preview-transition-button"
-                    onClick={() => {
-                      setBuilderTransitionPreview(true);
-                      window.setTimeout(
-                        () => setBuilderTransitionPreview(false),
-                        Math.min(
-                          2,
-                          Math.max(
-                            1,
-                            Number(activeBlock.config?.transitionDuration) ||
-                              1.6,
-                          ),
-                        ) * 1000,
-                      );
-                    }}
-                  >
-                    ▶ Preview transition
-                  </button>
-                )}
-                <p>
-                  Shows the activity name briefly, then moves into the
-                  interaction automatically.
-                </p>
-              </section>
               <PlayfulAiAssistant
                 id={activeBlock.id}
                 relationship={`${senderName.trim() || "the sender"} and ${name || "the recipient"} are ${recipient.toLowerCase()}s celebrating ${occasion.toLowerCase()}`}
@@ -2824,77 +2736,6 @@ export default function Home() {
                   </select>
                 </label>
               </div>
-              <section className="experience-background-editor">
-                <header>
-                  <span>▧</span>
-                  <div>
-                    <small>WHOLE EXPERIENCE</small>
-                    <strong>Background</strong>
-                  </div>
-                </header>
-                <label className="field">
-                  Background theme
-                  <select
-                    value={experienceBackground.theme}
-                    onChange={(event) =>
-                      setExperienceBackground((current) => ({
-                        ...current,
-                        theme: event.target.value,
-                      }))
-                    }
-                  >
-                    <option>Theme glow</option>
-                    <option>Rose clouds</option>
-                    <option>Golden hour</option>
-                    <option>Midnight stars</option>
-                    <option>Paper garden</option>
-                  </select>
-                </label>
-                <label className="field">
-                  Personal background image
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(event) =>
-                      void uploadExperienceBackground(event.target.files)
-                    }
-                  />
-                  <small>
-                    {experienceBackground.imageUrl
-                      ? "Personal image selected"
-                      : "Optional · JPG, PNG or WebP"}
-                  </small>
-                </label>
-                {experienceBackground.imageUrl && (
-                  <button
-                    className="remove-experience-background"
-                    onClick={() =>
-                      setExperienceBackground((current) => ({
-                        ...current,
-                        imageUrl: "",
-                      }))
-                    }
-                  >
-                    Remove personal image
-                  </button>
-                )}
-                <label className="field">
-                  Image overlay
-                  <select
-                    value={experienceBackground.overlay}
-                    onChange={(event) =>
-                      setExperienceBackground((current) => ({
-                        ...current,
-                        overlay: event.target.value,
-                      }))
-                    }
-                  >
-                    <option>None</option>
-                    <option>Soft</option>
-                    <option>Strong</option>
-                  </select>
-                </label>
-              </section>
               <div className="customizer-live-note">
                 <i /> You’re editing the live preview
               </div>

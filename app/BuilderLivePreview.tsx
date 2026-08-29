@@ -135,14 +135,14 @@ export function BuilderLivePreview({
   const letterEffect = (config.animation || "Flower burst")
     .toLowerCase()
     .replaceAll(" ", "-");
-  const letterSymbols =
+  const letterParticles =
     config.animation === "Heart burst"
-      ? ["♥", "♡", "♥"]
+      ? ["/letters/bursts/heart.webp", "/letters/bursts/star.webp"]
       : config.animation === "Golden sparkles"
-        ? ["✦", "✧", "⋆"]
+        ? ["/letters/bursts/star.webp", "/letters/bursts/star.webp", "/letters/bursts/heart.webp"]
         : config.animation === "Classic unfold"
-          ? ["·", "✦", "·"]
-          : ["✿", "❀", "❁"];
+          ? ["/letters/bursts/star.webp", "/letters/bursts/heart.webp"]
+          : ["/letters/bursts/heart.webp", "/letters/bursts/star.webp"];
   const letterDensity = Math.min(
     40,
     Math.max(8, Number(config.effectDensity) || 22),
@@ -238,7 +238,11 @@ export function BuilderLivePreview({
                     } as React.CSSProperties
                   }
                 >
-                  {letterSymbols[index % letterSymbols.length]}
+                  <img
+                    src={letterParticles[index % letterParticles.length]}
+                    alt=""
+                    aria-hidden="true"
+                  />
                 </i>
               ))}
             </div>
@@ -263,7 +267,10 @@ export function BuilderLivePreview({
                 />
                 <img
                   className="generated-envelope-open-art"
-                  src="/letters/keepsake-envelope-v2.webp"
+                  src={
+                    envelopeArtwork[config.envelopeStyle || "Blush satin"] ||
+                    envelopeArtwork["Blush satin"]
+                  }
                   alt=""
                   aria-hidden="true"
                 />
