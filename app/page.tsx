@@ -971,6 +971,7 @@ export default function Home() {
   const [soundtrackOpen, setSoundtrackOpen] = useState(false);
   const [builderPreviewNonce, setBuilderPreviewNonce] = useState(0);
   const [blockPreviewFullscreen, setBlockPreviewFullscreen] = useState(false);
+  const [mobileCustomizerOpen, setMobileCustomizerOpen] = useState(false);
   const [revealAt, setRevealAt] = useState("");
   const [compatibilityPin, setCompatibilityPin] = useState("");
   const [accessPin, setAccessPin] = useState("");
@@ -2394,7 +2395,7 @@ export default function Home() {
   }
 
   return (
-    <main className="builder-page">
+    <main className={`builder-page ${mobileCustomizerOpen ? "mobile-customizer-open" : ""}`}>
       {signInPopup}
       <header className="app-header builder-header">
         <div className="builder-brand-row">
@@ -2523,10 +2524,18 @@ export default function Home() {
                       );
                       const isSelected = selectedIndex >= 0;
                       const isActive = isSelected && active === selectedIndex;
+                      const isMobilePreview =
+                        isActive || libraryPreview?.id === item.id;
+                      const previewBlock = isSelected
+                        ? selected[selectedIndex]
+                        : {
+                            ...item,
+                            config: { ...(blockDefaults[item.id] || {}) },
+                          };
                       return (
+                        <div className="mobile-activity-group" key={item.id}>
                         <div
                           className={`activity-choice ${isSelected ? "selected" : ""} ${isActive ? "active" : ""}`}
-                          key={item.id}
                           role="button"
                           tabIndex={0}
                           onClick={() => {
@@ -2585,6 +2594,56 @@ export default function Home() {
                                 ? "SELECTED"
                                 : `₹${item.price}`}
                           </b>
+                        </div>
+                        {isMobilePreview && (
+                          <section
+                            className="mobile-inline-preview"
+                            aria-label={`${item.name} live preview`}
+                          >
+                            <header>
+                              <div>
+                                <small>{isSelected ? "ADDED TO YOUR GIFT" : "TRY IT FIRST"}</small>
+                                <strong>{item.name}</strong>
+                              </div>
+                              <span><i /> Live</span>
+                            </header>
+                            <div className="mobile-preview-canvas">
+                              <BuilderLivePreview
+                                key={`mobile-${previewBlock.instanceId || previewBlock.id}-${builderPreviewNonce}`}
+                                block={previewBlock}
+                                name={name}
+                                senderName={senderName.trim() || "Someone special"}
+                                theme={theme}
+                                ambience={ambience}
+                                giftId={giftId || undefined}
+                              />
+                            </div>
+                            <div className="mobile-preview-actions">
+                              <button
+                                className="mobile-add-action"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  setActivitySelected(item, !isSelected);
+                                }}
+                              >
+                                {isSelected ? "✓ Added" : `＋ Add for ₹${item.price}`}
+                              </button>
+                              {isSelected && (
+                                <button
+                                  className="mobile-customize-action"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    setLibraryPreview(null);
+                                    setActive(selectedIndex);
+                                    setMobileCustomizerOpen(true);
+                                  }}
+                                >
+                                  Customize <span>→</span>
+                                </button>
+                              )}
+                            </div>
+                          </section>
+                        )}
                         </div>
                       );
                     })}
@@ -2700,6 +2759,13 @@ export default function Home() {
             <span>
               {selected.length ? `${active + 1} / ${selected.length}` : "0 / 0"}
             </span>
+            <button
+              className="mobile-customizer-close"
+              onClick={() => setMobileCustomizerOpen(false)}
+              aria-label="Close customization"
+            >
+              ×
+            </button>
           </div>
           {!activeBlock || libraryPreview ? (
             <div className="custom-empty">
