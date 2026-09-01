@@ -29,6 +29,7 @@ public class AdminController {
  private final ContributionInviteRepository invites;
  private final CareerCampaignRepository careerCampaigns;
  private final CareerApplicationRepository careerApplications;
+ private final InvitationBulkRequestRepository invitationBulkRequests;
  private final RazorpayService razorpay;
  @Value("${app.auth.firebase-enabled:false}") private boolean firebaseEnabled;
  @Value("${app.groq.api-key:}") private String groqKey;
@@ -113,6 +114,9 @@ public class AdminController {
  @GetMapping("/careers/applications")
  public List<CareerApplication> careerApplications(){return careerApplications.findAllByOrderByCreatedAtDesc();}
 
+ @GetMapping("/invitation-bulk-requests") public List<InvitationBulkRequest> invitationBulkRequests(){return invitationBulkRequests.findAllByOrderByCreatedAtDesc();}
+ @PutMapping("/invitation-bulk-requests/{id}") public InvitationBulkRequest updateInvitationBulkRequest(@PathVariable String id,@RequestBody BulkRequestUpdate request){var item=invitationBulkRequests.findById(id).orElseThrow();item.setStatus(request.status());item.setAdminNote(request.adminNote());item.setUpdatedAt(Instant.now());return invitationBulkRequests.save(item);}
+
  @PostMapping("/careers/applications/{id}/approve")
  public CareerApplication approveCareerApplication(@PathVariable String id,@Valid @RequestBody CareerApproval request){
   var application=careerApplications.findById(id).orElseThrow();
@@ -148,4 +152,5 @@ public class AdminController {
  public record CareerCampaignUpdate(@jakarta.validation.constraints.NotBlank String title,@jakarta.validation.constraints.NotBlank String summary,boolean active,@jakarta.validation.constraints.Min(1) @jakarta.validation.constraints.Max(90) int defaultDiscountPercent,@jakarta.validation.constraints.PositiveOrZero int defaultCommissionPaise,@jakarta.validation.constraints.Positive int monthlyEarningCapPaise){}
  public record CareerApproval(@jakarta.validation.constraints.Pattern(regexp="[A-Za-z0-9_-]{4,30}") String couponCode,@jakarta.validation.constraints.Min(1) @jakarta.validation.constraints.Max(90) int discountPercent,@jakarta.validation.constraints.PositiveOrZero int commissionPaisePerUse,String adminNote){}
  public record CareerDecision(String adminNote){}
+ public record BulkRequestUpdate(String status,String adminNote){}
 }

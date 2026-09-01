@@ -106,6 +106,7 @@ type CareerApplication = {
   adminNote: string | null;
   createdAt: string;
 };
+type InvitationBulkRequest = {id:string;name:string;email:string;phone:string;quantity:number;eventType:string;message:string|null;status:string;adminNote:string|null;createdAt:string};
 type Tab =
   | "overview"
   | "coupons"
@@ -115,6 +116,7 @@ type Tab =
   | "orders"
   | "users"
   | "careers"
+  | "bulk-invitations"
   | "settings";
 type CouponForm = {
   code: string;
@@ -185,6 +187,7 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
   const [careerApplications, setCareerApplications] = useState<
     CareerApplication[]
   >([]);
+  const [bulkInvitationRequests,setBulkInvitationRequests]=useState<InvitationBulkRequest[]>([]);
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState("");
   const [couponForm, setCouponForm] = useState(emptyCoupon);
@@ -204,6 +207,7 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
         userRows,
         careerCampaignRow,
         careerApplicationRows,
+        bulkInvitationRows,
       ] = await Promise.all([
         request<Overview>("/api/admin/overview"),
         request<Coupon[]>("/api/admin/coupons"),
@@ -214,6 +218,7 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
         request<User[]>("/api/admin/users"),
         request<CareerCampaign>("/api/admin/careers/campaign"),
         request<CareerApplication[]>("/api/admin/careers/applications"),
+        request<InvitationBulkRequest[]>("/api/admin/invitation-bulk-requests"),
       ]);
       setOverview(summary);
       setCoupons(couponRows);
@@ -224,6 +229,7 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
       setUsers(userRows);
       setCareerCampaign(careerCampaignRow);
       setCareerApplications(careerApplicationRows);
+      setBulkInvitationRequests(bulkInvitationRows);
       setAuthState("ready");
     } catch (error) {
       setAuthState(
@@ -450,6 +456,7 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
         { id: "orders", icon: "₹", label: "Orders" },
         { id: "users", icon: "◎", label: "Users" },
         { id: "careers", icon: "↗", label: "Careers" },
+        { id: "bulk-invitations", icon: "✉", label: "Bulk invitations" },
         { id: "settings", icon: "⚙", label: "Integrations" },
       ] as { id: Tab; icon: string; label: string }[],
     [],
@@ -1215,6 +1222,15 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
                   )}
                 </article>
               ))}
+            </div>
+          </section>
+        )}
+        {tab === "bulk-invitations" && (
+          <section className="admin-section">
+            <div className="admin-section-head"><div><small>SALES LEADS</small><h2>Bulk invitation requests</h2><p>Contact customers and track every discounted bulk enquiry.</p></div><b>{bulkInvitationRequests.filter(item=>item.status==="PENDING").length} new</b></div>
+            <div className="career-applications bulk-request-admin">
+              {bulkInvitationRequests.length===0&&<p>No bulk requests yet.</p>}
+              {bulkInvitationRequests.map(item=><article key={item.id}><div><small>{new Date(item.createdAt).toLocaleString()}</small><h3>{item.name} · {item.quantity} invitations</h3><p><b>{item.eventType}</b> · <a href={`mailto:${item.email}`}>{item.email}</a> · <a href={`tel:${item.phone}`}>{item.phone}</a></p>{item.message&&<p>{item.message}</p>}<label>Admin note<textarea defaultValue={item.adminNote||""} id={`bulk-note-${item.id}`}/></label><div className="career-actions"><button onClick={async()=>{const note=(document.getElementById(`bulk-note-${item.id}`) as HTMLTextAreaElement)?.value||"";await request(`/api/admin/invitation-bulk-requests/${item.id}`,{method:"PUT",body:JSON.stringify({status:"CONTACTED",adminNote:note})});setNotice(`${item.name} marked contacted.`);await load()}}>Mark contacted</button><button onClick={async()=>{await request(`/api/admin/invitation-bulk-requests/${item.id}`,{method:"PUT",body:JSON.stringify({status:"CLOSED",adminNote:item.adminNote||""})});await load()}}>Close</button><span>{item.status}</span></div></div></article>)}
             </div>
           </section>
         )}
