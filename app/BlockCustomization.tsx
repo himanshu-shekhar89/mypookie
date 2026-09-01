@@ -1794,6 +1794,13 @@ function MemoryEditor({
               <img src={item.image} alt="Uploaded memory" />
             )}
             <div className="scrapbook-page-fields">
+              <button
+                type="button"
+                className={`memory-cover-choice ${config.coverImage === item.image ? "active" : ""}`}
+                onClick={() => onConfig("coverImage", item.image)}
+              >
+                {config.coverImage === item.image ? "✓ Cover photo" : "Set as cover"}
+              </button>
               {item.images && item.images.length > 1 && (
                 <label>
                   Collage layout

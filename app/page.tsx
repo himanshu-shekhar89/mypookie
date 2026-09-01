@@ -1862,6 +1862,7 @@ export default function Home() {
             <a href="#ideas">Gift ideas</a>
             <a className="nav-celebrations" href="/celebrations">Celebrations <span>new</span></a>
             <a href="/invitations">Invitations</a>
+            <a href="/careers">Careers</a>
             <a href="#pricing">Pricing</a>
           </div>
           <AccountMenu
@@ -1999,6 +2000,15 @@ export default function Home() {
             <div className="home-made-note"><small>MADE FROM YOUR MEMORIES</small><strong>not picked from a shelf</strong></div>
           </div>
         </section>
+        <section className="home-invitations-spotlight">
+          <div>
+            <span>NEW · MYPOOKIE INVITATIONS</span>
+            <h2>Not just gifts. Invite everyone to the big moments, beautifully.</h2>
+            <p>Create one shareable invitation for a wedding, engagement, celebration or an event entirely your own—with every ceremony, date, venue and photo together.</p>
+            <a href="/invitations">Explore invitations <b>→</b></a>
+          </div>
+          <div className="home-invite-mini-cards" aria-hidden="true"><i>शुभ</i><i>♡</i><i>✦</i></div>
+        </section>
         <section
           className="occasion-strip"
           aria-label="Preview gifts by occasion"
@@ -2116,6 +2126,7 @@ export default function Home() {
             <a href="/#how">How it works</a>
             <a href="/#ideas">Gift ideas</a>
             <a href="/invitations">Invitations</a>
+            <a href="/careers">Careers</a>
             <a href="/#pricing">Pricing</a>
           </div>
           <AccountMenu
