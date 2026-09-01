@@ -1537,6 +1537,7 @@ function MemoryEditor({
   const [captionState, setCaptionState] = useState<
     "idle" | "loading" | "done" | "error"
   >("idle");
+  const [captioningIndex, setCaptioningIndex] = useState<number | null>(null);
   const [pendingBatch, setPendingBatch] = useState<
     { file: File; preview: string }[]
   >([]);
@@ -1545,17 +1546,17 @@ function MemoryEditor({
   const maxPages = upgraded ? 12 : 7;
   const items = storedItems.slice(0, maxPages);
   const remaining = Math.max(0, maxPages - items.length);
-  const pageAnimations = [
-    ["Polaroid pop", "▱"],
-    ["Soft zoom", "◎"],
-    ["Film slide", "→"],
-    ["Sparkle reveal", "✦"],
-    ["Page curl", "◩"],
-    ["Photo scatter", "⌁"],
-    ["Crossfade", "◌"],
-    ["Flip book", "↶"],
-    ["Wash reveal", "▨"],
-    ["Ken Burns", "⌕"],
+  const albumAnimations = [
+    ["Gentle pop", "▱", "Photos softly pop into place"],
+    ["Soft zoom", "◎", "A calm cinematic zoom"],
+    ["Film slide", "→", "Memories slide in like film"],
+    ["Sparkle reveal", "✦", "A little sparkle on every page"],
+  ];
+  const scrapbookBorders = [
+    ["None", "□"],
+    ["Tiny hearts", "♡"],
+    ["Pressed flowers", "✿"],
+    ["Golden stars", "✦"],
   ];
   function clearPendingBatch() {
     pendingBatch.forEach((item) => URL.revokeObjectURL(item.preview));
@@ -1570,8 +1571,6 @@ function MemoryEditor({
         image: await imageToDataUrl(file),
         caption: file.name.replace(/\.[^.]+$/, ""),
         note: "",
-        arrow: "Curve right",
-        animation: "Polaroid pop",
       })),
     );
     onConfig(
@@ -1599,8 +1598,6 @@ function MemoryEditor({
             : "Four-photo grid",
       caption: "A collage of us",
       note: "",
-      arrow: "Curve right",
-      animation: "Polaroid pop",
     };
     onConfig(
       "memoryItems",
@@ -1620,10 +1617,6 @@ function MemoryEditor({
     setPendingBatch(
       chosen.map((file) => ({ file, preview: URL.createObjectURL(file) })),
     );
-  }
-  async function cover(files: FileList | null) {
-    const file = files?.[0];
-    if (file) onConfig("coverImage", await imageToDataUrl(file));
   }
   function patch(index: number, key: keyof MemoryItem, value: string) {
     onConfig(
@@ -1681,124 +1674,46 @@ function MemoryEditor({
       setCaptionState("error");
     }
   }
+  async function fillOneCaption(index: number) {
+    if (captioningIndex !== null) return;
+    setCaptioningIndex(index);
+    try {
+      const api = process.env.NEXT_PUBLIC_API_URL || "https://backend-production-22bd.up.railway.app";
+      const response = await fetch(`${api}/api/ai/playful-prompts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+        body: JSON.stringify({
+          gameType: "memorycaptions",
+          relationship: `A personal scrapbook photo currently labelled: ${items[index].caption || "a beautiful shared memory"}`,
+          tone: "short, warm, affectionate and natural",
+          count: 1,
+        }),
+      });
+      if (!response.ok) throw new Error();
+      const data = (await response.json()) as { items?: { prompt?: string }[] };
+      const caption = (data.items?.[0]?.prompt || "").trim();
+      if (!caption) throw new Error();
+      patch(index, "caption", caption.slice(0, 65));
+    } catch {
+      setCaptionState("error");
+    } finally {
+      setCaptioningIndex(null);
+    }
+  }
   return (
     <CustomizationSection
       title="Scrapbook album"
-      hint="Design every page with photos, words, arrows and motion"
+      hint="Add photos, pick a border and choose how the album moves"
     >
-      <div className="memory-cover-note">
-        <img
-          src={config.coverImage || "/mypookie-letter-photo.png"}
-          alt="Memory book cover"
-        />
-        <div>
-          <strong>Your cover</strong>
-          <span>Shown first when the memory lane opens.</span>
-        </div>
-      </div>
-      <UploadBox
-        label="Customize cover photo"
-        note="The complete photo will stay visible"
-        accept="image/*"
-        onFiles={cover}
-      />
-      <label className="field">
-        Cover caption
-        <input
-          maxLength={65}
-          value={config.coverCaption || "Our little book of us"}
-          onChange={(event) => onConfig("coverCaption", event.target.value)}
-        />
-      </label>
-      <label className="field">
-        Album style
-        <select
-          value={config.albumStyle || "Blush scrapbook"}
-          onChange={(event) => {
-            const next = event.target.value;
-            const dark = [
-              "Midnight love story",
-              "Luxury leather album",
-              "Celestial night",
-            ];
-            onConfig("albumStyle", next);
-            if (
-              dark.includes(next) &&
-              (!config.albumTextColor || config.albumTextColor === "#49343e")
-            )
-              onConfig("albumTextColor", "#f8eef3");
-            else if (
-              !dark.includes(next) &&
-              config.albumTextColor === "#f8eef3"
-            )
-              onConfig("albumTextColor", "#49343e");
-          }}
-        >
-          <option>Blush scrapbook</option>
-          <option>Retro travel album</option>
-          <option>Midnight love story</option>
-          <option>Playful sticker book</option>
-          <option>Pressed flower journal</option>
-          <option>Luxury leather album</option>
-          <option>Minimal linen book</option>
-          <option>Celestial night</option>
-          <option>Vintage botanical</option>
-        </select>
-      </label>
-      <div className="memory-typography-grid">
-        <label className="field">
-          Album font
-          <select
-            value={config.albumFont || "Handwritten"}
-            onChange={(event) => onConfig("albumFont", event.target.value)}
-          >
-            <option>Handwritten</option>
-            <option>Romantic script</option>
-            <option>Elegant serif</option>
-            <option>Vintage typewriter</option>
-            <option>Clean modern</option>
-          </select>
-        </label>
-        <label className="field color-field">
-          Text colour
-          <span>
-            <input
-              type="color"
-              value={config.albumTextColor || "#49343e"}
-              onChange={(event) =>
-                onConfig("albumTextColor", event.target.value)
-              }
-            />
-            <b>{config.albumTextColor || "#49343e"}</b>
-          </span>
-        </label>
-      </div>
       <div className="album-page-meter">
         <div>
           <strong>
             {items.length} / {maxPages} album pages
           </strong>
-          <span>The cover is separate and free.</span>
+          <span>Each photo becomes one scrapbook page.</span>
         </div>
         <b>{remaining} left</b>
       </div>
-      <label className="album-upgrade">
-        <input
-          type="checkbox"
-          checked={upgraded}
-          onChange={(event) => {
-            onConfig("extraPages", String(event.target.checked));
-            if (!event.target.checked && items.length > 7)
-              onConfig("memoryItems", JSON.stringify(items.slice(0, 7)));
-          }}
-        />
-        <span>＋5</span>
-        <div>
-          <strong>Add five more album pages</strong>
-          <small>Increase the limit from 7 to 12 pages.</small>
-        </div>
-        <b>₹20</b>
-      </label>
       <div className={remaining === 0 ? "upload-disabled" : ""}>
         <UploadBox
           label="Add memory photos"
@@ -1858,6 +1773,28 @@ function MemoryEditor({
           </div>
         </section>
       )}
+      <section className="memory-simple-style">
+        <div>
+          <small>ALBUM ANIMATION</small>
+          <strong>How should memories appear?</strong>
+          <div className="memory-simple-options animation-options">
+            {albumAnimations.map(([label, icon, description]) => (
+              <button key={label} className={(config.albumAnimation || "Gentle pop") === label ? "active" : ""} onClick={() => onConfig("albumAnimation", label)}>
+                <i>{icon}</i><span><b>{label}</b><small>{description}</small></span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <small>SCRAPBOOK BORDER</small>
+          <strong>Add a little decoration</strong>
+          <div className="memory-simple-options border-options">
+            {scrapbookBorders.map(([label, icon]) => (
+              <button key={label} className={(config.scrapbookBorder || "Tiny hearts") === label ? "active" : ""} onClick={() => onConfig("scrapbookBorder", label)}><i>{icon}</i><b>{label}</b></button>
+            ))}
+          </div>
+        </div>
+      </section>
       <div className="memory-ai-captions">
         <span>✦</span>
         <div>
@@ -1917,62 +1854,9 @@ function MemoryEditor({
                   </select>
                 </label>
               )}
-              <label>
-                Photo caption
-                <input
-                  maxLength={65}
-                  value={item.caption}
-                  onChange={(event) =>
-                    patch(index, "caption", event.target.value)
-                  }
-                />
-              </label>
-              <label>
-                Handwritten text
-                <textarea
-                  rows={2}
-                  maxLength={140}
-                  value={item.note || ""}
-                  onChange={(event) => patch(index, "note", event.target.value)}
-                  placeholder="Add a date, joke or tiny memory…"
-                />
-              </label>
-              <div>
-                <label>
-                  Curved arrow
-                  <select
-                    value={item.arrow || "Curve right"}
-                    onChange={(event) =>
-                      patch(index, "arrow", event.target.value)
-                    }
-                  >
-                    <option>Curve right</option>
-                    <option>Curve left</option>
-                    <option>Loop around</option>
-                    <option>None</option>
-                  </select>
-                </label>
-                <div className="memory-animation-picker">
-                  <span>Page animation</span>
-                  <div>
-                    {pageAnimations.map(([label, icon]) => (
-                      <button
-                        type="button"
-                        key={label}
-                        className={
-                          (item.animation || "Polaroid pop") === label
-                            ? "active"
-                            : ""
-                        }
-                        onClick={() => patch(index, "animation", label)}
-                        title={label}
-                      >
-                        <i>{icon}</i>
-                        <small>{label}</small>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+              <div className="memory-caption-row">
+                <label>Short caption<input maxLength={65} value={item.caption} onChange={(event) => patch(index, "caption", event.target.value)} placeholder="A tiny line for this memory…" /></label>
+                <button type="button" disabled={captioningIndex !== null} onClick={() => void fillOneCaption(index)}>✦ {captioningIndex === index ? "Writing…" : "AI caption"}</button>
               </div>
             </div>
             <button

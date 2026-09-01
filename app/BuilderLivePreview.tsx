@@ -1595,13 +1595,13 @@ function MemoryBook({
   const albumFont = (config.albumFont || "Handwritten")
     .toLowerCase()
     .replaceAll(" ", "-");
-  const animation = (current.animation || "Polaroid pop")
+  const animation = (config.albumAnimation || "Gentle pop")
     .toLowerCase()
     .replaceAll(" ", "-");
   const pageImages = current.images?.length ? current.images : [current.image];
   return (
     <div
-      className={`memory-book scrapbook-album album-${style} album-font-${albumFont}`}
+      className={`memory-book scrapbook-album album-${style} album-font-${albumFont} border-${(config.scrapbookBorder || "Tiny hearts").toLowerCase().replaceAll(" ", "-")}`}
       style={
         {
           "--album-ink": config.albumTextColor || "#49343e",
@@ -1645,12 +1645,12 @@ function MemoryBook({
           <strong>{current.caption}</strong>
           {current.note && <p>{current.note}</p>}
         </div>
-        {page > 0 && current.arrow !== "None" && (
-          <span
-            className={`scrapbook-arrow arrow-${(current.arrow || "Curve right").toLowerCase().replaceAll(" ", "-")}`}
-          >
-            ↝
-          </span>
+        {config.scrapbookBorder !== "None" && (
+          <div className="scrapbook-decorative-border" aria-hidden="true">
+            {Array.from({ length: 14 }, (_, index) => (
+              <i key={index}>{config.scrapbookBorder === "Pressed flowers" ? "✿" : config.scrapbookBorder === "Golden stars" ? "✦" : "♡"}</i>
+            ))}
+          </div>
         )}
         <div className="album-stickers" aria-hidden="true">
           <i>♡</i>
