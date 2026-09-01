@@ -8,6 +8,7 @@ import {
   type CSSProperties,
 } from "react";
 import { authHeaders } from "../authClient";
+import { loadRazorpay, type RazorpayResult } from "../CheckoutPage";
 import "./invitations.css";
 import "./invitations-v2.css";
 import "./invitations-v3.css";
@@ -524,14 +525,71 @@ export default function Invitations() {
       )
         throw new Error("Invitation could not be saved.");
       if (publish) {
-        const r = await fetch(
-          `${api}/api/invitations/${invitationId}/publish`,
+        const orderResponse = await fetch(
+          `${api}/api/invitations/${invitationId}/payment-order`,
           { method: "POST", headers: await authHeaders() },
         );
-        if (!r.ok) throw new Error("Invitation could not be published.");
-        setShare(
-          `${window.location.origin}/invitations?invite=${(await r.json()).shareToken}`,
-        );
+        if (!orderResponse.ok)
+          throw new Error("Secure payment could not be started.");
+        const order = await orderResponse.json();
+        if (order.paid && order.shareToken) {
+          setShare(
+            `${window.location.origin}/invitations?invite=${order.shareToken}`,
+          );
+          return;
+        }
+        const ready = await loadRazorpay();
+        if (!ready || !window.Razorpay)
+          throw new Error("Razorpay Checkout could not be loaded.");
+        await new Promise<void>((resolve, reject) => {
+          const checkout = new window.Razorpay({
+            key: order.keyId,
+            amount: order.amountPaise,
+            currency: order.currency,
+            name: "mypookie.",
+            description: `Invitation for ${details.couple}`,
+            order_id: order.providerOrderId,
+            theme: { color: "#b6305a" },
+            handler: async (result: RazorpayResult) => {
+              try {
+                const verified = await fetch(
+                  `${api}/api/invitations/${invitationId}/payment-verify`,
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      ...(await authHeaders()),
+                    },
+                    body: JSON.stringify({
+                      razorpayOrderId: result.razorpay_order_id,
+                      razorpayPaymentId: result.razorpay_payment_id,
+                      razorpaySignature: result.razorpay_signature,
+                    }),
+                  },
+                );
+                if (!verified.ok) throw new Error();
+                const published = await verified.json();
+                setShare(
+                  `${window.location.origin}/invitations?invite=${published.shareToken}`,
+                );
+                resolve();
+              } catch {
+                reject(new Error("Payment could not be verified."));
+              }
+            },
+            modal: {
+              ondismiss: () => reject(new Error("Payment was cancelled.")),
+            },
+          });
+          checkout.on("payment.failed", (response) =>
+            reject(
+              new Error(
+                response.error?.description || "Payment was not completed.",
+              ),
+            ),
+          );
+          checkout.open();
+        });
       }
     } catch (e) {
       alert(e instanceof Error ? e.message : "Please try again.");
@@ -692,7 +750,13 @@ export default function Invitations() {
                       key={name}
                       onClick={() => {
                         if (selectedIndex >= 0) {
-                          setPage(selectedIndex + 1);
+                          setDetails({
+                            ...details,
+                            events: details.events.filter(
+                              (_, index) => index !== selectedIndex,
+                            ),
+                          });
+                          setPage(0);
                           return;
                         }
                         setDetails({
@@ -707,7 +771,13 @@ export default function Invitations() {
                     >
                       <Sticker kind={sticker} />
                       <span>{name}</span>
-                      <b>{selectedIndex >= 0 ? "✓" : "＋"}</b>
+                      <b
+                        aria-label={
+                          selectedIndex >= 0 ? "Remove event" : "Add event"
+                        }
+                      >
+                        {selectedIndex >= 0 ? "−" : "＋"}
+                      </b>
                     </button>
                   );
                 },

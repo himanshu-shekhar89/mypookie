@@ -45,7 +45,7 @@ declare global {
   }
 }
 
-function loadRazorpay() {
+export function loadRazorpay() {
   return new Promise<boolean>((resolve) => {
     if (window.Razorpay) {
       resolve(true);

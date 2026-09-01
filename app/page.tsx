@@ -1043,7 +1043,8 @@ export default function Home() {
         if (recipients.includes(saved.recipient as Recipient))
           setRecipient(saved.recipient as Recipient);
         if (typeof saved.name === "string") setName(saved.name);
-        if (typeof saved.senderName === "string") setSenderName(saved.senderName);
+        if (typeof saved.senderName === "string")
+          setSenderName(saved.senderName);
         if (typeof saved.occasion === "string") setOccasion(saved.occasion);
         if (saved.recipientGender !== undefined)
           setRecipientGender(saved.recipientGender);
@@ -1055,7 +1056,9 @@ export default function Home() {
         if (saved.soundtrack) setSoundtrack(saved.soundtrack);
         setGiftId(saved.giftId || null);
         if (saved.screen === "catalog") setScreen("catalog");
-        else if (["builder", "preview", "checkout"].includes(saved.screen || ""))
+        else if (
+          ["builder", "preview", "checkout"].includes(saved.screen || "")
+        )
           setScreen("builder");
       }
     } catch {
@@ -1739,14 +1742,20 @@ export default function Home() {
           "Content-Type": "application/json",
           ...(await authHeaders()),
         },
-        body: JSON.stringify({ couponCode: coupon, subtotalPaise: subtotal * 100 }),
+        body: JSON.stringify({
+          couponCode: coupon,
+          subtotalPaise: subtotal * 100,
+        }),
       });
       if (!response.ok) {
-        const problem = (await response.json().catch(() => null)) as
-          | { detail?: string; message?: string }
-          | null;
+        const problem = (await response.json().catch(() => null)) as {
+          detail?: string;
+          message?: string;
+        } | null;
         throw new Error(
-          problem?.detail || problem?.message || "This coupon could not be applied.",
+          problem?.detail ||
+            problem?.message ||
+            "This coupon could not be applied.",
         );
       }
       return (await response.json()) as {
@@ -1860,7 +1869,9 @@ export default function Home() {
           <div className="nav-links">
             <a href="#how">How it works</a>
             <a href="#ideas">Gift ideas</a>
-            <a className="nav-celebrations" href="/celebrations">Celebrations <span>new</span></a>
+            <a className="nav-celebrations" href="/celebrations">
+              Celebrations <span>new</span>
+            </a>
             <a href="/invitations">Invitations</a>
             <a href="/careers">Careers</a>
             <a href="#pricing">Pricing</a>
@@ -1915,7 +1926,11 @@ export default function Home() {
             </div>
           </div>
           <div className="hero-art">
-            <img className="home-keepsake-art" src="/home/keepsake-hero.png" alt="A personalized gift made from photos, flowers, a letter and a phone" />
+            <img
+              className="home-keepsake-art"
+              src="/home/keepsake-hero.png"
+              alt="A personalized gift made from photos, flowers, a letter and a phone"
+            />
             <div className="orbit orbit-one" />
             <div className="orbit orbit-two" />
             <div className={`phone phone-stage-${heroStage}`}>
@@ -1997,17 +2012,32 @@ export default function Home() {
                 <strong>A surprise awaits</strong>
               </div>
             </div>
-            <div className="home-made-note"><small>MADE FROM YOUR MEMORIES</small><strong>not picked from a shelf</strong></div>
+            <div className="home-made-note">
+              <small>MADE FROM YOUR MEMORIES</small>
+              <strong>not picked from a shelf</strong>
+            </div>
           </div>
         </section>
         <section className="home-invitations-spotlight">
           <div>
             <span>NEW · MYPOOKIE INVITATIONS</span>
-            <h2>Not just gifts. Invite everyone to the big moments, beautifully.</h2>
-            <p>Create one shareable invitation for a wedding, engagement, celebration or an event entirely your own—with every ceremony, date, venue and photo together.</p>
-            <a href="/invitations">Explore invitations <b>→</b></a>
+            <h2>
+              Not just gifts. Invite everyone to the big moments, beautifully.
+            </h2>
+            <p>
+              Create one shareable invitation for a wedding, engagement,
+              celebration or an event entirely your own—with every ceremony,
+              date, venue and photo together.
+            </p>
+            <a href="/invitations">
+              Explore invitations <b>→</b>
+            </a>
           </div>
-          <div className="home-invite-mini-cards" aria-hidden="true"><i>शुभ</i><i>♡</i><i>✦</i></div>
+          <div className="home-invite-mini-cards" aria-hidden="true">
+            <i>शुभ</i>
+            <i>♡</i>
+            <i>✦</i>
+          </div>
         </section>
         <section
           className="occasion-strip"
@@ -2038,21 +2068,72 @@ export default function Home() {
         <section className="home-celebrations" id="celebrations">
           <div className="home-celebrations-copy">
             <div className="section-kicker">CELEBRATIONS, MADE PERSONAL</div>
-            <h2>Every date has a story.<br /><em>Make yours unforgettable.</em></h2>
-            <p>Start with a beautifully designed occasion, then fill it with the tiny things only the two of you understand.</p>
-            <div className="home-celebration-chips"><span>Birthdays</span><span>Anniversaries</span><span>Friendship</span><span>Festivals</span></div>
-            <a className="home-celebration-cta" href="/celebrations">Explore celebrations <b>→</b></a>
+            <h2>
+              Every date has a story.
+              <br />
+              <em>Make yours unforgettable.</em>
+            </h2>
+            <p>
+              Start with a beautifully designed occasion, then fill it with the
+              tiny things only the two of you understand.
+            </p>
+            <div className="home-celebration-chips">
+              <span>Birthdays</span>
+              <span>Anniversaries</span>
+              <span>Friendship</span>
+              <span>Festivals</span>
+            </div>
+            <a className="home-celebration-cta" href="/celebrations">
+              Explore celebrations <b>→</b>
+            </a>
           </div>
           <div className="home-celebrations-art">
             <div className="home-art-halo" />
-            <img src="/home/celebration-postcards.png" alt="Illustrated postcards for birthdays, anniversaries, Raksha Bandhan and friendship" />
-            <a className="festival-float-card" href="/celebrations/rakhi-bhai-dooj"><span>✦ FESTIVAL SPOTLIGHT</span><strong>Raksha Bandhan<br />& Bhai Dooj</strong><small>Explore the sibling theme →</small></a>
+            <img
+              src="/home/celebration-postcards.png"
+              alt="Illustrated postcards for birthdays, anniversaries, Raksha Bandhan and friendship"
+            />
+            <a
+              className="festival-float-card"
+              href="/celebrations/rakhi-bhai-dooj"
+            >
+              <span>✦ FESTIVAL SPOTLIGHT</span>
+              <strong>
+                Raksha Bandhan
+                <br />& Bhai Dooj
+              </strong>
+              <small>Explore the sibling theme →</small>
+            </a>
           </div>
         </section>
-        <section className="home-feeling-strip" aria-label="Ways to make a gift feel personal">
-          <article><i>✉</i><div><small>SAY IT BEAUTIFULLY</small><strong>Letters that unfold</strong><p>Write what a store-bought card never could.</p></div></article>
-          <article><i>▦</i><div><small>MAKE IT PLAYFUL</small><strong>Memories they unlock</strong><p>Photos become puzzles, games and tiny reveals.</p></div></article>
-          <article><i>♫</i><div><small>SET THE MOOD</small><strong>A world that sounds like you</strong><p>Add the song that belongs to your story.</p></div></article>
+        <section
+          className="home-feeling-strip"
+          aria-label="Ways to make a gift feel personal"
+        >
+          <article>
+            <i>✉</i>
+            <div>
+              <small>SAY IT BEAUTIFULLY</small>
+              <strong>Letters that unfold</strong>
+              <p>Write what a store-bought card never could.</p>
+            </div>
+          </article>
+          <article>
+            <i>▦</i>
+            <div>
+              <small>MAKE IT PLAYFUL</small>
+              <strong>Memories they unlock</strong>
+              <p>Photos become puzzles, games and tiny reveals.</p>
+            </div>
+          </article>
+          <article>
+            <i>♫</i>
+            <div>
+              <small>SET THE MOOD</small>
+              <strong>A world that sounds like you</strong>
+              <p>Add the song that belongs to your story.</p>
+            </div>
+          </article>
         </section>
         <LandingShowcase />
         <section className="how" id="how">
@@ -2242,12 +2323,18 @@ export default function Home() {
               </select>
             </label>
           </div>
-          <aside className="catalog-story-preview" aria-label="Your gift story preview">
+          <aside
+            className="catalog-story-preview"
+            aria-label="Your gift story preview"
+          >
             <div className="catalog-preview-orbit" />
             <span className="catalog-preview-number">01</span>
             <small>A LITTLE WORLD FOR</small>
             <h2>{name || "Someone special"}</h2>
-            <img src="/letters/envelopes/blush-botanical.webp" alt="A handmade sealed envelope" />
+            <img
+              src="/letters/envelopes/blush-botanical.webp"
+              alt="A handmade sealed envelope"
+            />
             <div>
               <b>{recipient}</b>
               <span>·</span>
@@ -2526,7 +2613,9 @@ export default function Home() {
   }
 
   return (
-    <main className={`builder-page ${mobileCustomizerOpen ? "mobile-customizer-open" : ""}`}>
+    <main
+      className={`builder-page ${mobileCustomizerOpen ? "mobile-customizer-open" : ""}`}
+    >
       {signInPopup}
       <header className="app-header builder-header">
         <div className="builder-brand-row">
@@ -2665,116 +2754,129 @@ export default function Home() {
                           };
                       return (
                         <div className="mobile-activity-group" key={item.id}>
-                        <div
-                          className={`activity-choice ${isSelected ? "selected" : ""} ${isActive ? "active" : ""}`}
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => {
-                            if (isSelected) {
-                              setLibraryPreview(null);
-                              setActive(selectedIndex);
-                            } else setLibraryPreview(item);
-                          }}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter" || event.key === " ") {
-                              event.preventDefault();
+                          <div
+                            className={`activity-choice ${isSelected ? "selected" : ""} ${isActive ? "active" : ""}`}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => {
                               if (isSelected) {
                                 setLibraryPreview(null);
                                 setActive(selectedIndex);
                               } else setLibraryPreview(item);
-                            }
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onClick={(event) => event.stopPropagation()}
-                            onChange={(event) =>
-                              setActivitySelected(item, event.target.checked)
-                            }
-                            aria-label={`${isSelected ? "Remove" : "Add"} ${item.name}`}
-                          />
-                          <span
-                            className="activity-check"
-                            role="checkbox"
-                            aria-checked={isSelected}
-                            tabIndex={0}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setActivitySelected(item, !isSelected);
                             }}
                             onKeyDown={(event) => {
                               if (event.key === "Enter" || event.key === " ") {
                                 event.preventDefault();
-                                event.stopPropagation();
-                                setActivitySelected(item, !isSelected);
+                                if (isSelected) {
+                                  setLibraryPreview(null);
+                                  setActive(selectedIndex);
+                                } else setLibraryPreview(item);
                               }
                             }}
                           >
-                            {isSelected ? "✓" : ""}
-                          </span>
-                          <i className={item.color}>{item.icon}</i>
-                          <span className="activity-copy">
-                            <strong>{item.name}</strong>
-                            <small>{item.description}</small>
-                          </span>
-                          <b>
-                            {isActive
-                              ? "LIVE"
-                              : isSelected
-                                ? "SELECTED"
-                                : `₹${item.price}`}
-                          </b>
-                        </div>
-                        {isMobilePreview && (
-                          <section
-                            className="mobile-inline-preview"
-                            aria-label={`${item.name} live preview`}
-                          >
-                            <header>
-                              <div>
-                                <small>{isSelected ? "ADDED TO YOUR GIFT" : "TRY IT FIRST"}</small>
-                                <strong>{item.name}</strong>
-                              </div>
-                              <span><i /> Live</span>
-                            </header>
-                            <div className="mobile-preview-canvas">
-                              <BuilderLivePreview
-                                key={`mobile-${previewBlock.instanceId || previewBlock.id}-${builderPreviewNonce}`}
-                                block={previewBlock}
-                                name={name}
-                                senderName={senderName.trim() || "Someone special"}
-                                theme={theme}
-                                ambience={ambience}
-                                giftId={giftId || undefined}
-                              />
-                            </div>
-                            <div className="mobile-preview-actions">
-                              <button
-                                className="mobile-add-action"
-                                onClick={(event) => {
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onClick={(event) => event.stopPropagation()}
+                              onChange={(event) =>
+                                setActivitySelected(item, event.target.checked)
+                              }
+                              aria-label={`${isSelected ? "Remove" : "Add"} ${item.name}`}
+                            />
+                            <span
+                              className="activity-check"
+                              role="checkbox"
+                              aria-checked={isSelected}
+                              tabIndex={0}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setActivitySelected(item, !isSelected);
+                              }}
+                              onKeyDown={(event) => {
+                                if (
+                                  event.key === "Enter" ||
+                                  event.key === " "
+                                ) {
+                                  event.preventDefault();
                                   event.stopPropagation();
                                   setActivitySelected(item, !isSelected);
-                                }}
-                              >
-                                {isSelected ? "✓ Added" : `＋ Add for ₹${item.price}`}
-                              </button>
-                              {isSelected && (
+                                }
+                              }}
+                            >
+                              {isSelected ? "✓" : ""}
+                            </span>
+                            <i className={item.color}>{item.icon}</i>
+                            <span className="activity-copy">
+                              <strong>{item.name}</strong>
+                              <small>{item.description}</small>
+                            </span>
+                            <b>
+                              {isActive
+                                ? "LIVE"
+                                : isSelected
+                                  ? "SELECTED"
+                                  : `₹${item.price}`}
+                            </b>
+                          </div>
+                          {isMobilePreview && (
+                            <section
+                              className="mobile-inline-preview"
+                              aria-label={`${item.name} live preview`}
+                            >
+                              <header>
+                                <div>
+                                  <small>
+                                    {isSelected
+                                      ? "ADDED TO YOUR GIFT"
+                                      : "TRY IT FIRST"}
+                                  </small>
+                                  <strong>{item.name}</strong>
+                                </div>
+                                <span>
+                                  <i /> Live
+                                </span>
+                              </header>
+                              <div className="mobile-preview-canvas">
+                                <BuilderLivePreview
+                                  key={`mobile-${previewBlock.instanceId || previewBlock.id}-${builderPreviewNonce}`}
+                                  block={previewBlock}
+                                  name={name}
+                                  senderName={
+                                    senderName.trim() || "Someone special"
+                                  }
+                                  theme={theme}
+                                  ambience={ambience}
+                                  giftId={giftId || undefined}
+                                />
+                              </div>
+                              <div className="mobile-preview-actions">
                                 <button
-                                  className="mobile-customize-action"
+                                  className="mobile-add-action"
                                   onClick={(event) => {
                                     event.stopPropagation();
-                                    setLibraryPreview(null);
-                                    setActive(selectedIndex);
-                                    setMobileCustomizerOpen(true);
+                                    setActivitySelected(item, !isSelected);
                                   }}
                                 >
-                                  Customize <span>→</span>
+                                  {isSelected
+                                    ? "✓ Added"
+                                    : `＋ Add for ₹${item.price}`}
                                 </button>
-                              )}
-                            </div>
-                          </section>
-                        )}
+                                {isSelected && (
+                                  <button
+                                    className="mobile-customize-action"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      setLibraryPreview(null);
+                                      setActive(selectedIndex);
+                                      setMobileCustomizerOpen(true);
+                                    }}
+                                  >
+                                    Customize <span>→</span>
+                                  </button>
+                                )}
+                              </div>
+                            </section>
+                          )}
                         </div>
                       );
                     })}
@@ -3182,12 +3284,6 @@ function SignInPopup({
           onClick={() => void onSignIn("google")}
         >
           <b>G</b> Continue with Google
-        </button>
-        <button
-          className="provider-button apple"
-          onClick={() => void onSignIn("apple")}
-        >
-          <b>●</b> Continue with Apple
         </button>
         {error && <output className="signin-error">{error}</output>}
         <em>Authentication is secured by Firebase. Your gift stays private.</em>

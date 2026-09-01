@@ -29,4 +29,5 @@ app:
     key-secret: ${RAZORPAY_KEY_SECRET:}
   groq:
     api-key: ${GROQ_API_KEY:}
+    model: ${GROQ_MODEL:openai/gpt-oss-20b}
   gift-secret-key: ${GIFT_SECRET_KEY:}

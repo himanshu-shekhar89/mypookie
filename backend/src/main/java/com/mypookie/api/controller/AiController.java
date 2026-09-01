@@ -20,6 +20,9 @@ public class AiController {
     @Value("${app.groq.api-key:}")
     private String apiKey;
 
+    @Value("${app.groq.model:openai/gpt-oss-20b}")
+    private String model;
+
     public AiController(RestClient.Builder builder, ObjectMapper mapper) {
         this.client = builder.baseUrl("https://api.groq.com/openai/v1").build();
         this.mapper = mapper;
@@ -47,7 +50,7 @@ public class AiController {
             """.formatted(relationship, tone, topic);
 
         Map<String, Object> body = Map.of(
-            "model", "llama-3.3-70b-versatile",
+            "model", model,
             "temperature", 0.85,
             "response_format", Map.of("type", "json_object"),
             "messages", List.of(
@@ -216,7 +219,7 @@ public class AiController {
     }
     private ResponseEntity<?> generate(String prompt,String system,String rootKey){
         Map<String,Object> body=Map.of(
-            "model","llama-3.3-70b-versatile",
+            "model",model,
             "temperature",0.82,
             "response_format",Map.of("type","json_object"),
             "messages",List.of(Map.of("role","system","content",system+" Always return valid JSON."),Map.of("role","user","content",prompt))

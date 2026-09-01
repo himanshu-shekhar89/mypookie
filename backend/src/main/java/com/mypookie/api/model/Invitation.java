@@ -9,6 +9,10 @@ public class Invitation {
  @Column(nullable=false,length=160) private String title;
  @Column(nullable=false,length=40) private String tradition;
  @Column(name="details_json",nullable=false,columnDefinition="LONGTEXT") private String detailsJson;
+ @Column(name="provider_order_id",length=80) private String providerOrderId;
+ @Column(name="provider_payment_id",length=80) private String providerPaymentId;
+ @Column(name="amount_paise") private Integer amountPaise;
+ @Column(name="payment_status",length=24) private String paymentStatus;
  @Column(name="created_at",nullable=false) private Instant createdAt=Instant.now();
  @Column(name="updated_at",nullable=false) private Instant updatedAt=Instant.now();
 }
