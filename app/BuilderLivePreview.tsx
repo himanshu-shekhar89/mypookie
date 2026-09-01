@@ -1586,7 +1586,7 @@ function MemoryBook({
       window.requestAnimationFrame(() =>
         window.requestAnimationFrame(() => setTurning(false)),
       );
-    }, 300);
+    }, 180);
   }
   const current = pages[page];
   const style = (config.albumStyle || "Blush scrapbook")

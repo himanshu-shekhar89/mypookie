@@ -991,6 +991,7 @@ export default function Home() {
     useState<Block[]>(activities);
   const [catalogBundles, setCatalogBundles] = useState(bundles);
   const deepLinkApplied = useRef(false);
+  const [workspaceReady, setWorkspaceReady] = useState(false);
 
   useEffect(() => {
     if (!browserReady || deepLinkApplied.current) return;
@@ -1009,6 +1010,125 @@ export default function Home() {
     setTheme("Golden celebration");
     setScreen("catalog");
   }, [browserReady, urlParams]);
+
+  useEffect(() => {
+    if (!browserReady || workspaceReady) return;
+    if (
+      contributionGiftId ||
+      publicGiftToken ||
+      adminMode ||
+      urlParams?.get("start")
+    ) {
+      setWorkspaceReady(true);
+      return;
+    }
+    try {
+      const raw = window.localStorage.getItem("mypookie-workstation-v1");
+      if (raw) {
+        const saved = JSON.parse(raw) as {
+          screen?: string;
+          recipient?: Recipient;
+          name?: string;
+          recipientGender?: "Girl" | "Boy" | "Neutral" | "";
+          senderName?: string;
+          occasion?: string;
+          selected?: Block[];
+          selectedBundleId?: string | null;
+          active?: number;
+          theme?: string;
+          ambience?: string;
+          soundtrack?: typeof soundtrack;
+          giftId?: string | null;
+        };
+        if (recipients.includes(saved.recipient as Recipient))
+          setRecipient(saved.recipient as Recipient);
+        if (typeof saved.name === "string") setName(saved.name);
+        if (typeof saved.senderName === "string") setSenderName(saved.senderName);
+        if (typeof saved.occasion === "string") setOccasion(saved.occasion);
+        if (saved.recipientGender !== undefined)
+          setRecipientGender(saved.recipientGender);
+        if (Array.isArray(saved.selected)) setSelected(saved.selected);
+        setSelectedBundleId(saved.selectedBundleId || null);
+        setActive(Math.max(0, Number(saved.active) || 0));
+        if (typeof saved.theme === "string") setTheme(saved.theme);
+        if (typeof saved.ambience === "string") setAmbience(saved.ambience);
+        if (saved.soundtrack) setSoundtrack(saved.soundtrack);
+        setGiftId(saved.giftId || null);
+        if (saved.screen === "catalog") setScreen("catalog");
+        else if (["builder", "preview", "checkout"].includes(saved.screen || ""))
+          setScreen("builder");
+      }
+    } catch {
+      window.localStorage.removeItem("mypookie-workstation-v1");
+    } finally {
+      setWorkspaceReady(true);
+    }
+  }, [
+    adminMode,
+    browserReady,
+    contributionGiftId,
+    publicGiftToken,
+    urlParams,
+    workspaceReady,
+  ]);
+
+  useEffect(() => {
+    if (
+      !browserReady ||
+      !workspaceReady ||
+      contributionGiftId ||
+      publicGiftToken ||
+      adminMode ||
+      urlParams?.get("start")
+    )
+      return;
+    if (screen === "welcome") {
+      window.localStorage.removeItem("mypookie-workstation-v1");
+      return;
+    }
+    try {
+      window.localStorage.setItem(
+        "mypookie-workstation-v1",
+        JSON.stringify({
+          screen,
+          recipient,
+          name,
+          recipientGender,
+          senderName,
+          occasion,
+          selected,
+          selectedBundleId,
+          active,
+          theme,
+          ambience,
+          soundtrack,
+          giftId,
+        }),
+      );
+    } catch {
+      // Storage can be unavailable or full when users add large local photos.
+    }
+  }, [
+    active,
+    adminMode,
+    ambience,
+    browserReady,
+    contributionGiftId,
+    giftId,
+    name,
+    occasion,
+    publicGiftToken,
+    recipient,
+    recipientGender,
+    screen,
+    selected,
+    selectedBundleId,
+    senderName,
+    soundtrack,
+    theme,
+    urlParams,
+    workspaceReady,
+  ]);
 
   const subtotal = useMemo(() => {
     const base = selectedBundleId

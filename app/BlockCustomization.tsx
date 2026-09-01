@@ -847,18 +847,7 @@ function QuizEditor({
     >
       <div className="quiz-editor-toolbar">
         <span>{questions.length}/7 questions</span>
-        <button
-          onClick={askAi}
-          disabled={aiState === "loading" || questions.length >= 7}
-        >
-          {aiState === "loading" ? "Dreaming up questions…" : "✦ Ask AI"}
-        </button>
       </div>
-      {aiState === "error" && (
-        <div className="ai-error">
-          AI is taking a little break. Try again in a moment.
-        </div>
-      )}
       <div className="question-editor-list">
         {questions.map((question, qIndex) => (
           <article key={question.id}>
@@ -1082,40 +1071,6 @@ function ThisOrThatEditor({
       title="This or that"
       hint="AI choices, sender picks and an optional private match report"
     >
-      <div className="this-or-that-ai">
-        <div>
-          <label className="field">
-            Question mood
-            <select
-              value={tone}
-              onChange={(event) => setTone(event.target.value)}
-            >
-              <option>Romantic</option>
-              <option>Playful</option>
-              <option>Deep</option>
-              <option>Flirty</option>
-              <option>Friends</option>
-            </select>
-          </label>
-          <label className="field">
-            Questions
-            <select
-              value={count}
-              onChange={(event) => setCount(Number(event.target.value))}
-            >
-              {[3, 4, 5, 6, 7].map((value) => (
-                <option key={value}>{value}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <button onClick={() => void fetchAi()} disabled={aiState === "loading"}>
-          {aiState === "loading" ? "Creating choices…" : "✦ Fetch AI choices"}
-        </button>
-        {aiState === "error" && (
-          <small>AI could not create choices right now. Try again.</small>
-        )}
-      </div>
       <div className="choice-round-editor">
         {rounds.map((round, index) => (
           <article key={index}>

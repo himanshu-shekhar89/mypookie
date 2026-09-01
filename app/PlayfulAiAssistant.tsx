@@ -31,14 +31,6 @@ const supported = new Set([
   "fortune",
   "mysterybox",
 ]);
-const tones = [
-  "Romantic",
-  "Funny",
-  "Deep",
-  "Flirty",
-  "Sexy (18+ · non-explicit)",
-  "Wholesome",
-];
 const activityNames: Record<string, string> = {
   quiz: "Playful quiz",
   thisorthat: "This or that",
@@ -75,8 +67,6 @@ export function PlayfulAiAssistant({
   const [state, setState] = useState<"idle" | "loading" | "done" | "error">(
     "idle",
   );
-  const [tone, setTone] = useState("Romantic");
-  const [count, setCount] = useState(id === "fortune" ? 10 : 6);
   if (!supported.has(id)) return null;
 
   function apply(items: AiItem[]) {
@@ -218,6 +208,7 @@ export function PlayfulAiAssistant({
   }
 
   async function generate() {
+    const count = id === "fortune" ? 10 : id === "quiz" ? 5 : 6;
     setState("loading");
     try {
       const response = await fetch(`${api}/api/ai/playful-prompts`, {
@@ -229,7 +220,7 @@ export function PlayfulAiAssistant({
         body: JSON.stringify({
           gameType: id,
           relationship,
-          tone,
+          tone: "warm, playful and natural",
           count,
           topic: config.aiThemePrompt || "",
         }),
@@ -272,33 +263,6 @@ export function PlayfulAiAssistant({
           />
           <small>This prompt is saved only for this activity.</small>
         </label>
-        <div className="ai-generation-options">
-          <label>
-            Style
-            <select
-              value={tone}
-              onChange={(event) => setTone(event.target.value)}
-            >
-              {tones.map((item) => (
-                <option key={item}>{item}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Number
-            <input
-              type="number"
-              min="2"
-              max="12"
-              value={count}
-              onChange={(event) =>
-                setCount(
-                  Math.min(12, Math.max(2, Number(event.target.value) || 2)),
-                )
-              }
-            />
-          </label>
-        </div>
       </div>
       <button disabled={state === "loading"} onClick={() => void generate()}>
         {state === "loading"
