@@ -1,0 +1,29 @@
+.welcome-page {
+  font-family: "Nunito", Arial, sans-serif;
+}
+.welcome-page > .nav {
+  height: 82px;
+  padding: 0 clamp(26px, 6vw, 88px);
+  background: #fffaf8f2;
+  border-bottom: 1px solid #eadde0;
+  backdrop-filter: blur(18px);
+}
+.welcome-page > .nav .brand {
+  font:
+    800 24px "Baloo 2",
+    sans-serif;
+  letter-spacing: -0.02em;
+}
+.welcome-page > .nav .nav-links {
+  gap: 36px;
+}
+.welcome-page > .nav .nav-links a {
+  font-family: "Nunito", Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: #5c4752;
+}
+.welcome-page > .nav .signin {
+  font-family: "Nunito", Arial, sans-serif;
+  font-weight: 900;
+}

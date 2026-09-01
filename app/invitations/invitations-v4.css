@@ -1,0 +1,331 @@
+.event-block-library button {
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    box-shadow 0.2s,
+    transform 0.2s;
+}
+.event-block-library button:hover {
+  transform: translateY(-2px);
+}
+.event-block-library button.selected {
+  border-color: #ba345d;
+  background: linear-gradient(145deg, #fff0f5, #ffe1ea);
+  box-shadow: 0 0 0 3px #d84c7520;
+}
+.event-block-library button.selected b {
+  background: #ba345d;
+  color: #fff;
+  border-radius: 50%;
+}
+.event-page-editor {
+  padding: 0;
+  overflow: hidden;
+}
+.event-page-editor > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px;
+  cursor: pointer;
+  list-style: none;
+}
+.event-page-editor > summary::-webkit-details-marker {
+  display: none;
+}
+.event-page-editor > summary span {
+  display: grid;
+}
+.event-page-editor > summary small {
+  color: #927b84;
+  font-size: 10px;
+}
+.event-page-editor > summary div {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.event-page-editor > summary button {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #e0d0d5;
+  border-radius: 8px;
+  background: #fff;
+}
+.event-page-editor > summary .danger {
+  color: #b92f58;
+}
+.event-page-editor > summary i {
+  margin-left: 4px;
+  font-style: normal;
+  transition: transform 0.2s;
+}
+.event-page-editor[open] > summary i {
+  transform: rotate(180deg);
+}
+.event-editor-body {
+  padding: 0 14px 14px;
+  border-top: 1px solid #f0e2e6;
+}
+.countdown-choice {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid #ead7df;
+  border-radius: 15px;
+  background: linear-gradient(145deg, #fff9fb, #fff2f6);
+}
+.countdown-choice label {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  cursor: pointer;
+}
+.countdown-choice label > input {
+  width: 20px;
+  height: 20px;
+  accent-color: #b6305a;
+}
+.countdown-choice span {
+  display: grid;
+}
+.countdown-choice small {
+  color: #89727c;
+}
+.countdown-choice > input {
+  width: 100%;
+  margin-top: 12px;
+  padding: 11px;
+  border: 1px solid #ddcbd1;
+  border-radius: 11px;
+  background: #fff;
+}
+.invite-cover-copy button {
+  margin-top: 16px;
+  padding: 11px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: #4a233f;
+  color: #fff;
+  font-weight: 900;
+  box-shadow: 0 8px 20px #48243b33;
+}
+.opening-shower {
+  position: absolute;
+  z-index: 8;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: #fff1;
+}
+.opening-shower i {
+  position: absolute;
+  top: 48%;
+  left: 50%;
+  color: #d23f6b;
+  font-style: normal;
+  font-size: 25px;
+  animation: inviteShower 0.85s cubic-bezier(0.1, 0.7, 0.25, 1) forwards;
+}
+.opening-shower i:nth-child(3n) {
+  color: #d89a23;
+}
+.opening-shower i:nth-child(3n + 2) {
+  color: #9b62bd;
+}
+.opening-shower i:nth-child(7n + 1) {
+  --x: -310px;
+  --y: -250px;
+}
+.opening-shower i:nth-child(7n + 2) {
+  --x: -210px;
+  --y: 260px;
+}
+.opening-shower i:nth-child(7n + 3) {
+  --x: -90px;
+  --y: -300px;
+}
+.opening-shower i:nth-child(7n + 4) {
+  --x: 70px;
+  --y: 290px;
+}
+.opening-shower i:nth-child(7n + 5) {
+  --x: 180px;
+  --y: -270px;
+}
+.opening-shower i:nth-child(7n + 6) {
+  --x: 300px;
+  --y: 210px;
+}
+.opening-shower i:nth-child(7n) {
+  --x: 330px;
+  --y: -90px;
+}
+.opening-shower i:nth-child(5n) {
+  animation-delay: 0.08s;
+}
+.opening-shower i:nth-child(4n) {
+  animation-delay: 0.14s;
+}
+@keyframes inviteShower {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.2) rotate(0);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y)))
+      scale(1.3) rotate(280deg);
+  }
+}
+.countdown-units {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 9px;
+  width: min(620px, 100%);
+  margin: 24px auto;
+}
+.countdown-units span {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  padding: 16px 7px;
+  border: 1px solid #ffffff66;
+  border-radius: 17px;
+  background: #fff9;
+  box-shadow: 0 10px 28px #6d334225;
+  animation: countPulse 1.2s ease-in-out infinite alternate;
+}
+.countdown-units span:nth-child(2) {
+  animation-delay: 0.12s;
+}
+.countdown-units span:nth-child(3) {
+  animation-delay: 0.24s;
+}
+.countdown-units span:nth-child(4) {
+  animation-delay: 0.36s;
+}
+.countdown-units span:nth-child(5) {
+  animation-delay: 0.48s;
+}
+.countdown-units b {
+  font:
+    800 clamp(20px, 4vw, 39px) "Baloo 2",
+    sans-serif;
+  color: #8f2e50;
+}
+.countdown-units small {
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: #825f6c;
+}
+@keyframes countPulse {
+  to {
+    transform: translateY(-4px);
+    box-shadow: 0 15px 32px #6d334235;
+  }
+}
+.invite-book-page.border-golden-arch:after,
+.invite-book-page.border-floral-vines:after,
+.invite-book-page.border-scalloped:after {
+  content: "";
+  position: absolute;
+  z-index: 6;
+  inset: 15px;
+  border: 3px solid #c99b42;
+  border-radius: 24px;
+  pointer-events: none;
+}
+.invite-book-page.border-floral-vines:after {
+  border: 8px double #b8657e;
+}
+.invite-book-page.border-scalloped:after {
+  border: 7px ridge #d095aa;
+}
+.invite-book-page.design-royal {
+  box-shadow:
+    inset 0 0 0 12px #b6893b,
+    0 30px 80px #4e243729;
+}
+.invite-book-page.design-floral {
+  box-shadow:
+    inset 0 0 55px #d77d9c66,
+    0 30px 80px #4e243729;
+}
+.invite-book-page.design-minimal {
+  filter: saturate(0.82);
+}
+.invite-event-page {
+  position: relative;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+}
+.invite-event-page > * {
+  position: relative;
+  z-index: 2;
+}
+.invite-event-page.event-haldi,
+.invite-event-page.event-mehendi,
+.invite-event-page.event-sangeet,
+.invite-event-page.event-baraat,
+.invite-event-page.event-shaadi {
+  background-image:
+    linear-gradient(#fff8efb8, #fff3f0d9), url("/invite-hindu-event-page.png");
+}
+.invite-event-page.event-haldi .invite-sticker,
+.invite-event-page.event-mehendi .invite-sticker,
+.invite-event-page.event-sangeet .invite-sticker,
+.invite-event-page.event-baraat .invite-sticker,
+.invite-event-page.event-shaadi .invite-sticker {
+  display: none;
+}
+.invite-event-page.design-rose-garden {
+  background-color: #f8cad9;
+  background-blend-mode: soft-light;
+}
+.invite-event-page.design-emerald-arch {
+  background-color: #bcd9c8;
+  background-blend-mode: multiply;
+}
+.invite-event-page.design-midnight-gold {
+  background-color: #321c35;
+  background-blend-mode: multiply;
+}
+.invite-event-page.design-sunlit-marigold {
+  background-color: #ffe29a;
+  background-blend-mode: soft-light;
+}
+.invite-event-page.design-lilac-mist {
+  background-color: #ddd0f0;
+  background-blend-mode: soft-light;
+}
+.invite-event-page.design-terracotta-glow {
+  background-color: #dc9878;
+  background-blend-mode: soft-light;
+}
+@media (max-width: 700px) {
+  .countdown-units {
+    gap: 4px;
+  }
+  .countdown-units span {
+    padding: 10px 3px;
+    border-radius: 11px;
+  }
+  .countdown-units small {
+    font-size: 6px;
+  }
+  .event-page-editor > summary small {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .opening-shower i,
+  .countdown-units span {
+    animation: none;
+  }
+}
