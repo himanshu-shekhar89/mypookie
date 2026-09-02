@@ -173,7 +173,6 @@ export function GiftSoundtrack({
     }
   }
   if (!settings.enabled) return null;
-  const target = blocks[startIndex]?.name || "the first block";
   return (
     <div
       className={`recipient-soundtrack ${playing && !mediaPlaying ? "playing" : ""}`}
@@ -181,26 +180,16 @@ export function GiftSoundtrack({
       <button
         disabled={!activeTrack.url}
         onClick={togglePlayback}
-        aria-label={playing ? "Pause soundtrack" : "Play soundtrack"}
+        aria-label={
+          playbackError
+            ? "Try playing soundtrack again"
+            : playing
+              ? "Pause soundtrack"
+              : "Play soundtrack"
+        }
       >
         {playing && !mediaPlaying ? "Ⅱ" : "♫"}
       </button>
-      <div>
-        <strong>{activeTrack.name || "Soothing soundtrack"}</strong>
-        <small>
-          {playbackError
-            ? "Tap again to allow audio"
-            : mediaPlaying
-              ? "Paused for this voice or video"
-              : playing && !ready
-                ? `Queued for ${target}`
-                : playing
-                  ? "Soft background · SFX stay louder"
-                  : settings.startMode === "From a specific block"
-                    ? `Starts at ${target}`
-                    : "Tap to play softly"}
-        </small>
-      </div>
       {activeTrack.url && (
         <audio ref={audioRef} src={activeTrack.url} preload="metadata" />
       )}
