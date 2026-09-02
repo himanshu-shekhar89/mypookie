@@ -87,6 +87,27 @@ async function imageToDataUrl(file: File): Promise<string> {
   }
 }
 
+const optionalGifs = ["cute-blinking","kiss-lip-kiss","wow-sparkle-eyes","lopyu","love","catto","fofo-cute","cute-pinch","cat-dancing","happy-cat","dog-hiding","sorry","dog-smiling"];
+
+export function GifDecorationEditor({ config, onConfig }: { config: Record<string,string>; onConfig:(key:string,value:string)=>void }) {
+  function useFile(file?:File) {
+    if (!file || file.type !== "image/gif" || file.size > 5*1024*1024) return;
+    const reader=new FileReader();reader.onload=()=>onConfig("decorativeGif",String(reader.result||""));reader.readAsDataURL(file);
+  }
+  return <CustomizationSection title="Optional GIF on top" hint="Add a bordered animation above this activity—or leave it empty">
+    {config.decorativeGif && <button type="button" className="remove-gif" onClick={()=>onConfig("decorativeGif","")}>Remove GIF</button>}
+    <div className="gif-picker">{optionalGifs.map((name)=><button type="button" className={config.decorativeGif===`/gifs/${name}.gif`?"selected":""} key={name} onClick={()=>onConfig("decorativeGif",`/gifs/${name}.gif`)}><img src={`/gifs/${name}.gif`} alt={name.replaceAll("-"," ")} /></button>)}</div>
+    <label className="field">Paste a GIF link
+      <input type="url" value={config.decorativeGif?.startsWith("http")?config.decorativeGif:""} onChange={(event)=>onConfig("decorativeGif",event.target.value)} onPaste={(event)=>{const file=Array.from(event.clipboardData.files).find((item)=>item.type==="image/gif");if(file){event.preventDefault();useFile(file)}}} placeholder="https://…/animation.gif" />
+      <small>You can paste a GIF URL directly from your keyboard.</small>
+    </label>
+    <label className="field gif-upload">Choose a GIF from your keyboard or files
+      <input type="file" accept="image/gif" onChange={(event)=>useFile(event.target.files?.[0])} />
+      <small>Keyboard accessible · GIF only · maximum 5 MB</small>
+    </label>
+  </CustomizationSection>;
+}
+
 export function BlockCustomization({
   block,
   giftId,
@@ -544,15 +565,6 @@ export function BlockCustomization({
         </label>
       </CustomizationSection>
     );
-
-  if (block.id === "gif")
-    return <CustomizationSection title="Animated GIF" hint="Choose one from the collection or upload your own">
-      <label className="field">Message<input value={block.message} onChange={(event) => onMessage(event.target.value)} /></label>
-      <div className="gif-picker">
-        {["cute-blinking","kiss-lip-kiss","wow-sparkle-eyes","lopyu","love","catto","fofo-cute","cute-pinch","cat-dancing","happy-cat","dog-hiding","sorry","dog-smiling"].map((name) => <button type="button" className={config.gifUrl === `/gifs/${name}.gif` ? "selected" : ""} key={name} onClick={() => onConfig("gifUrl", `/gifs/${name}.gif`)}><img src={`/gifs/${name}.gif`} alt={name.replaceAll("-", " ")} /></button>)}
-      </div>
-      <label className="field gif-upload">Upload your own GIF<input type="file" accept="image/gif" onChange={(event) => { const file=event.target.files?.[0]; if(!file || file.size>5*1024*1024)return; const reader=new FileReader(); reader.onload=()=>onConfig("gifUrl",String(reader.result||"")); reader.readAsDataURL(file); }} /><small>Animated GIF · maximum 5 MB</small></label>
-    </CustomizationSection>;
 
   if (block.id === "memory")
     return <MemoryEditor config={config} onConfig={onConfig} />;

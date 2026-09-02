@@ -9,7 +9,7 @@ import {
 } from "react";
 import { LandingShowcase } from "./LandingShowcase";
 import { BuilderLivePreview } from "./BuilderLivePreview";
-import { BlockCustomization } from "./BlockCustomization";
+import { BlockCustomization, GifDecorationEditor } from "./BlockCustomization";
 import { PlayfulAiAssistant } from "./PlayfulAiAssistant";
 import { GroupContributionPage } from "./GroupContributionPage";
 import {
@@ -113,7 +113,6 @@ const activities: Block[] = [
     category: "Messages & media",
     message: "A little face-to-face moment, just for you.",
   },
-  { id: "gif", icon: "✦", name: "Animated GIF", description: "Pick a cute animation or upload your own", price: 29, color: "violet", category: "Messages & media", message: "A tiny moving moment, just for you." },
   {
     id: "memory",
     icon: "⌁",
@@ -3033,6 +3032,7 @@ export default function Home() {
                 onMessage={updateMessage}
                 onConfig={updateBlockConfig}
               />
+              <GifDecorationEditor config={activeBlock.config || {}} onConfig={updateBlockConfig} />
               <div className="style-row">
                 <label className="field">
                   Theme

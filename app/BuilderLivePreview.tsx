@@ -216,6 +216,7 @@ export function BuilderLivePreview({
       {block.id !== "letter" &&
         block.id !== "voice" &&
         block.id !== "video" && <p>{block.message}</p>}
+      {config.decorativeGif && <div className="block-top-gif"><img src={config.decorativeGif} alt="Optional animated decoration" /></div>}
       <div
         className="live-interaction"
         onClickCapture={onInteract}
@@ -407,7 +408,6 @@ export function BuilderLivePreview({
             onReward={onReward}
           />
         )}
-        {block.id === "gif" && <div className="live-gif-card"><img src={config.gifUrl || "/gifs/cute-blinking.gif"} alt="Animated surprise" /><strong>{block.message}</strong></div>}
         {block.id === "wheel" && (
           <div className={`live-wheel-scene frame-${(config.wheelFrame || "Lucky carnival").toLowerCase().replaceAll(" ", "-")}`}>
             <div className="live-wheel-shell">
