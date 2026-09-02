@@ -1546,15 +1546,23 @@ function MemoryBook({
   config: Record<string, string>;
   onComplete?: () => void;
 }) {
-  const items = parseJson<MemoryItem[]>(config.memoryItems, []).slice(
+  const allItems = parseJson<MemoryItem[]>(config.memoryItems, []).slice(
     0,
     config.extraPages === "true" ? 12 : 7,
   );
+  const coverItem = config.coverItemId
+    ? allItems.find((item) => item.id === config.coverItemId)
+    : allItems.find((item) => Boolean(config.coverImage) && item.image === config.coverImage);
+  const items = coverItem
+    ? allItems.filter((item) => item.id !== coverItem.id)
+    : allItems;
   const pages = [
     {
       id: "cover",
-      image: config.coverImage || "/mypookie-letter-photo.png",
-      caption: config.coverCaption || "Our little book of us",
+      image: coverItem?.image || config.coverImage || "/mypookie-letter-photo.png",
+      images: coverItem?.images,
+      layout: coverItem?.layout,
+      caption: coverItem?.caption || config.coverCaption || "Our little book of us",
     },
     ...items,
   ];
@@ -1566,11 +1574,8 @@ function MemoryBook({
   const viewed = useRef<Set<number>>(new Set([0]));
   useEffect(() => {
     const preloadItems: { image: string; images?: string[] }[] = [
-      { image: config.coverImage || "/mypookie-letter-photo.png" },
-      ...parseJson<MemoryItem[]>(config.memoryItems, []).slice(
-        0,
-        config.extraPages === "true" ? 12 : 7,
-      ),
+      { image: coverItem?.image || config.coverImage || "/mypookie-letter-photo.png", images: coverItem?.images },
+      ...items,
     ];
     preloadItems.forEach((item) => {
       (item.images?.length ? item.images : [item.image]).forEach((source) => {
@@ -1578,7 +1583,7 @@ function MemoryBook({
         image.src = source;
       });
     });
-  }, [config.memoryItems, config.coverImage, config.extraPages]);
+  }, [config.memoryItems, config.coverImage, config.coverItemId, config.extraPages]);
   function turn(direction: number) {
     if (turning) return;
     playSound("page");
@@ -1605,6 +1610,15 @@ function MemoryBook({
     .toLowerCase()
     .replaceAll(" ", "-");
   const pageImages = current.images?.length ? current.images : [current.image];
+  const stickerPack = config.albumSticker || "Love notes";
+  const stickerContent: Record<string, [string, string, string]> = {
+    "Love notes": ["♡", "✦", "together"],
+    Daisies: ["✿", "❀", "our story"],
+    "Travel stamps": ["✈", "⌖", "adventure"],
+    Celestial: ["☾", "✦", "make a wish"],
+    Celebration: ["★", "♡", "yay!"],
+  };
+  const chosenStickers = stickerContent[stickerPack] || stickerContent["Love notes"];
   return (
     <div
       className={`memory-book scrapbook-album album-${style} album-font-${albumFont} border-${(config.scrapbookBorder || "Tiny hearts").toLowerCase().replaceAll(" ", "-")}`}
@@ -1664,11 +1678,13 @@ function MemoryBook({
             ))}
           </div>
         )}
-        <div className="album-stickers" aria-hidden="true">
-          <i>♡</i>
-          <b>✦</b>
-          <em>together</em>
-        </div>
+        {stickerPack !== "None" && (
+          <div className={`album-stickers stickers-${stickerPack.toLowerCase().replaceAll(" ", "-")}`} aria-hidden="true">
+            <i>{chosenStickers[0]}</i>
+            <b>{chosenStickers[1]}</b>
+            <em>{chosenStickers[2]}</em>
+          </div>
+        )}
       </div>
       <div className="book-controls">
         <button onClick={() => turn(-1)}>←</button>

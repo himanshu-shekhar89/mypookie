@@ -1553,6 +1553,32 @@ function MemoryEditor({
     ["Pressed flowers", "✿"],
     ["Golden stars", "✦"],
   ];
+  const albumThemes = [
+    ["Blush scrapbook", "#f7dfe7", "#fff8f2"],
+    ["Pressed flower journal", "#d99aaa", "#f7efd9"],
+    ["Retro travel album", "#ba895f", "#ead7b7"],
+    ["Midnight love story", "#302a55", "#171627"],
+    ["Minimal linen book", "#d8d3c7", "#faf8f2"],
+    ["Celestial night", "#514b89", "#17182e"],
+    ["Vintage botanical", "#78906b", "#eee2c7"],
+    ["Playful sticker book", "#ff8bab", "#ffe372"],
+    ["Ocean postcard", "#6caec2", "#e9f7f5"],
+    ["Sunlit citrus", "#e8a83d", "#fff2b8"],
+    ["Sage memories", "#7d9b7a", "#e8efe0"],
+    ["Lavender dreams", "#9879b6", "#eee4f5"],
+  ];
+  const stickerPacks = [
+    ["None", "□"],
+    ["Love notes", "♡"],
+    ["Daisies", "✿"],
+    ["Travel stamps", "✈"],
+    ["Celestial", "☾"],
+    ["Celebration", "★"],
+  ];
+  const isCover = (item: MemoryItem) =>
+    config.coverItemId
+      ? config.coverItemId === item.id
+      : Boolean(config.coverImage && config.coverImage === item.image);
   function clearPendingBatch() {
     pendingBatch.forEach((item) => URL.revokeObjectURL(item.preview));
     setPendingBatch([]);
@@ -1614,6 +1640,9 @@ function MemoryEditor({
     );
   }
   function patch(index: number, key: keyof MemoryItem, value: string) {
+    if (key === "caption" && isCover(items[index])) {
+      onConfig("coverCaption", value);
+    }
     onConfig(
       "memoryItems",
       JSON.stringify(
@@ -1710,7 +1739,7 @@ function MemoryEditor({
           <strong>
             {items.length} / {maxPages} album pages
           </strong>
-          <span>Each photo becomes one scrapbook page.</span>
+          <span>Choose separate pages or a collage when adding photos.</span>
         </div>
         <b>{remaining} left</b>
       </div>
@@ -1734,7 +1763,13 @@ function MemoryEditor({
         </div>
       )}
       {pendingBatch.length > 1 && (
-        <section className="memory-batch-choice">
+        <div
+          className="memory-batch-backdrop"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) clearPendingBatch();
+          }}
+        >
+        <section className="memory-batch-choice" role="dialog" aria-modal="true" aria-label="Choose photo layout">
           <header>
             <div>
               <small>{pendingBatch.length} PHOTOS SELECTED</small>
@@ -1772,8 +1807,25 @@ function MemoryEditor({
             </button>
           </div>
         </section>
+        </div>
       )}
       <section className="memory-simple-style">
+        <div>
+          <small>PAGE STYLE</small>
+          <strong>Choose the look of your scrapbook</strong>
+          <div className="memory-theme-options">
+            {albumThemes.map(([label, primary, secondary]) => (
+              <button
+                key={label}
+                className={(config.albumStyle || "Blush scrapbook") === label ? "active" : ""}
+                onClick={() => onConfig("albumStyle", label)}
+              >
+                <i style={{ background: `linear-gradient(135deg, ${primary}, ${secondary})` }} />
+                <b>{label}</b>
+              </button>
+            ))}
+          </div>
+        </div>
         <div>
           <small>ALBUM ANIMATION</small>
           <strong>How should memories appear?</strong>
@@ -1793,6 +1845,21 @@ function MemoryEditor({
                   <b>{label}</b>
                   <small>{description}</small>
                 </span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <small>STICKERS</small>
+          <strong>Add a playful finishing touch</strong>
+          <div className="memory-sticker-options">
+            {stickerPacks.map(([label, icon]) => (
+              <button
+                key={label}
+                className={(config.albumSticker || "Love notes") === label ? "active" : ""}
+                onClick={() => onConfig("albumSticker", label)}
+              >
+                <i>{icon}</i><b>{label}</b>
               </button>
             ))}
           </div>
@@ -1864,10 +1931,14 @@ function MemoryEditor({
             <div className="scrapbook-page-fields">
               <button
                 type="button"
-                className={`memory-cover-choice ${config.coverImage === item.image ? "active" : ""}`}
-                onClick={() => onConfig("coverImage", item.image)}
+                className={`memory-cover-choice ${isCover(item) ? "active" : ""}`}
+                onClick={() => {
+                  onConfig("coverItemId", item.id);
+                  onConfig("coverImage", item.image);
+                  onConfig("coverCaption", item.caption || "Our little album of us");
+                }}
               >
-                {config.coverImage === item.image
+                {isCover(item)
                   ? "✓ Cover photo"
                   : "Set as cover"}
               </button>
@@ -1908,12 +1979,14 @@ function MemoryEditor({
               </div>
             </div>
             <button
-              onClick={() =>
-                onConfig(
-                  "memoryItems",
-                  JSON.stringify(items.filter((_, i) => i !== index)),
-                )
-              }
+              onClick={() => {
+                onConfig("memoryItems", JSON.stringify(items.filter((_, i) => i !== index)));
+                if (isCover(item)) {
+                  onConfig("coverItemId", "");
+                  onConfig("coverImage", "");
+                  onConfig("coverCaption", "Our little album of us");
+                }
+              }}
             >
               ×
             </button>
