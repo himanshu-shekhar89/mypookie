@@ -2021,6 +2021,7 @@ function GiftScratchCard({
         {config.showNote !== "false" && <span>{config.giftMessage}</span>}
       </div>
       <ScratchSurface
+        headline={config.brand || "A gift for you"}
         label="SCRATCH TO OPEN YOUR GIFT"
         colors={["#9b8cff", "#ff6f91"]}
         onReveal={() => {
@@ -2160,10 +2161,12 @@ function VoicePreview({
 }
 
 function ScratchSurface({
+  headline,
   label,
   colors,
   onReveal,
 }: {
+  headline?: string;
   label: string;
   colors: string[];
   onReveal?: () => void;
@@ -2213,9 +2216,16 @@ function ScratchSurface({
       for (let x = -height; x < width; x += 22)
         context.fillRect(x, 0, 6, height);
       context.fillStyle = "white";
-      context.font = "800 12px Nunito";
       context.textAlign = "center";
-      context.fillText(label, width / 2, height / 2 + 4);
+      if (headline) {
+        context.font = "900 18px Nunito";
+        context.fillText(headline.slice(0, 34).toUpperCase(), width / 2, height / 2 - 8);
+        context.font = "800 10px Nunito";
+        context.fillText(label, width / 2, height / 2 + 16);
+      } else {
+        context.font = "800 12px Nunito";
+        context.fillText(label, width / 2, height / 2 + 4);
+      }
     }
     paint();
     const frame = window.requestAnimationFrame(paint);
@@ -2228,7 +2238,7 @@ function ScratchSurface({
       window.clearTimeout(retry);
       observer?.disconnect();
     };
-  }, [palette, label]);
+  }, [palette, label, headline]);
 
   function reveal() {
     if (revealOnce.current) return;
