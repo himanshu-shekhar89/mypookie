@@ -118,8 +118,17 @@
     transform 0.8s cubic-bezier(0.2, 0.9, 0.25, 1.15),
     filter 0.35s ease;
   will-change: transform;
+  opacity: 0;
 }
-.fortune-cookie-art .cookie-half img {
+.fortune-cookie-art .cookie-whole {
+  position: absolute;
+  inset: 0;
+  display: block;
+  opacity: 1;
+  transition: opacity 0.12s ease;
+}
+.fortune-cookie-art .cookie-half img,
+.fortune-cookie-art .cookie-whole img {
   display: block;
   width: 100%;
   height: 100%;
@@ -156,53 +165,25 @@
   transform-origin: 52% 55%;
 }
 .fortune-cookie:not(.cracked):hover .cookie-half-left {
-  transform: translateX(-3px) rotate(-1deg);
+  transform: none;
 }
 .fortune-cookie:not(.cracked):hover .cookie-half-right {
-  transform: translateX(3px) rotate(1deg);
+  transform: none;
 }
-.fortune-cookie-art .cookie-crack {
-  position: absolute;
-  z-index: 3;
-  left: 50%;
-  top: 39px;
-  width: 3px;
-  height: 151px;
-  border-radius: 50%;
-  background: linear-gradient(
-    180deg,
-    transparent,
-    #87531e 12% 86%,
-    transparent
-  );
-  clip-path: polygon(
-    0 0,
-    100% 0,
-    15% 18%,
-    100% 34%,
-    0 52%,
-    100% 69%,
-    20% 84%,
-    100% 100%,
-    0 100%,
-    60% 84%,
-    0 69%,
-    75% 52%,
-    0 34%,
-    80% 18%
-  );
-  opacity: 0.55;
-  transform: translateX(-50%);
-  transition: opacity 0.2s ease;
+.fortune-cookie:not(.cracked):hover .cookie-whole {
+  animation: fortuneCookieNudge 0.55s ease-in-out;
+}
+.fortune-cookie.cracked .cookie-whole {
+  opacity: 0;
+}
+.fortune-cookie.cracked .cookie-half {
+  opacity: 1;
 }
 .fortune-cookie.cracked .cookie-half-left {
   transform: translate(-58px, 13px) rotate(-18deg) scale(0.98);
 }
 .fortune-cookie.cracked .cookie-half-right {
   transform: translate(58px, 13px) rotate(18deg) scale(0.98);
-}
-.fortune-cookie.cracked .cookie-crack {
-  opacity: 0;
 }
 .fortune-cookie .fortune-cookie-art .cookie-crumbs {
   position: absolute;
@@ -266,13 +247,21 @@
       rotate(190deg) scale(1);
   }
 }
-.fortune-cookie.design-pink-velvet .cookie-half img {
+@keyframes fortuneCookieNudge {
+  50% {
+    transform: translateY(-3px) rotate(-1deg) scale(1.015);
+  }
+}
+.fortune-cookie.design-pink-velvet .cookie-half img,
+.fortune-cookie.design-pink-velvet .cookie-whole img {
   filter: sepia(0.18) saturate(1.22) hue-rotate(292deg);
 }
-.fortune-cookie.design-chocolate-dipped .cookie-half img {
+.fortune-cookie.design-chocolate-dipped .cookie-half img,
+.fortune-cookie.design-chocolate-dipped .cookie-whole img {
   filter: sepia(0.45) saturate(1.28) brightness(0.8);
 }
-.fortune-cookie.design-starry-lavender .cookie-half img {
+.fortune-cookie.design-starry-lavender .cookie-half img,
+.fortune-cookie.design-starry-lavender .cookie-whole img {
   filter: sepia(0.2) saturate(1.05) hue-rotate(190deg);
 }
 .fortune-sparkles {

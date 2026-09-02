@@ -1499,13 +1499,15 @@ function FortuneCookie({ config, onComplete, onReward }: Props) {
         <i>✦</i>
       </span>
       <div className="fortune-cookie-art" aria-hidden="true">
+        <span className="cookie-whole">
+          <img src="/games/fortune-cookie-v1.png" alt="" />
+        </span>
         <span className="cookie-half cookie-half-left">
           <img src="/games/fortune-cookie-v1.png" alt="" />
         </span>
         <span className="cookie-half cookie-half-right">
           <img src="/games/fortune-cookie-v1.png" alt="" />
         </span>
-        <i className="cookie-crack" />
         <span className="cookie-crumbs">
           <i />
           <i />
