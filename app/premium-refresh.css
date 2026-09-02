@@ -98,14 +98,182 @@
 }
 
 /* Fortune cookie variants and a fuller crack celebration. */
-.fortune-cookie.design-pink-velvet > div i {
-  background: linear-gradient(145deg, #ffb4c8, #c95178);
+.fortune-cookie {
+  position: relative;
+  isolation: isolate;
 }
-.fortune-cookie.design-chocolate-dipped > div i {
-  background: linear-gradient(145deg, #e7b76f 0 55%, #6e3d2e 56%);
+.fortune-cookie > .fortune-cookie-art {
+  position: relative;
+  width: min(360px, 78vw);
+  height: 235px;
+  filter: drop-shadow(0 18px 20px rgb(110 64 23 / 20%));
+  transform: translateZ(0);
 }
-.fortune-cookie.design-starry-lavender > div i {
-  background: linear-gradient(145deg, #d8c4ff, #7552a6);
+.fortune-cookie-art .cookie-half {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  transition:
+    transform 0.8s cubic-bezier(0.2, 0.9, 0.25, 1.15),
+    filter 0.35s ease;
+  will-change: transform;
+}
+.fortune-cookie-art .cookie-half img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+.fortune-cookie-art .cookie-half-left {
+  clip-path: polygon(
+    0 0,
+    52% 0,
+    49% 17%,
+    52% 31%,
+    48% 47%,
+    51% 61%,
+    48% 76%,
+    51% 100%,
+    0 100%
+  );
+  transform-origin: 48% 55%;
+}
+.fortune-cookie-art .cookie-half-right {
+  clip-path: polygon(
+    52% 0,
+    100% 0,
+    100% 100%,
+    51% 100%,
+    48% 76%,
+    51% 61%,
+    48% 47%,
+    52% 31%,
+    49% 17%
+  );
+  transform-origin: 52% 55%;
+}
+.fortune-cookie:not(.cracked):hover .cookie-half-left {
+  transform: translateX(-3px) rotate(-1deg);
+}
+.fortune-cookie:not(.cracked):hover .cookie-half-right {
+  transform: translateX(3px) rotate(1deg);
+}
+.fortune-cookie-art .cookie-crack {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 39px;
+  width: 3px;
+  height: 151px;
+  border-radius: 50%;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    #87531e 12% 86%,
+    transparent
+  );
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    15% 18%,
+    100% 34%,
+    0 52%,
+    100% 69%,
+    20% 84%,
+    100% 100%,
+    0 100%,
+    60% 84%,
+    0 69%,
+    75% 52%,
+    0 34%,
+    80% 18%
+  );
+  opacity: 0.55;
+  transform: translateX(-50%);
+  transition: opacity 0.2s ease;
+}
+.fortune-cookie.cracked .cookie-half-left {
+  transform: translate(-58px, 13px) rotate(-18deg) scale(0.98);
+}
+.fortune-cookie.cracked .cookie-half-right {
+  transform: translate(58px, 13px) rotate(18deg) scale(0.98);
+}
+.fortune-cookie.cracked .cookie-crack {
+  opacity: 0;
+}
+.fortune-cookie .fortune-cookie-art .cookie-crumbs {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  top: 52%;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+.fortune-cookie .cookie-crumbs i {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 45% 55% 60% 40%;
+  background: #d98b2d;
+  opacity: 0;
+}
+.fortune-cookie.cracked .cookie-crumbs i {
+  animation: fortuneCrumb 0.8s ease-out both;
+}
+.fortune-cookie.cracked .cookie-crumbs i:nth-child(2) {
+  --crumb-x: -35px;
+  --crumb-y: -45px;
+  animation-delay: 0.04s;
+}
+.fortune-cookie.cracked .cookie-crumbs i:nth-child(3) {
+  --crumb-x: 42px;
+  --crumb-y: -34px;
+  animation-delay: 0.08s;
+}
+.fortune-cookie.cracked .cookie-crumbs i:nth-child(4) {
+  --crumb-x: -49px;
+  --crumb-y: 16px;
+  animation-delay: 0.12s;
+}
+.fortune-cookie.cracked .cookie-crumbs i:nth-child(5) {
+  --crumb-x: 48px;
+  --crumb-y: 20px;
+  animation-delay: 0.16s;
+}
+.fortune-cookie > p {
+  z-index: 6;
+  max-width: 330px;
+  margin-top: -54px !important;
+  border-radius: 3px !important;
+  background: linear-gradient(180deg, #fffefa, #fff8df) !important;
+  transform-origin: 50% 0;
+}
+@keyframes fortuneCrumb {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(0) scale(0.4);
+  }
+  28% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--crumb-x, 28px), var(--crumb-y, -48px))
+      rotate(190deg) scale(1);
+  }
+}
+.fortune-cookie.design-pink-velvet .cookie-half img {
+  filter: sepia(0.18) saturate(1.22) hue-rotate(292deg);
+}
+.fortune-cookie.design-chocolate-dipped .cookie-half img {
+  filter: sepia(0.45) saturate(1.28) brightness(0.8);
+}
+.fortune-cookie.design-starry-lavender .cookie-half img {
+  filter: sepia(0.2) saturate(1.05) hue-rotate(190deg);
 }
 .fortune-sparkles {
   position: absolute;

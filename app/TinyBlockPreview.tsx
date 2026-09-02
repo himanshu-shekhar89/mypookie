@@ -1498,10 +1498,21 @@ function FortuneCookie({ config, onComplete, onReward }: Props) {
         <i>⋆</i>
         <i>✦</i>
       </span>
-      <div>
-        <i />
-        <i />
-        <span>✦</span>
+      <div className="fortune-cookie-art" aria-hidden="true">
+        <span className="cookie-half cookie-half-left">
+          <img src="/games/fortune-cookie-v1.png" alt="" />
+        </span>
+        <span className="cookie-half cookie-half-right">
+          <img src="/games/fortune-cookie-v1.png" alt="" />
+        </span>
+        <i className="cookie-crack" />
+        <span className="cookie-crumbs">
+          <i />
+          <i />
+          <i />
+          <i />
+          <i />
+        </span>
       </div>
       {fortune ? <p>{fortune}</p> : <strong>Tap to crack your fortune</strong>}
     </button>
