@@ -1,0 +1,50 @@
+/* Recipient-only mobile composition for interactive blocks with optional GIFs. */
+@media (max-width: 760px) {
+  .public-recipient .recipient-experience-shell {
+    align-content: center;
+  }
+
+  .public-recipient .builder-live-card {
+    display: flex !important;
+    flex-direction: column;
+    justify-content: center;
+    width: 100%;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: calc(100dvh - 205px) !important;
+    padding: 12px 8px !important;
+  }
+
+  .public-recipient .builder-live-card > .block-top-gif {
+    position: relative !important;
+    inset: auto !important;
+    order: 0;
+    flex: 0 0 auto;
+    width: 58px;
+    height: 58px;
+    margin: 0 auto 8px;
+    padding: 3px;
+    border-width: 1.5px;
+    border-radius: 12px;
+    box-shadow: 0 6px 14px #552d421f;
+    pointer-events: none;
+  }
+
+  .public-recipient .builder-live-card > .block-top-gif img {
+    border-radius: 8px;
+  }
+
+  .public-recipient .builder-live-card > .live-interaction {
+    order: 1;
+    align-self: center;
+    flex: 0 1 auto;
+    margin: 0 auto !important;
+  }
+
+  .public-recipient .builder-live-card:has(.live-puzzle) > .live-interaction,
+  .public-recipient .builder-live-card:has(.live-slot-machine) > .live-interaction,
+  .public-recipient .builder-live-card:has(.mystery-box-play) > .live-interaction {
+    display: grid;
+    place-items: center;
+  }
+}
