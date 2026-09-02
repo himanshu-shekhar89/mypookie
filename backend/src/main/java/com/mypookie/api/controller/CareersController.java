@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URLEncoder;
@@ -33,24 +32,22 @@ public class CareersController {
  @PostMapping(value="/applications",consumes="multipart/form-data")
  @ResponseStatus(HttpStatus.CREATED)
  public Map<String,String> apply(
-  @RequestParam String fullName,@RequestParam String email,@RequestParam String platform,
-  @RequestParam String socialHandle,@RequestParam(required=false) Integer audienceSize,
-  @RequestParam(required=false) String pitch,@RequestParam("screenshot") MultipartFile screenshot){
+  @RequestParam String fullName,@RequestParam String phone,@RequestParam String socialProfileUrl,
+  @RequestParam(required=false) String email){
   var campaign=campaign();
   if(!campaign.isActive())throw new ResponseStatusException(HttpStatus.CONFLICT,"Applications are currently paused.");
   String cleanName=required(fullName,"Add your full name",100);
-  String cleanEmail=required(email,"Add your email",180).toLowerCase();
-  if(!cleanEmail.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"))throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Add a valid email address.");
-  String cleanPlatform=required(platform,"Choose a platform",20).toUpperCase();
-  if(!Set.of("INSTAGRAM","SNAPCHAT").contains(cleanPlatform))throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Choose Instagram or Snapchat.");
-  String cleanHandle=required(socialHandle,"Add your social handle",100);
-  if(applications.existsByEmailIgnoreCaseAndCampaignIdAndStatusIn(cleanEmail,campaign.getId(),List.of("PENDING","APPROVED")))throw new ResponseStatusException(HttpStatus.CONFLICT,"You already have an active application.");
-  String screenshotUrl=storeScreenshot(screenshot);
+  String cleanPhone=required(phone,"Add your phone number",30);
+  if(!cleanPhone.matches("^[+0-9 ()-]{8,30}$"))throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Add a valid phone number.");
+  String cleanProfile=required(socialProfileUrl,"Add your social profile link",1000);
+  if(!cleanProfile.matches("^https?://.+"))throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Add a complete social profile link.");
+  String cleanEmail=email==null||email.isBlank()?null:email.trim().toLowerCase();
+  if(cleanEmail!=null&&!cleanEmail.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"))throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Add a valid email address.");
+  if(cleanEmail!=null&&applications.existsByEmailIgnoreCaseAndCampaignIdAndStatusIn(cleanEmail,campaign.getId(),List.of("PENDING","APPROVED")))throw new ResponseStatusException(HttpStatus.CONFLICT,"You already have an active application.");
   var application=new CareerApplication();
   application.setId(UUID.randomUUID().toString());application.setCampaignId(campaign.getId());application.setFullName(cleanName);
-  application.setEmail(cleanEmail);application.setPlatform(cleanPlatform);application.setSocialHandle(cleanHandle);
-  application.setScreenshotUrl(screenshotUrl);application.setAudienceSize(audienceSize==null?null:Math.max(0,audienceSize));
-  application.setPitch(pitch==null?null:pitch.trim().substring(0,Math.min(pitch.trim().length(),700)));
+  application.setEmail(cleanEmail);application.setPhone(cleanPhone);application.setPlatform("SOCIAL");application.setSocialHandle(cleanProfile);
+  application.setSocialProfileUrl(cleanProfile);
   applications.save(application);
   return Map.of("id",application.getId(),"status",application.getStatus());
  }
@@ -59,7 +56,8 @@ public class CareersController {
   if(value==null||value.trim().isBlank())throw new ResponseStatusException(HttpStatus.BAD_REQUEST,message);
   String clean=value.trim();if(clean.length()>max)throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"That value is too long.");return clean;
  }
- private String storeScreenshot(MultipartFile file){
+ /* Legacy screenshot storage retained for applications submitted before this streamlined form. */
+ private String storeScreenshot(org.springframework.web.multipart.MultipartFile file){
   String type=file.getContentType()==null?"":file.getContentType().toLowerCase();
   if(file.isEmpty()||!Set.of("image/jpeg","image/png","image/webp").contains(type))throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Upload a JPG, PNG or WebP screenshot.");
   if(file.getSize()>5L*1024*1024)throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE,"Screenshot must be under 5 MB.");

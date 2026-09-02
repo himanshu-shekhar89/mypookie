@@ -1000,6 +1000,8 @@ function QuizPlay({
   const [index, setIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [feedback, setFeedback] = useState("");
+  const [celebrating, setCelebrating] = useState(false);
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [order, setOrder] = useState(
     () => questions[0]?.options.map((_, optionIndex) => optionIndex) || [],
   );
@@ -1078,6 +1080,7 @@ function QuizPlay({
     }
   }
   function answer(optionIndex: number) {
+    if (celebrating) return;
     if (
       question.interaction === "floating" &&
       !correctIndices.includes(optionIndex)
@@ -1087,11 +1090,15 @@ function QuizPlay({
       return;
     }
     const correct = correctIndices.includes(optionIndex);
+    setSelectedOption(optionIndex);
     playSound(correct ? "correct" : "incorrect");
     setFeedback(
       correct ? "Perfect — you got it! ♡" : "Not quite, but that was cute.",
     );
-    if (correct) setScore((value) => value + 1);
+    if (correct) {
+      setScore((value) => value + 1);
+      setCelebrating(true);
+    }
     const finalScore = score + (correct ? 1 : 0);
     window.setTimeout(() => {
       if (index < questions.length - 1) {
@@ -1111,7 +1118,9 @@ function QuizPlay({
         onReward?.(`Quiz score: ${finalScore}/${questions.length}`);
         onComplete?.();
       }
-    }, 700);
+      setCelebrating(false);
+      setSelectedOption(null);
+    }, correct ? 1250 : 850);
   }
   const visibleOrder = [
     ...order.filter((optionIndex) => optionIndex < question.options.length),
@@ -1143,7 +1152,7 @@ function QuizPlay({
             <button
               data-option={optionIndex}
               key={optionIndex}
-              className={`${wrongFloat ? "vanishing-wrong" : ""} ${hidden ? "quiz-option-hidden" : ""}`}
+              className={`${wrongFloat ? "vanishing-wrong" : ""} ${hidden ? "quiz-option-hidden" : ""} ${selectedOption === optionIndex ? (correctIndices.includes(optionIndex) ? "quiz-picked-correct" : "quiz-picked-wrong") : ""}`}
               onClick={() => answer(optionIndex)}
             >
               {option.image && <img src={option.image} alt="" />}
@@ -1156,6 +1165,14 @@ function QuizPlay({
         {feedback ||
           `${index + 1} of ${questions.length} · ${question.interaction === "floating" ? "wrong answers disappear when the cursor gets close" : "normal scoring"}`}
       </output>
+      {celebrating && (
+        <div className="quiz-success-celebration" aria-live="polite">
+          <div className="quiz-confetti" aria-hidden="true">✦ ♡ ★ ✿ ✦ ♡ ★</div>
+          <b>✓</b>
+          <strong>You got it!</strong>
+          <small>That deserves a little celebration</small>
+        </div>
+      )}
     </div>
   );
 }

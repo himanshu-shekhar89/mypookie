@@ -90,6 +90,8 @@ type CareerCampaign = {
   active: boolean;
   defaultDiscountPercent: number;
   defaultCommissionPaise: number;
+  defaultCommissionType: "FIXED" | "PERCENT";
+  defaultCommissionPercent: number;
   monthlyEarningCapPaise: number;
 };
 type CareerApplication = {
@@ -98,6 +100,8 @@ type CareerApplication = {
   email: string;
   platform: string;
   socialHandle: string;
+  socialProfileUrl?: string;
+  phone?: string;
   screenshotUrl: string;
   audienceSize: number | null;
   pitch: string | null;
@@ -401,6 +405,9 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
     setNotice("");
     try {
       if (decision === "approve") {
+        const commissionType = (window.prompt("Commission type for this influencer: FIXED or PERCENT", careerCampaign?.defaultCommissionType || "FIXED") || "FIXED").toUpperCase() === "PERCENT" ? "PERCENT" : "FIXED";
+        const suggestedCommission = commissionType === "PERCENT" ? (careerCampaign?.defaultCommissionPercent || 10) : ((careerCampaign?.defaultCommissionPaise || 1000) / 100);
+        const commissionValue = Math.max(0, Number(window.prompt(commissionType === "PERCENT" ? "Commission percentage per paid order" : "Fixed commission in rupees per paid order", String(suggestedCommission))) || 0);
         const base =
           application.socialHandle
             .replace(/^@/, "")
@@ -415,7 +422,9 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
               couponCode: `${base}${application.id.slice(0, 4).toUpperCase()}`,
               discountPercent: careerCampaign?.defaultDiscountPercent || 10,
               commissionPaisePerUse:
-                careerCampaign?.defaultCommissionPaise || 1000,
+                commissionType === "FIXED" ? commissionValue * 100 : 0,
+              commissionType,
+              commissionPercent: commissionType === "PERCENT" ? Math.min(100, commissionValue) : 0,
               adminNote: "Approved through careers console",
             }),
           },
@@ -1032,24 +1041,11 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
                       ? "ROOT ADMIN"
                       : user.role}
                   </span>
-                  {isRootAdmin ? (
-                    <select
-                      value={
-                        rootAdmins.has(user.email?.trim().toLowerCase())
-                          ? "ADMIN"
-                          : user.role
-                      }
-                      disabled={rootAdmins.has(
-                        user.email?.trim().toLowerCase(),
-                      )}
-                      onChange={(event) => updateRole(user, event.target.value)}
-                    >
-                      <option>USER</option>
-                      <option>ADMIN</option>
-                    </select>
-                  ) : (
-                    <small>Managed by root admin</small>
-                  )}
+                  <small>
+                    {rootAdmins.has(user.email?.trim().toLowerCase())
+                      ? "Permanent admin"
+                      : "User access only"}
+                  </small>
                 </div>
               ))}
             </div>
@@ -1111,18 +1107,17 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
                 />
               </label>
               <label>
-                Commission per paid sale ₹
-                <input
-                  type="number"
-                  min="0"
-                  value={careerCampaign.defaultCommissionPaise / 100}
-                  onChange={(e) =>
-                    setCareerCampaign({
-                      ...careerCampaign,
-                      defaultCommissionPaise: Number(e.target.value) * 100,
-                    })
-                  }
-                />
+                Default commission type
+                <select value={careerCampaign.defaultCommissionType || "FIXED"} onChange={(e)=>setCareerCampaign({...careerCampaign,defaultCommissionType:e.target.value as "FIXED"|"PERCENT"})}>
+                  <option value="FIXED">Fixed ₹ per sale</option>
+                  <option value="PERCENT">Percentage per sale</option>
+                </select>
+              </label>
+              <label>
+                {careerCampaign.defaultCommissionType === "PERCENT" ? "Default commission %" : "Default commission per sale ₹"}
+                <input type="number" min="0" max={careerCampaign.defaultCommissionType === "PERCENT" ? "100" : undefined}
+                  value={careerCampaign.defaultCommissionType === "PERCENT" ? careerCampaign.defaultCommissionPercent || 0 : careerCampaign.defaultCommissionPaise / 100}
+                  onChange={(e) => setCareerCampaign(careerCampaign.defaultCommissionType === "PERCENT" ? {...careerCampaign,defaultCommissionPercent:Number(e.target.value)} : {...careerCampaign,defaultCommissionPaise:Number(e.target.value)*100})}/>
               </label>
               <label>
                 Public monthly potential ₹
@@ -1173,15 +1168,11 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
               {careerApplications.map((application) => (
                 <article key={application.id}>
                   <a
-                    href={application.screenshotUrl}
+                    href={application.socialProfileUrl || application.screenshotUrl}
                     target="_blank"
                     rel="noreferrer"
                   >
-                    <img
-                      src={application.screenshotUrl}
-                      alt={`${application.socialHandle} profile screenshot`}
-                    />
-                    <span>Open screenshot ↗</span>
+                    {application.screenshotUrl ? <img src={application.screenshotUrl} alt={`${application.socialHandle} profile`} /> : <span>Open social profile ↗</span>}
                   </a>
                   <div>
                     <small>
@@ -1190,7 +1181,8 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
                     <h3>{application.fullName}</h3>
                     <strong>{application.socialHandle}</strong>
                     <p>
-                      {application.email}
+                      {application.phone || application.email}
+                      {application.email && application.phone ? ` · ${application.email}` : ""}
                       {application.audienceSize != null
                         ? ` · ${application.audienceSize.toLocaleString("en-IN")} followers`
                         : ""}

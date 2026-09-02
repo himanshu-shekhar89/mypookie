@@ -633,16 +633,18 @@
   grid-column: 1/-1;
 }
 .career-campaign-editor input,
-.career-campaign-editor textarea {
+.career-campaign-editor textarea,
+.career-campaign-editor select {
   width: 100%;
   margin-top: 5px;
   border: 1px solid #e4d8dc;
   border-radius: 9px;
   background: #fff;
   padding: 9px;
-  font: 8px "Nunito";
+  font: 11px "Nunito";
   text-transform: none;
 }
+.admin-shell,.admin-section{font-size:14px}.admin-section p,.admin-section label,.admin-section input,.admin-section select,.admin-section textarea,.admin-section button{font-size:max(10px,1em)}.careers-admin .career-campaign-editor label{font-size:10px}.careers-admin .admin-section-head p,.career-applications p,.career-applications strong{font-size:11px}.career-applications article small{font-size:9px}
 .career-campaign-editor textarea {
   min-height: 65px;
   resize: vertical;

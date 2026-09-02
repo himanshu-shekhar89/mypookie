@@ -43,7 +43,7 @@ export function GiftSoundtrack({
 }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const initialized = useRef(false);
-  const [playing, setPlaying] = useState(false);
+  const [playing, setPlaying] = useState(Boolean(settings.enabled));
   const [playbackError, setPlaybackError] = useState(false);
   const [mediaPlaying, setMediaPlaying] = useState(false);
   const [trackIndex, setTrackIndex] = useState(0);
@@ -77,6 +77,22 @@ export function GiftSoundtrack({
     window.addEventListener("mypookie-media-playing", listener);
     return () => window.removeEventListener("mypookie-media-playing", listener);
   }, []);
+  useEffect(() => {
+    if (!settings.enabled) return;
+    const unlock = () => {
+      const audio = audioRef.current;
+      if (!audio || !activeTrack.url || !ready || mediaPlaying) return;
+      setPlaying(true);
+      audio.volume = 0.14;
+      void audio.play().then(() => setPlaybackError(false)).catch(() => setPlaybackError(true));
+    };
+    document.addEventListener("pointerdown", unlock, { once: true, capture: true });
+    document.addEventListener("touchend", unlock, { once: true, capture: true });
+    return () => {
+      document.removeEventListener("pointerdown", unlock, true);
+      document.removeEventListener("touchend", unlock, true);
+    };
+  }, [settings.enabled, activeTrack.url, ready, mediaPlaying]);
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;

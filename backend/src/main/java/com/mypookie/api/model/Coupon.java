@@ -18,6 +18,8 @@ public class Coupon {
  @Column(name="used_count",nullable=false) private int usedCount;
  @Column(name="coupon_type",nullable=false) private String couponType="STANDARD";
  @Column(name="commission_paise_per_use",nullable=false) private int commissionPaisePerUse;
+ @Column(name="commission_type",nullable=false) private String commissionType="FIXED";
+ @Column(name="commission_percent",nullable=false) private int commissionPercent;
  @Column(name="valid_from") private Instant validFrom;
  @Column(name="expires_at") private Instant expiresAt;
  @Column(nullable=false) private boolean active=true;

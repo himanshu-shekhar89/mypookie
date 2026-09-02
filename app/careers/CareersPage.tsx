@@ -11,6 +11,8 @@ type Campaign = {
   active: boolean;
   defaultDiscountPercent: number;
   defaultCommissionPaise: number;
+  defaultCommissionType?: "FIXED" | "PERCENT";
+  defaultCommissionPercent?: number;
   monthlyEarningCapPaise: number;
 };
 const fallback: Campaign = {
@@ -20,28 +22,26 @@ const fallback: Campaign = {
   active: true,
   defaultDiscountPercent: 10,
   defaultCommissionPaise: 1000,
+  defaultCommissionType: "FIXED",
+  defaultCommissionPercent: 0,
   monthlyEarningCapPaise: 10000000,
 };
 
 export function CareersPage() {
   const [campaign, setCampaign] = useState(fallback);
-  const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   useEffect(() => {
-    fetch(`${api}/api/public/careers/campaign`)
+    fetch(`${api}/api/public/careers/campaign`, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then(setCampaign)
       .catch(() => {});
   }, []);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!file)
-      return setMessage("Please add a screenshot of your social profile.");
     setBusy(true);
     setMessage("");
     const form = new FormData(event.currentTarget);
-    form.set("screenshot", file);
     try {
       const response = await fetch(`${api}/api/public/careers/applications`, {
         method: "POST",
@@ -56,9 +56,8 @@ export function CareersPage() {
         );
       }
       event.currentTarget.reset();
-      setFile(null);
       setMessage(
-        "Application received! Our team will review your profile and contact you by email.",
+        "Application received! Our team will review your profile and contact you shortly.",
       );
     } catch (error) {
       setMessage(
@@ -121,7 +120,7 @@ export function CareersPage() {
             [
               "01",
               "Apply",
-              "Tell us about your audience and upload a profile screenshot.",
+              "Share your public profile link and phone number.",
             ],
             [
               "02",
@@ -136,7 +135,9 @@ export function CareersPage() {
             [
               "04",
               "Earn per sale",
-              `Start from ₹${campaign.defaultCommissionPaise / 100} per verified use; final rate is set on approval.`,
+              campaign.defaultCommissionType === "PERCENT"
+                ? `Earn up to ${campaign.defaultCommissionPercent || 0}% per verified order; your final rate is set by admin.`
+                : `Earn per verified order; your final commission is set by admin.`,
             ],
           ].map(([n, t, d]) => (
             <article key={n}>
@@ -173,60 +174,33 @@ export function CareersPage() {
             />
           </label>
           <label>
-            Email address
+            Phone number
+            <input
+              name="phone"
+              type="tel"
+              maxLength={20}
+              required
+              placeholder="+91 98765 43210"
+            />
+          </label>
+          <label className="career-wide">
+            Social media profile link
+            <input
+              name="socialProfileUrl"
+              type="url"
+              maxLength={500}
+              required
+              placeholder="https://instagram.com/yourprofile"
+            />
+          </label>
+          <label>
+            Email address <small>(optional)</small>
             <input
               name="email"
               type="email"
               maxLength={180}
-              required
               placeholder="you@example.com"
             />
-          </label>
-          <label>
-            Platform
-            <select name="platform" required defaultValue="">
-              <option value="" disabled>
-                Choose one
-              </option>
-              <option value="INSTAGRAM">Instagram</option>
-              <option value="SNAPCHAT">Snapchat</option>
-            </select>
-          </label>
-          <label>
-            Social handle
-            <input
-              name="socialHandle"
-              maxLength={100}
-              required
-              placeholder="@yourhandle"
-            />
-          </label>
-          <label>
-            Followers / audience size
-            <input
-              name="audienceSize"
-              type="number"
-              min="0"
-              placeholder="Optional"
-            />
-          </label>
-          <label className="career-wide">
-            Why are you a good fit?
-            <textarea
-              name="pitch"
-              maxLength={700}
-              placeholder="Tell us about your content and audience…"
-            />
-          </label>
-          <label className="career-upload career-wide">
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
-            />
-            <span>＋</span>
-            <b>{file ? file.name : "Upload social profile screenshot"}</b>
-            <small>JPG, PNG or WebP · maximum 5 MB</small>
           </label>
           <label className="career-consent career-wide">
             <input type="checkbox" required />

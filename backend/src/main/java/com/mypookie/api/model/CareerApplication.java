@@ -11,10 +11,12 @@ public class CareerApplication {
  @Id private String id;
  @Column(name="campaign_id",nullable=false) private String campaignId;
  @Column(name="full_name",nullable=false) private String fullName;
- @Column(nullable=false) private String email;
+ private String email;
+ private String phone;
  @Column(nullable=false) private String platform;
  @Column(name="social_handle",nullable=false) private String socialHandle;
- @Column(name="screenshot_url",nullable=false,length=1000) private String screenshotUrl;
+ @Column(name="screenshot_url",length=1000) private String screenshotUrl;
+ @Column(name="social_profile_url",length=1000) private String socialProfileUrl;
  @Column(name="audience_size") private Integer audienceSize;
  @Column(length=700) private String pitch;
  @Column(nullable=false) private String status="PENDING";

@@ -94,6 +94,7 @@ public class AdminController {
   if(principal==null||!isSuperAdmin(principal.email()))throw new ResponseStatusException(HttpStatus.FORBIDDEN,"Only a root administrator can change admin access");
   if(!Set.of("USER","ADMIN").contains(request.role()))throw new IllegalArgumentException("Invalid role");
   var user=users.findById(id).orElseThrow();
+  if("ADMIN".equals(request.role())&&!isSuperAdmin(user.getEmail()))throw new ResponseStatusException(HttpStatus.FORBIDDEN,"Only the two configured accounts can be administrators");
   if(isSuperAdmin(user.getEmail())&&!"ADMIN".equals(request.role()))throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Root administrator access cannot be removed");
   user.setRole(request.role());return users.save(user);
  }
@@ -108,6 +109,7 @@ public class AdminController {
  public CareerCampaign updateCareerCampaign(@Valid @RequestBody CareerCampaignUpdate request){
   var campaign=careerCampaign();campaign.setTitle(request.title().trim());campaign.setSummary(request.summary().trim());campaign.setActive(request.active());
   campaign.setDefaultDiscountPercent(request.defaultDiscountPercent());campaign.setDefaultCommissionPaise(request.defaultCommissionPaise());
+  campaign.setDefaultCommissionType(request.defaultCommissionType());campaign.setDefaultCommissionPercent(request.defaultCommissionPercent());
   campaign.setMonthlyEarningCapPaise(request.monthlyEarningCapPaise());campaign.setUpdatedAt(Instant.now());return careerCampaigns.save(campaign);
  }
 
@@ -126,6 +128,7 @@ public class AdminController {
   var coupon=new Coupon();coupon.setId(UUID.randomUUID().toString());coupon.setCode(code);coupon.setDiscountType("PERCENT");
   coupon.setDiscountValue(request.discountPercent());coupon.setMinOrderPaise(0);coupon.setCouponType("INFLUENCER");
   coupon.setCommissionPaisePerUse(request.commissionPaisePerUse());coupon.setActive(true);coupon.setUpdatedAt(Instant.now());coupons.save(coupon);
+  coupon.setCommissionType(request.commissionType());coupon.setCommissionPercent(request.commissionPercent());coupons.save(coupon);
   application.setCouponId(coupon.getId());application.setStatus("APPROVED");application.setAdminNote(request.adminNote());application.setUpdatedAt(Instant.now());
   return careerApplications.save(application);
  }
@@ -149,8 +152,8 @@ public class AdminController {
  public record ActivityUpdate(@jakarta.validation.constraints.NotBlank String name,@jakarta.validation.constraints.NotBlank String description,@jakarta.validation.constraints.PositiveOrZero int pricePaise,boolean active){}
  public record BundleUpdate(@jakarta.validation.constraints.NotBlank String name,@jakarta.validation.constraints.NotBlank String description,@jakarta.validation.constraints.PositiveOrZero int pricePaise,@jakarta.validation.constraints.NotBlank String activityIds,@jakarta.validation.constraints.Pattern(regexp="Lover|Friend|Parents|Sibling|Other") String recipientType,boolean active){}
  public record RoleUpdate(String role){}
- public record CareerCampaignUpdate(@jakarta.validation.constraints.NotBlank String title,@jakarta.validation.constraints.NotBlank String summary,boolean active,@jakarta.validation.constraints.Min(1) @jakarta.validation.constraints.Max(90) int defaultDiscountPercent,@jakarta.validation.constraints.PositiveOrZero int defaultCommissionPaise,@jakarta.validation.constraints.Positive int monthlyEarningCapPaise){}
- public record CareerApproval(@jakarta.validation.constraints.Pattern(regexp="[A-Za-z0-9_-]{4,30}") String couponCode,@jakarta.validation.constraints.Min(1) @jakarta.validation.constraints.Max(90) int discountPercent,@jakarta.validation.constraints.PositiveOrZero int commissionPaisePerUse,String adminNote){}
+ public record CareerCampaignUpdate(@jakarta.validation.constraints.NotBlank String title,@jakarta.validation.constraints.NotBlank String summary,boolean active,@jakarta.validation.constraints.Min(1) @jakarta.validation.constraints.Max(90) int defaultDiscountPercent,@jakarta.validation.constraints.PositiveOrZero int defaultCommissionPaise,@jakarta.validation.constraints.Pattern(regexp="FIXED|PERCENT") String defaultCommissionType,@jakarta.validation.constraints.Min(0) @jakarta.validation.constraints.Max(100) int defaultCommissionPercent,@jakarta.validation.constraints.Positive int monthlyEarningCapPaise){}
+ public record CareerApproval(@jakarta.validation.constraints.Pattern(regexp="[A-Za-z0-9_-]{4,30}") String couponCode,@jakarta.validation.constraints.Min(1) @jakarta.validation.constraints.Max(90) int discountPercent,@jakarta.validation.constraints.PositiveOrZero int commissionPaisePerUse,@jakarta.validation.constraints.Pattern(regexp="FIXED|PERCENT") String commissionType,@jakarta.validation.constraints.Min(0) @jakarta.validation.constraints.Max(100) int commissionPercent,String adminNote){}
  public record CareerDecision(String adminNote){}
  public record BulkRequestUpdate(String status,String adminNote){}
 }
