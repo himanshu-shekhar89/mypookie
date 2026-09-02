@@ -139,7 +139,11 @@ export function BuilderLivePreview({
     config.animation === "Heart burst"
       ? ["/letters/bursts/heart.webp", "/letters/bursts/star.webp"]
       : config.animation === "Golden sparkles"
-        ? ["/letters/bursts/star.webp", "/letters/bursts/star.webp", "/letters/bursts/heart.webp"]
+        ? [
+            "/letters/bursts/star.webp",
+            "/letters/bursts/star.webp",
+            "/letters/bursts/heart.webp",
+          ]
         : config.animation === "Classic unfold"
           ? ["/letters/bursts/star.webp", "/letters/bursts/heart.webp"]
           : ["/letters/bursts/heart.webp", "/letters/bursts/star.webp"];
@@ -1472,18 +1476,15 @@ function PhotoPuzzlePlay({
             )
           }
         />
-        <small>
-          reference · {size}×{size}
-        </small>
+        <small>the real photo</small>
       </div>
       <div>
-        <div className="puzzle-move-count" aria-live="polite">
-          <span>{autoSolving ? "AUTO SOLVING" : "MOVES"}</span>
-          <strong>{moves}</strong>
-        </div>
         <div
           className={`live-puzzle-grid ${solved ? "solved" : ""} ${autoSolving ? "auto-solving" : ""}`}
-          style={{ gridTemplateColumns: `repeat(${size},1fr)` }}
+          style={{
+            gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))`,
+            gridTemplateRows: `repeat(${size}, minmax(0, 1fr))`,
+          }}
         >
           {tiles.map((tile, index) => (
             <button
@@ -1510,13 +1511,18 @@ function PhotoPuzzlePlay({
             </div>
           )}
         </div>
-        <div className="puzzle-actions">
+        <div className="puzzle-landing-tools" aria-live="polite">
+          <span>
+            {autoSolving
+              ? "Putting it together…"
+              : `${moves} move${moves === 1 ? "" : "s"} · Tap a piece, then one beside it`}
+          </span>
           <button
             className="puzzle-shuffle"
             onClick={reshuffle}
             disabled={autoSolving}
           >
-            ↻ Shuffle again
+            Shuffle
           </button>
           {config.autoSolver === "true" && (
             <button
@@ -1648,7 +1654,13 @@ function MemoryBook({
         {config.scrapbookBorder !== "None" && (
           <div className="scrapbook-decorative-border" aria-hidden="true">
             {Array.from({ length: 14 }, (_, index) => (
-              <i key={index}>{config.scrapbookBorder === "Pressed flowers" ? "✿" : config.scrapbookBorder === "Golden stars" ? "✦" : "♡"}</i>
+              <i key={index}>
+                {config.scrapbookBorder === "Pressed flowers"
+                  ? "✿"
+                  : config.scrapbookBorder === "Golden stars"
+                    ? "✦"
+                    : "♡"}
+              </i>
             ))}
           </div>
         )}
