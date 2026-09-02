@@ -47,4 +47,31 @@
     display: grid;
     place-items: center;
   }
+
+  /* Memory Lane keeps its full album size, but must never become a scroll pane. */
+  .public-recipient .activity-stage-enter:has(.memory-book),
+  .public-recipient .builder-live-card:has(.memory-book) {
+    overflow: hidden !important;
+    overscroll-behavior: none;
+  }
+
+  .public-recipient .builder-live-card:has(.memory-book) {
+    display: flex !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+  }
+
+  .public-recipient .builder-live-card:has(.memory-book) > .live-interaction {
+    flex: 0 0 530px;
+    width: 100% !important;
+    min-height: 530px !important;
+    max-height: 530px !important;
+    overflow: hidden !important;
+    touch-action: pan-x;
+  }
+
+  .public-recipient .builder-live-card:has(.memory-book) .scrapbook-copy p {
+    overflow: hidden;
+  }
 }

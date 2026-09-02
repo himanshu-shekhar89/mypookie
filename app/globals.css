@@ -13,7 +13,6 @@
 @import "./account-menu.css";
 @import "./mypookie-fixes.css";
 @import "./recipient-fullscreen.css";
-@import "./recipient-mobile-games.css";
 @import "./recipient-transitions.css";
 @import "./puzzle-stage.css";
 @import "./transition-editor.css";
@@ -30,6 +29,7 @@
 @import "./catalog-redesign.css";
 @import "./mobile-builder.css";
 @import "./memory-lane-simple.css";
+@import "./recipient-mobile-games.css";
 
 :root {
   --ink: #33272b;
