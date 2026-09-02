@@ -21,11 +21,32 @@ export async function GET(
 
   const sourceUrl = new URL(`/music/${filename}`, request.url);
   const range = request.headers.get("range");
-  const source = await fetch(sourceUrl, {
-    headers: range ? { Range: range } : undefined,
-  });
+  const source = await fetch(sourceUrl);
   if (!source.ok || !source.body)
     return new Response("Soundtrack unavailable", { status: 502 });
+
+  // Railway's static server ignores Range headers. Mobile Safari expects a
+  // genuine 206 response before it will reliably start an audio element.
+  if (range) {
+    const bytes = new Uint8Array(await source.arrayBuffer());
+    const match = range.match(/bytes=(\d*)-(\d*)/);
+    if (!match) return new Response("Invalid range", { status: 416 });
+    const requestedStart = match[1] ? Number(match[1]) : 0;
+    const requestedEnd = match[2] ? Number(match[2]) : bytes.length - 1;
+    const start = Math.max(0, Math.min(requestedStart, bytes.length - 1));
+    const end = Math.max(start, Math.min(requestedEnd, bytes.length - 1));
+    const chunk = bytes.slice(start, end + 1);
+    return new Response(chunk, {
+      status: 206,
+      headers: {
+        "Content-Type": "audio/mpeg",
+        "Accept-Ranges": "bytes",
+        "Content-Range": `bytes ${start}-${end}/${bytes.length}`,
+        "Content-Length": String(chunk.byteLength),
+        "Cache-Control": "public, max-age=86400",
+      },
+    });
+  }
 
   const headers = new Headers();
   headers.set("Content-Type", "audio/mpeg");
