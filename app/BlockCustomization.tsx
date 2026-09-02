@@ -141,8 +141,48 @@ export function BlockCustomization({
           />
         </label>
         <div className="letter-art-picker">
-          <fieldset><legend>Choose an envelope</legend><div>{envelopeChoices.map(([label, image]) => <button type="button" key={label} className={(config.envelopeStyle || "Blush satin") === label ? "active" : ""} onClick={() => onConfig("envelopeStyle", label)}><img src={image} alt="" /><span>{label}</span><b>✓</b></button>)}</div></fieldset>
-          <fieldset><legend>Choose letter paper</legend><div>{letterPageChoices.map(([label, image]) => <button type="button" key={label} className={(config.pageType || "Classic cream") === label ? "active" : ""} onClick={() => onConfig("pageType", label)}><img src={image} alt="" /><span>{label}</span><b>✓</b></button>)}</div></fieldset>
+          <fieldset>
+            <legend>Choose an envelope</legend>
+            <div>
+              {envelopeChoices.map(([label, image]) => (
+                <button
+                  type="button"
+                  key={label}
+                  className={
+                    (config.envelopeStyle || "Blush satin") === label
+                      ? "active"
+                      : ""
+                  }
+                  onClick={() => onConfig("envelopeStyle", label)}
+                >
+                  <img src={image} alt="" />
+                  <span>{label}</span>
+                  <b>✓</b>
+                </button>
+              ))}
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Choose letter paper</legend>
+            <div>
+              {letterPageChoices.map(([label, image]) => (
+                <button
+                  type="button"
+                  key={label}
+                  className={
+                    (config.pageType || "Classic cream") === label
+                      ? "active"
+                      : ""
+                  }
+                  onClick={() => onConfig("pageType", label)}
+                >
+                  <img src={image} alt="" />
+                  <span>{label}</span>
+                  <b>✓</b>
+                </button>
+              ))}
+            </div>
+          </fieldset>
         </div>
         <div className="letter-customization-grid">
           <label className="field">
@@ -731,7 +771,7 @@ function QuizEditor({
         { text: "I forgot", image: "" },
       ],
       correctIndex: 0,
-      interaction: "floating",
+      interaction: "normal",
     },
   ];
   const questions = safeParse<QuizQuestion[]>(
@@ -789,7 +829,7 @@ function QuizEditor({
               Math.max(item.correctIndex || 0, 0),
               options.length - 1,
             ),
-            interaction: item.interaction === "normal" ? "normal" : "floating",
+            interaction: "normal",
           };
         },
       );
@@ -1633,10 +1673,15 @@ function MemoryEditor({
     if (captioningIndex !== null) return;
     setCaptioningIndex(index);
     try {
-      const api = process.env.NEXT_PUBLIC_API_URL || "https://backend-production-22bd.up.railway.app";
+      const api =
+        process.env.NEXT_PUBLIC_API_URL ||
+        "https://backend-production-22bd.up.railway.app";
       const response = await fetch(`${api}/api/ai/playful-prompts`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+        headers: {
+          "Content-Type": "application/json",
+          ...(await authHeaders()),
+        },
         body: JSON.stringify({
           gameType: "memorycaptions",
           relationship: `A personal scrapbook photo currently labelled: ${items[index].caption || "a beautiful shared memory"}`,
@@ -1734,8 +1779,20 @@ function MemoryEditor({
           <strong>How should memories appear?</strong>
           <div className="memory-simple-options animation-options">
             {albumAnimations.map(([label, icon, description]) => (
-              <button key={label} className={(config.albumAnimation || "Gentle pop") === label ? "active" : ""} onClick={() => onConfig("albumAnimation", label)}>
-                <i>{icon}</i><span><b>{label}</b><small>{description}</small></span>
+              <button
+                key={label}
+                className={
+                  (config.albumAnimation || "Gentle pop") === label
+                    ? "active"
+                    : ""
+                }
+                onClick={() => onConfig("albumAnimation", label)}
+              >
+                <i>{icon}</i>
+                <span>
+                  <b>{label}</b>
+                  <small>{description}</small>
+                </span>
               </button>
             ))}
           </div>
@@ -1745,7 +1802,18 @@ function MemoryEditor({
           <strong>Add a little decoration</strong>
           <div className="memory-simple-options border-options">
             {scrapbookBorders.map(([label, icon]) => (
-              <button key={label} className={(config.scrapbookBorder || "Tiny hearts") === label ? "active" : ""} onClick={() => onConfig("scrapbookBorder", label)}><i>{icon}</i><b>{label}</b></button>
+              <button
+                key={label}
+                className={
+                  (config.scrapbookBorder || "Tiny hearts") === label
+                    ? "active"
+                    : ""
+                }
+                onClick={() => onConfig("scrapbookBorder", label)}
+              >
+                <i>{icon}</i>
+                <b>{label}</b>
+              </button>
             ))}
           </div>
         </div>
@@ -1799,7 +1867,9 @@ function MemoryEditor({
                 className={`memory-cover-choice ${config.coverImage === item.image ? "active" : ""}`}
                 onClick={() => onConfig("coverImage", item.image)}
               >
-                {config.coverImage === item.image ? "✓ Cover photo" : "Set as cover"}
+                {config.coverImage === item.image
+                  ? "✓ Cover photo"
+                  : "Set as cover"}
               </button>
               {item.images && item.images.length > 1 && (
                 <label>
@@ -1817,8 +1887,24 @@ function MemoryEditor({
                 </label>
               )}
               <div className="memory-caption-row">
-                <label>Short caption<input maxLength={65} value={item.caption} onChange={(event) => patch(index, "caption", event.target.value)} placeholder="A tiny line for this memory…" /></label>
-                <button type="button" disabled={captioningIndex !== null} onClick={() => void fillOneCaption(index)}>✦ {captioningIndex === index ? "Writing…" : "AI caption"}</button>
+                <label>
+                  Short caption
+                  <input
+                    maxLength={65}
+                    value={item.caption}
+                    onChange={(event) =>
+                      patch(index, "caption", event.target.value)
+                    }
+                    placeholder="A tiny line for this memory…"
+                  />
+                </label>
+                <button
+                  type="button"
+                  disabled={captioningIndex !== null}
+                  onClick={() => void fillOneCaption(index)}
+                >
+                  ✦ {captioningIndex === index ? "Writing…" : "AI caption"}
+                </button>
               </div>
             </div>
             <button

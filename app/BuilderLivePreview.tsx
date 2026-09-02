@@ -993,7 +993,7 @@ function QuizPlay({
         { text: "I forgot", image: "" },
       ],
       correctIndex: 0,
-      interaction: "floating",
+      interaction: "normal",
     },
   ];
   const questions = parseJson<QuizQuestion[]>(config.quizQuestions, fallback);
@@ -1143,7 +1143,7 @@ function QuizPlay({
             <button
               data-option={optionIndex}
               key={optionIndex}
-              className={`${correctIndices.includes(optionIndex) ? "desired" : ""} ${wrongFloat ? "vanishing-wrong" : ""} ${hidden ? "quiz-option-hidden" : ""}`}
+              className={`${wrongFloat ? "vanishing-wrong" : ""} ${hidden ? "quiz-option-hidden" : ""}`}
               onClick={() => answer(optionIndex)}
             >
               {option.image && <img src={option.image} alt="" />}

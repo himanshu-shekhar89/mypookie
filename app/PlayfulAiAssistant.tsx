@@ -74,42 +74,36 @@ export function PlayfulAiAssistant({
       onConfig(
         "quizQuestions",
         JSON.stringify(
-          items
-            .slice(0, 7)
-            .map((item, index) => ({
-              id: `ai-${Date.now()}-${index}`,
-              question: item.prompt || "A playful question",
-              options: (item.options || ["Yes", "Maybe"])
-                .slice(0, 4)
-                .map((text) => ({ text, image: "" })),
-              correctIndex: 0,
-              interaction: "floating",
-            })),
+          items.slice(0, 7).map((item, index) => ({
+            id: `ai-${Date.now()}-${index}`,
+            question: item.prompt || "A playful question",
+            options: (item.options || ["Yes", "Maybe"])
+              .slice(0, 4)
+              .map((text) => ({ text, image: "" })),
+            correctIndex: 0,
+            interaction: "normal",
+          })),
         ),
       );
     } else if (id === "thisorthat") {
       onConfig(
         "thisOrThatRounds",
         JSON.stringify(
-          items
-            .slice(0, 8)
-            .map((item) => ({
-              prompt: item.prompt || "Choose one",
-              left: item.options?.[0] || "This",
-              right: item.options?.[1] || "That",
-            })),
+          items.slice(0, 8).map((item) => ({
+            prompt: item.prompt || "Choose one",
+            left: item.options?.[0] || "This",
+            right: item.options?.[1] || "That",
+          })),
         ),
       );
     } else if (id === "wouldrather") {
       onConfig(
         "pairs",
         JSON.stringify(
-          items
-            .slice(0, 8)
-            .map((item) => ({
-              left: item.options?.[0] || item.prompt || "This",
-              right: item.options?.[1] || "That",
-            })),
+          items.slice(0, 8).map((item) => ({
+            left: item.options?.[0] || item.prompt || "This",
+            right: item.options?.[1] || "That",
+          })),
         ),
       );
     } else if (id === "neverhave") {
@@ -149,43 +143,36 @@ export function PlayfulAiAssistant({
       onConfig(
         "treasureClues",
         JSON.stringify(
-          items
-            .slice(0, 7)
-            .map((item) => ({
-              clue: item.prompt || "Find the next memory",
-              hint: item.options?.[0] || "Think of a shared moment",
-              answer: item.options?.[1] || "love",
-              photo: "",
-              caption: "",
-            })),
+          items.slice(0, 7).map((item) => ({
+            clue: item.prompt || "Find the next memory",
+            hint: item.options?.[0] || "Think of a shared moment",
+            answer: item.options?.[1] || "love",
+            photo: "",
+            caption: "",
+          })),
         ),
       );
     else if (id === "alwaysyou") {
-      const generated = items
-        .slice(0, 7)
-        .map((item, index) => ({
-          id: `always-ai-${Date.now()}-${index}`,
-          question: item.prompt || "Who makes every day better?",
-          answers: (item.options?.length
-            ? item.options
-            : ["You", "Still you", "Always you", "Obviously you"]
-          ).slice(0, 4),
-        }));
+      const generated = items.slice(0, 7).map((item, index) => ({
+        id: `always-ai-${Date.now()}-${index}`,
+        question: item.prompt || "Who makes every day better?",
+        answers: (item.options?.length
+          ? item.options
+          : ["You", "Still you", "Always you", "Obviously you"]
+        ).slice(0, 4),
+      }));
       onConfig("alwaysYouQuestions", JSON.stringify(generated));
       if (generated[0]) {
         onConfig("question", generated[0].question);
         onConfig("answers", generated[0].answers.join("\n"));
       }
     } else if (id === "excuse") {
-      const rounds = items
-        .slice(0, 6)
-        .map((item, index) => ({
-          id: `excuse-ai-${Date.now()}-${index}`,
-          situation:
-            item.prompt || "We need a playful excuse to meet right now.",
-          senderExcuse:
-            item.options?.[0] || "There is an emergency hug shortage.",
-        }));
+      const rounds = items.slice(0, 6).map((item, index) => ({
+        id: `excuse-ai-${Date.now()}-${index}`,
+        situation: item.prompt || "We need a playful excuse to meet right now.",
+        senderExcuse:
+          item.options?.[0] || "There is an emergency hug shortage.",
+      }));
       onConfig("excuseRounds", JSON.stringify(rounds));
       onConfig("excuses", rounds.map((round) => round.senderExcuse).join("\n"));
     } else if (id === "roast")
@@ -257,7 +244,7 @@ export function PlayfulAiAssistant({
             onChange={(event) => onConfig("aiThemePrompt", event.target.value)}
             placeholder={
               id === "quiz"
-                ? "Example: Lock Upp season 2"
+                ? "Example: Stranger Things quiz"
                 : "Example: our college memories, cricket, a favourite show…"
             }
           />

@@ -650,7 +650,7 @@ const blockDefaults: Record<string, Record<string, string>> = {
           { text: "I forgot", image: "" },
         ],
         correctIndex: 0,
-        interaction: "floating",
+        interaction: "normal",
       },
     ]),
   },
@@ -3019,17 +3019,17 @@ export default function Home() {
                   <h2>{activeBlock.name}</h2>
                 </div>
               </div>
+              <PlayfulAiAssistant
+                id={activeBlock.id}
+                relationship={`${senderName.trim() || "the sender"} and ${name || "the recipient"} are ${recipient.toLowerCase()}s celebrating ${occasion.toLowerCase()}`}
+                config={activeBlock.config || {}}
+                onConfig={updateBlockConfig}
+              />
               <BlockCustomization
                 key={activeBlock.instanceId || activeBlock.id}
                 block={activeBlock}
                 giftId={giftId || undefined}
                 onMessage={updateMessage}
-                onConfig={updateBlockConfig}
-              />
-              <PlayfulAiAssistant
-                id={activeBlock.id}
-                relationship={`${senderName.trim() || "the sender"} and ${name || "the recipient"} are ${recipient.toLowerCase()}s celebrating ${occasion.toLowerCase()}`}
-                config={activeBlock.config || {}}
                 onConfig={updateBlockConfig}
               />
               <div className="style-row">
