@@ -10,6 +10,8 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import com.mypookie.api.service.FirebaseAuthenticationFilter;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -23,6 +25,8 @@ public class CareersController {
  private final CareerCampaignRepository campaigns;
  private final CareerApplicationRepository applications;
  private final ObjectProvider<FirebaseApp> firebaseApp;
+ private final CouponRepository coupons;
+ private final GiftOrderRepository orders;
 
  @GetMapping("/campaign")
  public CareerCampaign campaign(){
@@ -32,8 +36,10 @@ public class CareersController {
  @PostMapping(value="/applications",consumes="multipart/form-data")
  @ResponseStatus(HttpStatus.CREATED)
  public Map<String,String> apply(
+  @AuthenticationPrincipal FirebaseAuthenticationFilter.UserPrincipal principal,
   @RequestParam String fullName,@RequestParam String phone,@RequestParam String socialProfileUrl,
   @RequestParam(required=false) String email){
+  if(principal==null)throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Sign in with Google before applying.");
   var campaign=campaign();
   if(!campaign.isActive())throw new ResponseStatusException(HttpStatus.CONFLICT,"Applications are currently paused.");
   String cleanName=required(fullName,"Add your full name",100);
@@ -45,11 +51,30 @@ public class CareersController {
   if(cleanEmail!=null&&!cleanEmail.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"))throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Add a valid email address.");
   if(cleanEmail!=null&&applications.existsByEmailIgnoreCaseAndCampaignIdAndStatusIn(cleanEmail,campaign.getId(),List.of("PENDING","APPROVED")))throw new ResponseStatusException(HttpStatus.CONFLICT,"You already have an active application.");
   var application=new CareerApplication();
+  application.setFirebaseUid(principal.uid());
   application.setId(UUID.randomUUID().toString());application.setCampaignId(campaign.getId());application.setFullName(cleanName);
   application.setEmail(cleanEmail);application.setPhone(cleanPhone);application.setPlatform("SOCIAL");application.setSocialHandle(cleanProfile);
   application.setSocialProfileUrl(cleanProfile);
   applications.save(application);
   return Map.of("id",application.getId(),"status",application.getStatus());
+ }
+
+ @GetMapping("/me")
+ public Map<String,Object> dashboard(@AuthenticationPrincipal FirebaseAuthenticationFilter.UserPrincipal principal){
+  if(principal==null)throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Sign in with Google to view your dashboard.");
+  var application=applications.findFirstByFirebaseUidOrderByCreatedAtDesc(principal.uid()).orElse(null);
+  if(application==null)return Map.of("status","NOT_APPLIED");
+  Map<String,Object> result=new LinkedHashMap<>();result.put("status",application.getStatus());result.put("fullName",application.getFullName());
+  if(application.getCouponId()!=null){
+   var coupon=coupons.findById(application.getCouponId()).orElse(null);
+   if(coupon!=null){
+    var paid=orders.findByCouponCodeIgnoreCaseAndStatusOrderByCreatedAtAsc(coupon.getCode(),"PAID");
+    Map<String,Long> daily=new LinkedHashMap<>();for(var order:paid)daily.merge(order.getCreatedAt().toString().substring(0,10),1L,Long::sum);
+    long earnings="PERCENT".equals(coupon.getCommissionType())?paid.stream().mapToLong(order->Math.round(order.getAmountPaise()*coupon.getCommissionPercent()/100.0)).sum():(long)paid.size()*coupon.getCommissionPaisePerUse();
+    result.put("couponCode",coupon.getCode());result.put("discountPercent",coupon.getDiscountValue());result.put("uses",paid.size());result.put("earningsPaise",earnings);result.put("commissionType",coupon.getCommissionType());result.put("commissionValue","PERCENT".equals(coupon.getCommissionType())?coupon.getCommissionPercent():coupon.getCommissionPaisePerUse());result.put("dailyUsage",daily);
+   }
+  }
+  return result;
  }
 
  private String required(String value,String message,int max){

@@ -545,6 +545,15 @@ export function BlockCustomization({
       </CustomizationSection>
     );
 
+  if (block.id === "gif")
+    return <CustomizationSection title="Animated GIF" hint="Choose one from the collection or upload your own">
+      <label className="field">Message<input value={block.message} onChange={(event) => onMessage(event.target.value)} /></label>
+      <div className="gif-picker">
+        {["cute-blinking","kiss-lip-kiss","wow-sparkle-eyes","lopyu","love","catto","fofo-cute","cute-pinch","cat-dancing","happy-cat","dog-hiding","sorry","dog-smiling"].map((name) => <button type="button" className={config.gifUrl === `/gifs/${name}.gif` ? "selected" : ""} key={name} onClick={() => onConfig("gifUrl", `/gifs/${name}.gif`)}><img src={`/gifs/${name}.gif`} alt={name.replaceAll("-", " ")} /></button>)}
+      </div>
+      <label className="field gif-upload">Upload your own GIF<input type="file" accept="image/gif" onChange={(event) => { const file=event.target.files?.[0]; if(!file || file.size>5*1024*1024)return; const reader=new FileReader(); reader.onload=()=>onConfig("gifUrl",String(reader.result||"")); reader.readAsDataURL(file); }} /><small>Animated GIF · maximum 5 MB</small></label>
+    </CustomizationSection>;
+
   if (block.id === "memory")
     return <MemoryEditor config={config} onConfig={onConfig} />;
 
@@ -1244,6 +1253,12 @@ function WheelEditor({
       title="Spin wheel rules"
       hint="Up to 5 options and 6 planned spins"
     >
+      <label className="field">
+        Wheel frame
+        <select value={config.wheelFrame || "Lucky carnival"} onChange={(event) => onConfig("wheelFrame", event.target.value)}>
+          <option>Lucky carnival</option><option>Royal velvet</option><option>Candy pop</option><option>Celestial gold</option>
+        </select>
+      </label>
       <label className="field">
         Wheel options
         <textarea

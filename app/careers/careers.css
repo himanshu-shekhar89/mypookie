@@ -258,6 +258,7 @@
   padding: 11px;
   font-size: 12px;
 }
+.career-google-gate,.influencer-dashboard{background:#fff;border:1px solid #ead8de;border-radius:26px;padding:34px;align-self:start}.career-google-gate>span{display:grid;place-items:center;width:52px;height:52px;border-radius:16px;background:#fff1f5;color:#bd315c;font-size:24px;font-weight:900}.career-google-gate h3,.influencer-dashboard h3{font-size:30px;margin:18px 0 8px}.career-google-gate button{width:100%;margin-top:20px}.influencer-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:22px 0}.influencer-stats article{padding:18px;border-radius:18px;background:#fff5f7}.influencer-stats span{display:block;color:#876d79;font-size:12px}.influencer-stats strong{display:block;margin-top:7px;font-size:24px}.usage-chart{min-height:150px;display:flex;align-items:flex-end;gap:12px;padding:20px;border-radius:18px;background:#faf6f8}.usage-chart>div{display:grid;justify-items:center;gap:6px;flex:1}.usage-chart i{width:min(34px,100%);border-radius:8px 8px 3px 3px;background:linear-gradient(#f05b84,#a92f58)}.usage-chart small{font-size:9px}
 .careers-page footer {
   display: flex;
   justify-content: space-between;

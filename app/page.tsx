@@ -113,6 +113,7 @@ const activities: Block[] = [
     category: "Messages & media",
     message: "A little face-to-face moment, just for you.",
   },
+  { id: "gif", icon: "✦", name: "Animated GIF", description: "Pick a cute animation or upload your own", price: 29, color: "violet", category: "Messages & media", message: "A tiny moving moment, just for you." },
   {
     id: "memory",
     icon: "⌁",
@@ -3382,6 +3383,8 @@ function SoundtrackEditor({
   const previewRef = useRef<HTMLAudioElement>(null);
   const [duration, setDuration] = useState(0);
   const [editOpen, setEditOpen] = useState(false);
+  const [previewingId, setPreviewingId] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState("");
   useEffect(() => {
     const audio = previewRef.current;
     if (!audio) return;
@@ -3421,6 +3424,12 @@ function SoundtrackEditor({
       ? settings.startBlockId
       : blocks[0]?.id || "";
   function selectAndPreview(template: (typeof soundtrackTemplates)[number]) {
+    const audio = previewRef.current;
+    if (audio && previewingId === template.id && !audio.paused) {
+      audio.pause();
+      setPreviewingId(null);
+      return;
+    }
     const currentTracks = settings.tracks || [];
     const alreadySelected = currentTracks.some(
       (track) => track.id === template.id,
@@ -3459,14 +3468,17 @@ function SoundtrackEditor({
       endSeconds: selectedTrack?.endSeconds || "",
       tracks,
     });
-    const audio = previewRef.current;
     if (!audio) return;
-    audio.src = template.url;
+    setPreviewError("");
+    audio.src = playableSoundtrackUrl(template.url);
     audio.load();
     // Start inside the user's click gesture. Waiting for metadata first can
     // make Safari and mobile Chrome treat this as blocked autoplay.
     const playback = audio.play();
-    if (playback) void playback.catch(() => {});
+    if (playback) void playback.then(() => setPreviewingId(template.id)).catch(() => {
+      setPreviewingId(null);
+      setPreviewError("Tap once more to preview this song.");
+    });
     audio.onloadedmetadata = () => {
       const start = Math.min(
         Math.max(0, Number(settings.startSeconds) || 0),
@@ -3491,6 +3503,7 @@ function SoundtrackEditor({
         <b>{settings.enabled ? "ON" : "OFF"}</b>
       </div>
       <div className="soundtrack-body">
+        <audio ref={previewRef} preload="metadata" onEnded={() => setPreviewingId(null)} onPause={() => setPreviewingId(null)} />
         <label className="soundtrack-toggle">
           <input
             type="checkbox"
@@ -3571,7 +3584,9 @@ function SoundtrackEditor({
                     : selectAndPreview(template)
                 }
               >
-                {settings.templateId === template.id
+                {previewingId === template.id
+                  ? "❚❚ Playing"
+                  : settings.templateId === template.id
                   ? "✎ Edit"
                   : (settings.tracks || []).some(
                         (track) => track.id === template.id,
@@ -3582,6 +3597,7 @@ function SoundtrackEditor({
             </div>
           ))}
         </div>
+        {previewError && <p className="soundtrack-preview-error">{previewError}</p>}
         {editOpen && (
           <section className="soundtrack-clip-editor">
             <header>
@@ -3591,17 +3607,12 @@ function SoundtrackEditor({
               </div>
               <button onClick={() => setEditOpen(false)}>Done</button>
             </header>
-            <audio
-              ref={previewRef}
-              className="soundtrack-template-preview"
-              controls
-              preload="metadata"
-              src={playableSoundtrackUrl(settings.audioUrl)}
-              aria-label={`Preview ${settings.name}`}
-              onLoadedMetadata={(event) =>
-                setDuration(event.currentTarget.duration || 0)
-              }
-            />
+            <button type="button" className="soundtrack-template-preview-button" onClick={() => {
+              const selected = soundtrackTemplates.find((template) => template.id === settings.templateId);
+              if (selected) selectAndPreview(selected);
+            }}>
+              {previewingId === settings.templateId ? "Pause preview" : "Play preview"}
+            </button>
             <p className="template-note">
               Music stays soft beneath the experience. Interaction and win
               sounds always play louder.

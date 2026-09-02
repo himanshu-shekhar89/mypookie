@@ -407,8 +407,9 @@ export function BuilderLivePreview({
             onReward={onReward}
           />
         )}
+        {block.id === "gif" && <div className="live-gif-card"><img src={config.gifUrl || "/gifs/cute-blinking.gif"} alt="Animated surprise" /><strong>{block.message}</strong></div>}
         {block.id === "wheel" && (
-          <div className="live-wheel-scene">
+          <div className={`live-wheel-scene frame-${(config.wheelFrame || "Lucky carnival").toLowerCase().replaceAll(" ", "-")}`}>
             <div className="live-wheel-shell">
               <i className="live-wheel-pointer" />
               <div

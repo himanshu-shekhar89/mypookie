@@ -9,6 +9,7 @@ import java.time.Instant;
 @Getter @Setter @NoArgsConstructor
 public class CareerApplication {
  @Id private String id;
+ @Column(name="firebase_uid") private String firebaseUid;
  @Column(name="campaign_id",nullable=false) private String campaignId;
  @Column(name="full_name",nullable=false) private String fullName;
  private String email;

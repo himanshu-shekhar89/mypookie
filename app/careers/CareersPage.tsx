@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { authHeaders, signInWithFirebase, watchFirebaseAuth } from "../authClient";
 
 const api =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -31,12 +32,25 @@ export function CareersPage() {
   const [campaign, setCampaign] = useState(fallback);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [user, setUser] = useState<{ displayName: string | null; email: string | null } | null>(null);
+  const [dashboard, setDashboard] = useState<Record<string, any> | null>(null);
   useEffect(() => {
     fetch(`${api}/api/public/careers/campaign`, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then(setCampaign)
       .catch(() => {});
   }, []);
+  useEffect(() => watchFirebaseAuth((next) => {
+    setUser(next);
+    if (!next) { setDashboard(null); return; }
+    void authHeaders().then((headers) => fetch(`${api}/api/public/careers/me`, { headers, cache: "no-store" }))
+      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then(setDashboard).catch(() => setDashboard(null));
+  }), []);
+  async function googleLogin() {
+    try { await signInWithFirebase("google"); }
+    catch { setMessage("Google sign-in could not be completed. Please try again."); }
+  }
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
@@ -45,6 +59,7 @@ export function CareersPage() {
     try {
       const response = await fetch(`${api}/api/public/careers/applications`, {
         method: "POST",
+        headers: await authHeaders(),
         body: form,
       });
       if (!response.ok) {
@@ -163,7 +178,28 @@ export function CareersPage() {
             <li>18 years or older</li>
           </ul>
         </div>
-        <form onSubmit={submit}>
+        {!user ? (
+          <div className="career-google-gate">
+            <span>G</span><h3>Continue with Google</h3>
+            <p>Your Google account securely connects your application to your private coupon dashboard.</p>
+            <button type="button" onClick={googleLogin}>Sign in with Google →</button>
+          </div>
+        ) : dashboard?.status === "APPROVED" ? (
+          <div className="influencer-dashboard">
+            <small>YOUR CREATOR DASHBOARD</small><h3>Welcome, {user.displayName || "creator"}</h3>
+            <div className="influencer-stats">
+              <article><span>Coupon</span><strong>{dashboard.couponCode}</strong></article>
+              <article><span>Verified uses</span><strong>{dashboard.uses || 0}</strong></article>
+              <article><span>Earnings</span><strong>₹{((dashboard.earningsPaise || 0) / 100).toLocaleString("en-IN")}</strong></article>
+            </div>
+            <div className="usage-chart" aria-label="Coupon uses by day">
+              {Object.entries(dashboard.dailyUsage || {}).map(([day, value]) => <div key={day}><i style={{ height: `${Math.max(12, Number(value) * 22)}px` }} /><small>{day.slice(5)}</small></div>)}
+              {!Object.keys(dashboard.dailyUsage || {}).length && <p>Your usage graph will appear after the first verified order.</p>}
+            </div>
+          </div>
+        ) : dashboard && dashboard.status !== "NOT_APPLIED" ? (
+          <div className="career-google-gate"><span>✓</span><h3>Application {String(dashboard.status).toLowerCase()}</h3><p>Signed in as {user.email}. Your dashboard will unlock after approval.</p></div>
+        ) : <form onSubmit={submit}>
           <label>
             Full name
             <input
@@ -217,7 +253,7 @@ export function CareersPage() {
                 : "Submit application →"}
           </button>
           {message && <output className="career-wide">{message}</output>}
-        </form>
+        </form>}
       </section>
       <footer>
         <span>© 2026 mypookie.</span>
