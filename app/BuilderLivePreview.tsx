@@ -391,6 +391,7 @@ export function BuilderLivePreview({
           "excuse",
           "roast",
           "fortune",
+          "tarot",
           "mysterybox",
           "playlist",
           "countdowninvite",

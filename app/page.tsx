@@ -58,6 +58,7 @@ const transitionGameBlocks = new Set([
   "excuse",
   "roast",
   "fortune",
+  "tarot",
   "mysterybox",
 ]);
 
@@ -282,6 +283,16 @@ const activities: Block[] = [
     color: "gold",
     category: "Playful games",
     message: "Your future contains something lovely.",
+  },
+  {
+    id: "tarot",
+    icon: "☾",
+    name: "Tarot Cat Fortune",
+    description: "Choose one of nine AI-written fortune cards",
+    price: 59,
+    color: "purple",
+    category: "Playful games",
+    message: "The cards have a little secret for you.",
   },
   {
     id: "mysterybox",
@@ -781,6 +792,9 @@ const blockDefaults: Record<string, Record<string, string>> = {
     fortunes:
       "A surprise date is closer than you think\nSomeone is about to miss you loudly\nYour next hug will last longer than expected",
   },
+  tarot: {
+    tarotTheme: "love, joy and gentle new beginnings",
+  },
   mysterybox: {
     surprises:
       "Breakfast date\nA long drive\nYour favourite dessert\nOne wish granted",
@@ -988,7 +1002,7 @@ export default function Home() {
   const [winsOpen, setWinsOpen] = useState(false);
   const rewardCounter = useRef(0);
   const [catalogActivities, setCatalogActivities] =
-    useState<Block[]>(activities);
+    useState<Block[]>(activities.filter((item) => item.id !== "constellation"));
   const [catalogBundles, setCatalogBundles] = useState(bundles);
   const deepLinkApplied = useRef(false);
   const [workspaceReady, setWorkspaceReady] = useState(false);
@@ -1190,6 +1204,7 @@ export default function Home() {
         const byId = new Map(catalog.activities.map((item) => [item.id, item]));
         setCatalogActivities(
           activities
+            .filter((item) => item.id !== "constellation")
             .filter((item) => byId.has(item.id))
             .map((item) => {
               const managed = byId.get(item.id)!;

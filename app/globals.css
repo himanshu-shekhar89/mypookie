@@ -30,6 +30,7 @@
 @import "./mobile-builder.css";
 @import "./memory-lane-simple.css";
 @import "./recipient-mobile-games.css";
+@import "./tarot-fortune.css";
 
 :root {
   --ink: #33272b;

@@ -186,7 +186,7 @@ public class AiController {
                 Every prompt is a short, affectionate, harmless complaint or loving roast. Keep every options array empty.
                 Never make it cruel, humiliating, sensitive, or a truth-or-dare prompt.
                 """;
-            case "fortune", "fortunecookie" -> """
+            case "fortune", "fortunecookie", "tarot", "tarotfortune" -> """
                 Every prompt is a short, positive fortune or gentle prediction. Never write a question, task, quiz, instruction, or question mark.
                 Keep every options array empty.
                 """;

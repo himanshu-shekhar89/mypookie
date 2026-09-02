@@ -93,6 +93,7 @@ export function TinyBlockPreview(props: Props) {
   if (props.id === "excuse") return <ExcuseGenerator {...props} />;
   if (props.id === "roast") return <RoastCards {...props} />;
   if (props.id === "fortune") return <FortuneCookie {...props} />;
+  if (props.id === "tarot") return <TarotFortune {...props} />;
   if (props.id === "mysterybox") return <MysteryBox {...props} />;
   if (props.id === "playlist") return <PlaylistReveal {...props} />;
   if (props.id === "countdowninvite") return <CountdownInvite {...props} />;
@@ -1470,6 +1471,116 @@ function RoastCards({ config, onComplete }: Props) {
         <span>…and I would still choose you.</span>
       </div>
     </button>
+  );
+}
+
+const tarotFallbacks = [
+  "A quiet wish is already finding its way toward you.",
+  "Your next brave choice opens a surprisingly beautiful door.",
+  "A familiar smile will make an ordinary day feel magical.",
+  "Trust the gentle beginning; it carries more than it first reveals.",
+  "Something you give freely will return to you as joy.",
+  "The path ahead becomes clearer when you choose what feels kind.",
+  "A lovely coincidence is waiting just beyond your usual routine.",
+  "Your warmth is about to turn a small moment into a memory.",
+  "The chapter approaching you has room for wonder and good news.",
+];
+
+function TarotFortune({ config, onComplete, onReward }: Props) {
+  const [phase, setPhase] = useState<"intro" | "cards" | "revealed">("intro");
+  const [fortunes, setFortunes] = useState(tarotFallbacks);
+  const [loading, setLoading] = useState(true);
+  const [chosen, setChosen] = useState<number | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    fetch(`${api}/api/ai/playful-prompts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
+      body: JSON.stringify({
+        gameType: "tarot fortune",
+        relationship: "a warm digital gift for someone special",
+        tone: "mystical, hopeful, concise and personal-feeling",
+        topic: config.tarotTheme || "love, joy and gentle new beginnings",
+        count: 9,
+      }),
+    })
+      .then((response) => (response.ok ? response.json() : Promise.reject()))
+      .then((data: { items?: Array<{ prompt?: string }> }) => {
+        const next = (data.items || [])
+          .map((item) => item.prompt?.trim() || "")
+          .filter(Boolean)
+          .slice(0, 9);
+        if (next.length === 9) setFortunes(next);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+    return () => controller.abort();
+  }, [config.tarotTheme]);
+
+  function reveal(index: number) {
+    if (chosen !== null) return;
+    setChosen(index);
+    playSound("reveal");
+    window.setTimeout(() => {
+      setPhase("revealed");
+      playSound("win");
+      onReward?.(`Tarot fortune: ${fortunes[index]}`);
+      onComplete?.();
+    }, 720);
+  }
+
+  return (
+    <div className={`tarot-fortune tarot-${phase}`}>
+      {phase === "intro" ? (
+        <div className="tarot-cat-intro">
+          <img src="/tarot/tarot-cat.gif" alt="Animated tarot cat" />
+          <div className="tarot-cat-bubble">
+            <small>THE TAROT CAT WHISPERS</small>
+            <strong>Are you ready to meet the fortune meant for you?</strong>
+            <span>{loading ? "The stars are arranging your cards…" : "Nine fresh fortunes are ready."}</span>
+          </div>
+          <button disabled={loading} onClick={() => { playSound("tile"); setPhase("cards"); }}>
+            {loading ? "Reading the stars…" : "Yes, deal my cards ✦"}
+          </button>
+        </div>
+      ) : (
+        <div className="tarot-table">
+          <header>
+            <small>THE CAT HAS DEALT YOUR DESTINY</small>
+            <strong>{phase === "revealed" ? "Your card has spoken" : "Choose the card that calls to you"}</strong>
+          </header>
+          <div className="tarot-card-grid">
+            {fortunes.map((fortune, index) => {
+              const flipped = chosen === index;
+              return (
+                <button
+                  aria-label={flipped ? `Fortune: ${fortune}` : `Flip tarot card ${index + 1}`}
+                  className={flipped ? "flipped" : chosen !== null ? "dimmed" : ""}
+                  key={index}
+                  onClick={() => reveal(index)}
+                >
+                  <span className="tarot-card-inner">
+                    <i className="tarot-card-back" />
+                    <i
+                      className="tarot-card-face"
+                      style={{ backgroundPosition: `${(index % 3) * 50}% ${Math.floor(index / 3) * 50}%` }}
+                    >
+                      <em>{fortune}</em>
+                    </i>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {phase === "revealed" && chosen !== null && (
+            <p className="tarot-reading">{fortunes[chosen]}</p>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

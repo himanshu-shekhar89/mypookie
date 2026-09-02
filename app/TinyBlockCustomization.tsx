@@ -323,6 +323,24 @@ export function TinyBlockCustomization({
         />
       </Section>
     );
+  if (id === "tarot")
+    return (
+      <Section
+        title="Tarot Cat Fortune"
+        hint="Nine fresh, positive fortunes are prepared while the cat welcomes them"
+      >
+        <label className="field">
+          Fortune theme
+          <input
+            maxLength={90}
+            placeholder="Love, confidence, friendship, a new chapter…"
+            value={config.tarotTheme || ""}
+            onChange={(event) => onConfig("tarotTheme", event.target.value)}
+          />
+          <small>The AI keeps every reading warm, safe and uplifting.</small>
+        </label>
+      </Section>
+    );
   if (id === "mysterybox")
     return (
       <Section
