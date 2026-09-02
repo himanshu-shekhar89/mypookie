@@ -946,7 +946,7 @@ export default function Home() {
   const [soundtrack, setSoundtrack] = useState({
     enabled: false,
     templateId: "until-i-found-you",
-    audioUrl: "/music/until-i-found-you.mp3",
+    audioUrl: "/api/music/until-i-found-you",
     name: "Until I Found You",
     startMode: "From the beginning",
     startBlockId: "",
@@ -962,7 +962,7 @@ export default function Home() {
       {
         id: "until-i-found-you",
         name: "Until I Found You",
-        url: "/music/until-i-found-you.mp3",
+        url: "/api/music/until-i-found-you",
         startSeconds: "0",
         endSeconds: "",
       },
@@ -3297,73 +3297,78 @@ const soundtrackTemplates = [
     id: "until-i-found-you",
     name: "Until I Found You — Stephen Sanchez & Em Beihold",
     mood: "Classic romance · warm duet",
-    url: "/music/until-i-found-you.mp3",
+    url: "/api/music/until-i-found-you",
     mark: "♡",
   },
   {
     id: "blue",
     name: "Blue — yung kai",
     mood: "Dreamy · tender",
-    url: "/music/blue.mp3",
+    url: "/api/music/blue",
     mark: "☾",
   },
   {
     id: "i-think-they-call-this-love",
     name: "I Think They Call This Love",
     mood: "Sweet · timeless romance",
-    url: "/music/i-think-they-call-this-love.mp3",
+    url: "/api/music/i-think-they-call-this-love",
     mark: "♥",
   },
   {
     id: "somewhere-only-we-know",
     name: "Somewhere Only We Know — Keane",
     mood: "Nostalgic · meaningful",
-    url: "/music/somewhere-only-we-know.mp3",
+    url: "/api/music/somewhere-only-we-know",
     mark: "⌂",
   },
   {
     id: "treat-you-better",
     name: "Treat You Better — Shawn Mendes",
     mood: "Pop · heartfelt",
-    url: "/music/treat-you-better.mp3",
+    url: "/api/music/treat-you-better",
     mark: "✦",
   },
   {
     id: "the-night-we-met",
     name: "The Night We Met — Lord Huron",
     mood: "Late night · wistful",
-    url: "/music/the-night-we-met.mp3",
+    url: "/api/music/the-night-we-met",
     mark: "☽",
   },
   {
     id: "ive-got-my-eye-on-you",
     name: "I've Got My Eye on You",
     mood: "Intimate · magnetic",
-    url: "/music/ive-got-my-eye-on-you.mp3",
+    url: "/api/music/ive-got-my-eye-on-you",
     mark: "◉",
   },
   {
     id: "perfect",
     name: "Perfect — Ed Sheeran",
     mood: "Slow dance · romantic",
-    url: "/music/perfect.mp3",
+    url: "/api/music/perfect",
     mark: "♪",
   },
   {
     id: "i-wanna-be-yours",
     name: "I Wanna Be Yours — Arctic Monkeys",
     mood: "Moody · devoted",
-    url: "/music/i-wanna-be-yours.mp3",
+    url: "/api/music/i-wanna-be-yours",
     mark: "∞",
   },
   {
     id: "i-thought-i-saw-your-face-today",
     name: "I Thought I Saw Your Face Today — She & Him",
     mood: "Indie · nostalgic",
-    url: "/music/i-thought-i-saw-your-face-today.mp3",
+    url: "/api/music/i-thought-i-saw-your-face-today",
     mark: "❀",
   },
 ];
+
+function playableSoundtrackUrl(url: string) {
+  const match = url.match(/^\/music\/([^/]+)\.mp3$/);
+  return match ? `/api/music/${match[1]}` : url;
+}
 
 function SoundtrackEditor({
   settings,
@@ -3591,7 +3596,7 @@ function SoundtrackEditor({
               className="soundtrack-template-preview"
               controls
               preload="metadata"
-              src={settings.audioUrl}
+              src={playableSoundtrackUrl(settings.audioUrl)}
               aria-label={`Preview ${settings.name}`}
               onLoadedMetadata={(event) =>
                 setDuration(event.currentTarget.duration || 0)

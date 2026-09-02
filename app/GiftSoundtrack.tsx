@@ -2,6 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 
+function playableAudioUrl(url: string) {
+  const match = url.match(/^\/music\/([^/]+)\.mp3$/);
+  return match ? `/api/music/${match[1]}` : url;
+}
+
 export type SoundtrackSettings = {
   enabled: boolean;
   audioUrl: string;
@@ -42,15 +47,17 @@ export function GiftSoundtrack({
   const [playbackError, setPlaybackError] = useState(false);
   const [mediaPlaying, setMediaPlaying] = useState(false);
   const [trackIndex, setTrackIndex] = useState(0);
-  const tracks = settings.tracks?.length
-    ? settings.tracks
-    : [
-        {
-          id: settings.templateId || "soundtrack",
-          name: settings.name,
-          url: settings.audioUrl,
-        },
-      ];
+  const tracks = (
+    settings.tracks?.length
+      ? settings.tracks
+      : [
+          {
+            id: settings.templateId || "soundtrack",
+            name: settings.name,
+            url: settings.audioUrl,
+          },
+        ]
+  ).map((track) => ({ ...track, url: playableAudioUrl(track.url) }));
   const activeTrack = tracks[Math.min(trackIndex, tracks.length - 1)];
   const startIndex =
     settings.startMode === "From a specific block"
@@ -184,14 +191,14 @@ export function GiftSoundtrack({
           {playbackError
             ? "Tap again to allow audio"
             : mediaPlaying
-            ? "Paused for this voice or video"
-            : playing && !ready
-              ? `Queued for ${target}`
-              : playing
-                ? "Soft background · SFX stay louder"
-                : settings.startMode === "From a specific block"
-                  ? `Starts at ${target}`
-                  : "Tap to play softly"}
+              ? "Paused for this voice or video"
+              : playing && !ready
+                ? `Queued for ${target}`
+                : playing
+                  ? "Soft background · SFX stay louder"
+                  : settings.startMode === "From a specific block"
+                    ? `Starts at ${target}`
+                    : "Tap to play softly"}
         </small>
       </div>
       {activeTrack.url && (
