@@ -51,6 +51,7 @@ export function BuilderLivePreview({
   onComplete,
   onAdvance,
   onReward,
+  onConfig,
 }: {
   block: PreviewBlock;
   name: string;
@@ -63,6 +64,7 @@ export function BuilderLivePreview({
   onComplete?: () => void;
   onAdvance?: () => void;
   onReward?: (reward: string) => void;
+  onConfig?: (key: string, value: string) => void;
 }) {
   const [opened, setOpened] = useState(false);
   const [letterStage, setLetterStage] = useState<
@@ -347,6 +349,7 @@ export function BuilderLivePreview({
             config={config}
             onComplete={onComplete}
             onReward={onReward}
+            onConfig={onConfig}
           />
         )}
         {block.id === "thisorthat" && (

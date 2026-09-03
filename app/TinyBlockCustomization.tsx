@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { authHeaders } from "./authClient";
-import { DrawingCanvas } from "./DrawingCanvas";
 
 type Props = {
   id: string;
@@ -354,8 +353,7 @@ export function TinyBlockCustomization({
             <button type="button" key={prompt} className={(config.drawPrompt || "A flower") === prompt ? "active" : ""} onClick={() => onConfig("drawPrompt", prompt)}>{prompt}</button>
           ))}
         </div>
-        <DrawingCanvas initial={config.senderDrawing || ""} onSave={(image) => onConfig("senderDrawing", image)} saveLabel={config.senderDrawing ? "Update my drawing" : "Save my drawing"} />
-        <small>{config.senderDrawing ? "Your drawing is saved. The recipient will draw before seeing it." : "Save your drawing before publishing the gift."}</small>
+        <small>Draw and save on the live board. The recipient will receive the same prompt without seeing your drawing.</small>
       </Section>
     );
   if (id === "mysterybox")

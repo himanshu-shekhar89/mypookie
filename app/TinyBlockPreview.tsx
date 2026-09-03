@@ -15,6 +15,7 @@ type Props = {
   onComplete?: () => void;
   onAdvance?: () => void;
   onReward?: (reward: string) => void;
+  onConfig?: (key: string, value: string) => void;
 };
 type Pair = {
   left: string;
@@ -1583,7 +1584,7 @@ function TarotFortune({ config, onComplete, onAdvance, onReward }: Props) {
   );
 }
 
-function DrawTogether({ config, giftId, recipientSession, recipientName, senderName, blockInstanceId, onComplete, onReward }: Props) {
+function DrawTogether({ config, giftId, recipientSession, recipientName, senderName, blockInstanceId, onComplete, onReward, onConfig }: Props) {
   const [recipientDrawing, setRecipientDrawing] = useState("");
   const [saved, setSaved] = useState(false);
   const prompt = config.drawPrompt || "A flower";
@@ -1606,16 +1607,18 @@ function DrawTogether({ config, giftId, recipientSession, recipientName, senderN
     if (isRecipient) {
       const response = await fetch(`${api}/api/public/gifts/${giftId}/responses`, { method: "POST", headers: recipientHeaders(recipientSession), body: JSON.stringify({ blockId: blockInstanceId || "drawtogether", responseType: "DRAW_TOGETHER", contributorName: recipientName || "Recipient", responseText: "DRAW_TOGETHER", photoUrls: [image] }) });
       if (!response.ok) return;
+    } else {
+      onConfig?.("senderDrawing", image);
     }
     setSaved(true); playSound("win"); onReward?.(`You both drew: ${prompt}`); onComplete?.();
   }
 
   return <section className="draw-together">
     <small>ONE PROMPT · TWO IMAGINATIONS</small><h3>Draw Together</h3><p>Draw it your way. You only see each other’s art after saving.</p><span className="drawing-prompt">Draw: {prompt}</span>
-    {!saved ? <DrawingCanvas onSave={save} saveLabel="Finish my drawing" /> : <div className="drawing-comparison">
+    {!saved ? <DrawingCanvas initial={isRecipient ? "" : config.senderDrawing || ""} onSave={save} saveLabel={isRecipient ? "Finish my drawing" : config.senderDrawing ? "Update my drawing" : "Save my drawing"} /> : isRecipient ? <div className="drawing-comparison">
       <figure>{config.senderDrawing ? <img src={config.senderDrawing} alt={`${senderName || "Sender"}'s drawing`} /> : <div className="drawing-missing">Sender drawing coming soon</div>}<figcaption>{senderName || "Sender"}</figcaption></figure>
       <figure>{recipientDrawing ? <img src={recipientDrawing} alt={`${recipientName || "Recipient"}'s drawing`} /> : <div className="drawing-missing">Your drawing</div>}<figcaption>{recipientName || "Recipient"}</figcaption></figure>
-    </div>}
+    </div> : <div className="sender-drawing-saved"><img src={recipientDrawing || config.senderDrawing} alt="Your saved drawing"/><strong>Your drawing is saved</strong><span>The recipient will draw the same prompt before seeing yours.</span><button onClick={() => setSaved(false)}>Edit drawing</button></div>}
   </section>;
 }
 

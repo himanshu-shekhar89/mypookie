@@ -2993,6 +2993,7 @@ export default function Home() {
                   theme={theme}
                   ambience={ambience}
                   giftId={giftId || undefined}
+                  onConfig={updateBlockConfig}
                   onAdvance={() => {
                     if (!libraryPreview && active < selected.length - 1) {
                       setActive(active + 1);
