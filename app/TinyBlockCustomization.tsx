@@ -339,6 +339,8 @@ export function TinyBlockCustomization({
           />
           <small>The AI keeps every reading warm, safe and uplifting.</small>
         </label>
+        <button className="tiny-ai-start" type="button" onClick={() => onConfig("tarotGeneration", String(Date.now()))}>✦ Start AI fortune generation</button>
+        <small>Set the theme first, then prepare the nine cards with one click.</small>
       </Section>
     );
   if (id === "drawtogether")

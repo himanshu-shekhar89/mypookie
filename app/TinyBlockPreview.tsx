@@ -1518,7 +1518,7 @@ function TarotFortune({ config, onComplete, onAdvance, onReward }: Props) {
       .catch(() => {})
       .finally(() => setLoading(false));
     return () => controller.abort();
-  }, [config.tarotTheme]);
+  }, [config.tarotGeneration]);
 
   function reveal(index: number) {
     if (chosen !== null) return;
@@ -1586,7 +1586,7 @@ function TarotFortune({ config, onComplete, onAdvance, onReward }: Props) {
 
 function DrawTogether({ config, giftId, recipientSession, recipientName, senderName, blockInstanceId, onComplete, onReward, onConfig }: Props) {
   const [recipientDrawing, setRecipientDrawing] = useState("");
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState(() => Boolean(config.senderDrawing && !(giftId && recipientSession)));
   const prompt = config.drawPrompt || "A flower";
   const isRecipient = Boolean(giftId && recipientSession);
 

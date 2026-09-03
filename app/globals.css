@@ -39,6 +39,7 @@
 .casino-wheel-scene output,.casino-slot-scene output{color:#ffe7a6!important;text-shadow:0 2px 8px #190b18}
 .drawing-missing{display:grid;place-items:center;width:100%;aspect-ratio:9/7;padding:18px;border-radius:12px;background:#fffaf4;color:#9a7080;font-weight:800;text-align:center}
 .drawing-tools{display:flex;justify-content:center;gap:8px;margin:0 0 12px}.drawing-tools button{padding:9px 14px;border:1px solid #dfc6d0;border-radius:99px;background:#fff;color:#48243f;font-weight:800}.drawing-tools button.active{background:#48243f;color:#fff}.sender-drawing-saved{display:grid;justify-items:center;gap:9px}.sender-drawing-saved img{width:min(480px,100%);border:3px solid #e8cbd7;border-radius:20px;background:#fffaf4}.sender-drawing-saved strong{font-size:18px}.sender-drawing-saved span{color:#806c7d}.sender-drawing-saved button{padding:9px 16px;border:1px solid #dfc6d0;border-radius:99px;background:#fff;font-weight:800}
+.drawing-tools button{display:grid;place-items:center;min-width:43px;min-height:43px;padding:8px;font-size:22px}.drawing-tools button:disabled{opacity:.35}.paint-bucket-icon{display:block;transform:rotate(-35deg);font-size:23px}.tiny-ai-start{width:100%;margin-top:12px;padding:12px 16px;border:0;border-radius:13px;background:#48243f;color:#fff;font-weight:900}
 @media(max-width:760px){.casino-wheel-scene{padding:22px 8px 18px}.casino-slot-scene{padding:50px 8px 24px}.casino-slot-scene .slot-machine-rig{transform:scale(.9);transform-origin:center}}
 
 :root {

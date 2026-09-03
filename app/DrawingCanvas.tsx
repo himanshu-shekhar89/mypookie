@@ -7,8 +7,11 @@ const colors = ["#3f2038", "#d52f62", "#ff7d74", "#f6c453", "#4fae78", "#4d83d1"
 export function DrawingCanvas({ initial = "", onSave, saveLabel = "Save my drawing" }: { initial?: string; onSave: (image: string) => void; saveLabel?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
+  const undoStack = useRef<ImageData[]>([]);
+  const redoStack = useRef<ImageData[]>([]);
   const [color, setColor] = useState(colors[0]);
   const [tool, setTool] = useState<"draw" | "fill">("draw");
+  const [, setHistoryVersion] = useState(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -19,10 +22,26 @@ export function DrawingCanvas({ initial = "", onSave, saveLabel = "Save my drawi
     context.fillRect(0, 0, canvas.width, canvas.height);
     if (initial) {
       const image = new Image();
-      image.onload = () => context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      image.onload = () => { context.drawImage(image, 0, 0, canvas.width, canvas.height); undoStack.current = []; redoStack.current = []; setHistoryVersion(value => value + 1); };
       image.src = initial;
     }
   }, [initial]);
+
+  function remember() {
+    const canvas = canvasRef.current!;
+    undoStack.current = [...undoStack.current.slice(-19), canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height)];
+    redoStack.current = [];
+    setHistoryVersion(value => value + 1);
+  }
+  function restore(source: React.MutableRefObject<ImageData[]>, destination: React.MutableRefObject<ImageData[]>) {
+    const canvas = canvasRef.current!;
+    const context = canvas.getContext("2d")!;
+    const state = source.current.pop();
+    if (!state) return;
+    destination.current.push(context.getImageData(0, 0, canvas.width, canvas.height));
+    context.putImageData(state, 0, 0);
+    setHistoryVersion(value => value + 1);
+  }
 
   function point(event: React.PointerEvent<HTMLCanvasElement>) {
     const canvas = canvasRef.current!;
@@ -31,9 +50,11 @@ export function DrawingCanvas({ initial = "", onSave, saveLabel = "Save my drawi
   }
   function start(event: React.PointerEvent<HTMLCanvasElement>) {
     if (tool === "fill") {
+      remember();
       fillClosedArea(event);
       return;
     }
+    remember();
     drawing.current = true;
     event.currentTarget.setPointerCapture(event.pointerId);
     const p = point(event);
@@ -78,11 +99,13 @@ export function DrawingCanvas({ initial = "", onSave, saveLabel = "Save my drawi
     context.lineTo(p.x, p.y); context.stroke();
   }
   function clear() {
+    remember();
     const canvas = canvasRef.current!;
     const context = canvas.getContext("2d")!;
     context.fillStyle = "#fffaf4"; context.fillRect(0, 0, canvas.width, canvas.height);
   }
   function fill() {
+    remember();
     const canvas = canvasRef.current!;
     const context = canvas.getContext("2d")!;
     context.fillStyle = color;
@@ -93,7 +116,7 @@ export function DrawingCanvas({ initial = "", onSave, saveLabel = "Save my drawi
     <div className="drawing-palette" aria-label="Drawing colours">
       {colors.map(value => <button key={value} className={color === value ? "active" : ""} style={{ background: value }} onClick={() => setColor(value)} aria-label={`Use ${value}`} />)}
     </div>
-    <div className="drawing-tools"><button className={tool === "draw" ? "active" : ""} onClick={() => setTool("draw")}>✎ Draw</button><button className={tool === "fill" ? "active" : ""} onClick={() => setTool("fill")}>◉ Fill closed area</button></div>
+    <div className="drawing-tools"><button className={tool === "draw" ? "active" : ""} onClick={() => setTool("draw")} aria-label="Pencil" title="Pencil">✎</button><button className={tool === "fill" ? "active" : ""} onClick={() => setTool("fill")} aria-label="Paint bucket" title="Fill a closed area"><span className="paint-bucket-icon">▰</span></button><button onClick={() => restore(undoStack, redoStack)} disabled={!undoStack.current.length} aria-label="Undo" title="Undo">↶</button><button onClick={() => restore(redoStack, undoStack)} disabled={!redoStack.current.length} aria-label="Redo" title="Redo">↷</button></div>
     <div className="drawing-actions"><button onClick={clear}>Clear</button><button onClick={fill}>Fill page</button><button className="primary" onClick={() => onSave(canvasRef.current!.toDataURL("image/webp", .82))}>{saveLabel}</button></div>
   </div>;
 }
