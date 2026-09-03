@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { authHeaders } from "./authClient";
+import { DrawingCanvas } from "./DrawingCanvas";
 
 type Props = {
   id: string;
@@ -339,6 +340,22 @@ export function TinyBlockCustomization({
           />
           <small>The AI keeps every reading warm, safe and uplifting.</small>
         </label>
+      </Section>
+    );
+  if (id === "drawtogether")
+    return (
+      <Section title="Draw Together" hint="You both draw the same simple prompt">
+        <label className="field">
+          What should you both draw?
+          <input maxLength={40} value={config.drawPrompt || "A flower"} onChange={(event) => onConfig("drawPrompt", event.target.value)} />
+        </label>
+        <div className="draw-editor-prompts">
+          {["A flower", "An iPhone", "A tiny house", "A cat", "A birthday cake", "A happy cloud"].map(prompt => (
+            <button type="button" key={prompt} className={(config.drawPrompt || "A flower") === prompt ? "active" : ""} onClick={() => onConfig("drawPrompt", prompt)}>{prompt}</button>
+          ))}
+        </div>
+        <DrawingCanvas initial={config.senderDrawing || ""} onSave={(image) => onConfig("senderDrawing", image)} saveLabel={config.senderDrawing ? "Update my drawing" : "Save my drawing"} />
+        <small>{config.senderDrawing ? "Your drawing is saved. The recipient will draw before seeing it." : "Save your drawing before publishing the gift."}</small>
       </Section>
     );
   if (id === "mysterybox")

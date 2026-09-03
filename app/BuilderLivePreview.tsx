@@ -49,6 +49,7 @@ export function BuilderLivePreview({
   recipientSession,
   onInteract,
   onComplete,
+  onAdvance,
   onReward,
 }: {
   block: PreviewBlock;
@@ -60,6 +61,7 @@ export function BuilderLivePreview({
   recipientSession?: string;
   onInteract?: () => void;
   onComplete?: () => void;
+  onAdvance?: () => void;
   onReward?: (reward: string) => void;
 }) {
   const [opened, setOpened] = useState(false);
@@ -392,6 +394,7 @@ export function BuilderLivePreview({
           "roast",
           "fortune",
           "tarot",
+          "drawtogether",
           "mysterybox",
           "playlist",
           "countdowninvite",
@@ -406,11 +409,12 @@ export function BuilderLivePreview({
             recipientName={name}
             senderName={senderName}
             onComplete={onComplete}
+            onAdvance={onAdvance}
             onReward={onReward}
           />
         )}
         {block.id === "wheel" && (
-          <div className={`live-wheel-scene frame-${(config.wheelFrame || "Lucky carnival").toLowerCase().replaceAll(" ", "-")}`}>
+          <div className={`live-wheel-scene casino-wheel-scene frame-${(config.wheelFrame || "Lucky carnival").toLowerCase().replaceAll(" ", "-")}`}>
             <div className="live-wheel-shell">
               <i className="live-wheel-pointer" />
               <div
@@ -1278,7 +1282,7 @@ function SlotMachinePlay({
     );
   }
   return (
-    <div className="live-slot-machine">
+    <div className="live-slot-machine casino-slot-scene">
       <div className="slot-machine-rig">
         <div className={`slot-machine-reels ${rolling ? "rolling" : ""}`}>
           {reels.map((reel, index) => (

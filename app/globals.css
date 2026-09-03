@@ -31,6 +31,14 @@
 @import "./memory-lane-simple.css";
 @import "./recipient-mobile-games.css";
 @import "./tarot-fortune.css";
+@import "./draw-together.css";
+
+.casino-wheel-scene,.casino-slot-scene{overflow:hidden;border:1px solid #d8af66;border-radius:28px;background-color:#29162d;background-position:center;background-repeat:no-repeat;background-size:cover;box-shadow:inset 0 0 0 5px #fff1c329,0 20px 44px #35152c4d}
+.casino-wheel-scene{width:min(520px,100%);padding:30px 18px 24px;background-image:linear-gradient(#23122a42,#23122a73),url('/casino/spin-wheel-bg.png')}
+.casino-slot-scene{width:min(540px,100%);padding:70px 28px 35px;background-image:linear-gradient(#2a132342,#2a132375),url('/casino/slot-machine-bg.png')}
+.casino-wheel-scene output,.casino-slot-scene output{color:#ffe7a6!important;text-shadow:0 2px 8px #190b18}
+.drawing-missing{display:grid;place-items:center;width:100%;aspect-ratio:9/7;padding:18px;border-radius:12px;background:#fffaf4;color:#9a7080;font-weight:800;text-align:center}
+@media(max-width:760px){.casino-wheel-scene{padding:22px 8px 18px}.casino-slot-scene{padding:50px 8px 24px}.casino-slot-scene .slot-machine-rig{transform:scale(.9);transform-origin:center}}
 
 :root {
   --ink: #33272b;

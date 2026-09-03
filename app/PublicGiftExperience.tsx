@@ -330,6 +330,14 @@ export function PublicGiftExperience({ token }: { token: string }) {
         : "them";
   const block = blocks[step];
   const currentComplete = complete.includes(step);
+  function advanceMoment() {
+    if (step < blocks.length - 1) {
+      const next = step + 1;
+      recordProgress(next + 1);
+      setStep(next);
+      setIntroSlide(transitionStyle(blocks[next]) !== "None" ? 1 : 2);
+    } else finishGift();
+  }
   const reportBlock = blocks.find(
     (item) =>
       item.id === "thisorthat" && item.config?.compatibilityEnabled === "true",
@@ -702,6 +710,7 @@ export function PublicGiftExperience({ token }: { token: string }) {
                   current.includes(step) ? current : [...current, step],
                 )
               }
+              onAdvance={advanceMoment}
               onReward={(reward) => setWins((current) => [...current, reward])}
             />
           </div>
@@ -711,16 +720,7 @@ export function PublicGiftExperience({ token }: { token: string }) {
             <button
               className="primary recipient-next"
               disabled={!currentComplete}
-              onClick={() => {
-                if (step < blocks.length - 1) {
-                  const next = step + 1;
-                  recordProgress(next + 1);
-                  setStep(next);
-                  setIntroSlide(
-                    transitionStyle(blocks[next]) !== "None" ? 1 : 2,
-                  );
-                } else finishGift();
-              }}
+              onClick={advanceMoment}
             >
               {step < blocks.length - 1
                 ? "Continue to the next moment"

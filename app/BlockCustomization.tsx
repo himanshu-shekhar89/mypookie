@@ -627,6 +627,8 @@ export function BlockCustomization({
       "excuse",
       "roast",
       "fortune",
+      "tarot",
+      "drawtogether",
       "mysterybox",
       "playlist",
       "countdowninvite",

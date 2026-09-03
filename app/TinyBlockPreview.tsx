@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { playSound } from "./soundFx";
+import { DrawingCanvas } from "./DrawingCanvas";
 
 type Props = {
   id: string;
@@ -12,6 +13,7 @@ type Props = {
   recipientName?: string;
   senderName?: string;
   onComplete?: () => void;
+  onAdvance?: () => void;
   onReward?: (reward: string) => void;
 };
 type Pair = {
@@ -94,6 +96,7 @@ export function TinyBlockPreview(props: Props) {
   if (props.id === "roast") return <RoastCards {...props} />;
   if (props.id === "fortune") return <FortuneCookie {...props} />;
   if (props.id === "tarot") return <TarotFortune {...props} />;
+  if (props.id === "drawtogether") return <DrawTogether {...props} />;
   if (props.id === "mysterybox") return <MysteryBox {...props} />;
   if (props.id === "playlist") return <PlaylistReveal {...props} />;
   if (props.id === "countdowninvite") return <CountdownInvite {...props} />;
@@ -1486,7 +1489,7 @@ const tarotFallbacks = [
   "The chapter approaching you has room for wonder and good news.",
 ];
 
-function TarotFortune({ config, onComplete, onReward }: Props) {
+function TarotFortune({ config, onComplete, onAdvance, onReward }: Props) {
   const [phase, setPhase] = useState<"intro" | "cards" | "revealed">("intro");
   const [fortunes, setFortunes] = useState(tarotFallbacks);
   const [loading, setLoading] = useState(true);
@@ -1495,22 +1498,18 @@ function TarotFortune({ config, onComplete, onReward }: Props) {
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
-    fetch(`${api}/api/ai/playful-prompts`, {
+    fetch(`${api}/api/ai/tarot-fortunes`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       signal: controller.signal,
       body: JSON.stringify({
-        gameType: "tarot fortune",
-        relationship: "a warm digital gift for someone special",
-        tone: "mystical, hopeful, concise and personal-feeling",
-        topic: config.tarotTheme || "love, joy and gentle new beginnings",
-        count: 9,
+        theme: config.tarotTheme || "love, joy and gentle new beginnings",
       }),
     })
       .then((response) => (response.ok ? response.json() : Promise.reject()))
-      .then((data: { items?: Array<{ prompt?: string }> }) => {
-        const next = (data.items || [])
-          .map((item) => item.prompt?.trim() || "")
+      .then((data: { fortunes?: string[] }) => {
+        const next = (data.fortunes || [])
+          .map((item) => item.trim())
           .filter(Boolean)
           .slice(0, 9);
         if (next.length === 9) setFortunes(next);
@@ -1576,12 +1575,48 @@ function TarotFortune({ config, onComplete, onReward }: Props) {
             })}
           </div>
           {phase === "revealed" && chosen !== null && (
-            <p className="tarot-reading">{fortunes[chosen]}</p>
+            <><p className="tarot-reading">{fortunes[chosen]}</p><button className="tarot-next" onClick={() => onAdvance?.()}>Continue to the next moment →</button></>
           )}
         </div>
       )}
     </div>
   );
+}
+
+function DrawTogether({ config, giftId, recipientSession, recipientName, senderName, blockInstanceId, onComplete, onReward }: Props) {
+  const [recipientDrawing, setRecipientDrawing] = useState("");
+  const [saved, setSaved] = useState(false);
+  const prompt = config.drawPrompt || "A flower";
+  const isRecipient = Boolean(giftId && recipientSession);
+
+  useEffect(() => {
+    if (!isRecipient) return;
+    fetch(`${api}/api/public/gifts/${giftId}/responses?blockId=${encodeURIComponent(blockInstanceId || "drawtogether")}`, { headers: recipientHeaders(recipientSession) })
+      .then(response => response.ok ? response.json() : [])
+      .then((items: SavedResponse[]) => {
+        const match = items.find(item => item.responseText === "DRAW_TOGETHER");
+        if (!match) return;
+        const images = parse<string[]>(match.photoUrls, []);
+        if (images[0]) { setRecipientDrawing(images[0]); setSaved(true); onComplete?.(); }
+      }).catch(() => {});
+  }, [blockInstanceId, giftId, isRecipient, onComplete, recipientSession]);
+
+  async function save(image: string) {
+    setRecipientDrawing(image);
+    if (isRecipient) {
+      const response = await fetch(`${api}/api/public/gifts/${giftId}/responses`, { method: "POST", headers: recipientHeaders(recipientSession), body: JSON.stringify({ blockId: blockInstanceId || "drawtogether", responseType: "DRAW_TOGETHER", contributorName: recipientName || "Recipient", responseText: "DRAW_TOGETHER", photoUrls: [image] }) });
+      if (!response.ok) return;
+    }
+    setSaved(true); playSound("win"); onReward?.(`You both drew: ${prompt}`); onComplete?.();
+  }
+
+  return <section className="draw-together">
+    <small>ONE PROMPT · TWO IMAGINATIONS</small><h3>Draw Together</h3><p>Draw it your way. You only see each other’s art after saving.</p><span className="drawing-prompt">Draw: {prompt}</span>
+    {!saved ? <DrawingCanvas onSave={save} saveLabel="Finish my drawing" /> : <div className="drawing-comparison">
+      <figure>{config.senderDrawing ? <img src={config.senderDrawing} alt={`${senderName || "Sender"}'s drawing`} /> : <div className="drawing-missing">Sender drawing coming soon</div>}<figcaption>{senderName || "Sender"}</figcaption></figure>
+      <figure>{recipientDrawing ? <img src={recipientDrawing} alt={`${recipientName || "Recipient"}'s drawing`} /> : <div className="drawing-missing">Your drawing</div>}<figcaption>{recipientName || "Recipient"}</figcaption></figure>
+    </div>}
+  </section>;
 }
 
 function FortuneCookie({ config, onComplete, onReward }: Props) {

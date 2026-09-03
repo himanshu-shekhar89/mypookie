@@ -7,6 +7,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestClient;
+import com.mypookie.api.service.TarotFortuneService;
 
 import java.util.List;
 import java.util.Map;
@@ -16,6 +17,7 @@ import java.util.Map;
 public class AiController {
     private final RestClient client;
     private final ObjectMapper mapper;
+    private final TarotFortuneService tarotFortunes;
 
     @Value("${app.groq.api-key:}")
     private String apiKey;
@@ -23,9 +25,15 @@ public class AiController {
     @Value("${app.groq.model:openai/gpt-oss-20b}")
     private String model;
 
-    public AiController(RestClient.Builder builder, ObjectMapper mapper) {
+    public AiController(RestClient.Builder builder, ObjectMapper mapper, TarotFortuneService tarotFortunes) {
         this.client = builder.baseUrl("https://api.groq.com/openai/v1").build();
         this.mapper = mapper;
+        this.tarotFortunes = tarotFortunes;
+    }
+
+    @PostMapping("/tarot-fortunes")
+    public ResponseEntity<?> tarotFortunes(@RequestBody(required=false) Map<String,Object> request){
+        return ResponseEntity.ok(Map.of("fortunes",tarotFortunes.drawNine(safe(request,"theme","hope, affection and delightful surprises"))));
     }
 
     @PostMapping("/quiz-suggestions")

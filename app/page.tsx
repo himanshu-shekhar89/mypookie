@@ -59,6 +59,7 @@ const transitionGameBlocks = new Set([
   "roast",
   "fortune",
   "tarot",
+  "drawtogether",
   "mysterybox",
 ]);
 
@@ -293,6 +294,16 @@ const activities: Block[] = [
     color: "purple",
     category: "Playful games",
     message: "The cards have a little secret for you.",
+  },
+  {
+    id: "drawtogether",
+    icon: "✎",
+    name: "Draw Together",
+    description: "Draw the same prompt and compare your creations",
+    price: 59,
+    color: "violet",
+    category: "Playful games",
+    message: "One prompt. Two wonderfully different imaginations.",
   },
   {
     id: "mysterybox",
@@ -794,6 +805,10 @@ const blockDefaults: Record<string, Record<string, string>> = {
   },
   tarot: {
     tarotTheme: "love, joy and gentle new beginnings",
+  },
+  drawtogether: {
+    drawPrompt: "A flower",
+    senderDrawing: "",
   },
   mysterybox: {
     surprises:
@@ -2514,6 +2529,17 @@ export default function Home() {
         current.includes(previewStep) ? current : [...current, previewStep],
       );
     }
+    function advancePreviewMoment() {
+      if (previewStep < selected.length - 1) {
+        setPreviewStep(previewStep + 1);
+        setOpened(false);
+      } else {
+        setPreviewStep(0);
+        setOpened(false);
+        setCompletedSteps([]);
+        setWonItems([]);
+      }
+    }
     function addReward(reward: string) {
       rewardCounter.current += 1;
       setWonItems((current) => [
@@ -2589,6 +2615,7 @@ export default function Home() {
               giftId={giftId || undefined}
               onInteract={() => setOpened(true)}
               onComplete={completeMoment}
+              onAdvance={advancePreviewMoment}
               onReward={addReward}
             />
           )}
@@ -2597,17 +2624,7 @@ export default function Home() {
               <button
                 className="primary recipient-next"
                 disabled={!currentComplete}
-                onClick={() => {
-                  if (previewStep < selected.length - 1) {
-                    setPreviewStep(previewStep + 1);
-                    setOpened(false);
-                  } else {
-                    setPreviewStep(0);
-                    setOpened(false);
-                    setCompletedSteps([]);
-                    setWonItems([]);
-                  }
-                }}
+                onClick={advancePreviewMoment}
               >
                 {previewStep < selected.length - 1
                   ? "Continue to the next moment"
@@ -2976,6 +2993,11 @@ export default function Home() {
                   theme={theme}
                   ambience={ambience}
                   giftId={giftId || undefined}
+                  onAdvance={() => {
+                    if (!libraryPreview && active < selected.length - 1) {
+                      setActive(active + 1);
+                    }
+                  }}
                 />
               )}
             </div>
