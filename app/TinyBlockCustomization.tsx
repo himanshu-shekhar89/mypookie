@@ -1507,12 +1507,12 @@ function BondQuestionEditor({
   onConfig: Props["onConfig"];
 }) {
   const fallback = [
-    "How did your relationship begin, and what changed after that day?",
-    "Which shared memory captures your bond better than any other?",
-    "When life gets difficult, how do the two of you show up for each other?",
-    "What kind of adventure feels most like the two of you?",
-    "Which emotion defines your relationship right now?",
-    "What do you hope the next chapter together feels like?",
+    "Where did you first meet?",
+    "What do you always laugh about?",
+    "What snack do you usually share?",
+    "Who texts first most often?",
+    "Which day together do you remember most?",
+    "What little habit of theirs makes you smile?",
   ];
   const questions = parse<string[]>(config.bondQuestions, fallback);
   const answers = parse<string[]>(config.senderBondAnswers, []);
@@ -1548,8 +1548,8 @@ function BondQuestionEditor({
         },
         body: JSON.stringify({
           gameType: mode,
-          relationship: `A real ${config.relationshipType || "meaningful relationship"}; questions must uncover how they met, shared memories, emotional dynamic, conflict style, favourite moments and hopes for the future so an AI can accurately match a ${mode}.`,
-          tone: `simple, short, ${config.bondQuestionTone || "Playful"}`,
+          relationship: `A real ${config.relationshipType || "meaningful relationship"}. Ask only tiny, everyday questions about their moments and each other: where they met, what they laugh about, a shared snack or song, a small habit, who texts first, or one memorable day. Each question must contain one simple idea, use at most 10 words, and be answerable with a name or short phrase. Do not ask about conflict, abstract emotions, relationship analysis, the future, metaphors, or compatibility. The answers will help match a ${mode}.`,
+          tone: `warm, natural, very simple, ${config.bondQuestionTone || "Playful"}`,
           count: questionCount,
         }),
       });

@@ -203,8 +203,10 @@ public class AiController {
                 Do not write questions or dares.
                 """;
             case "movie", "song" -> """
-                Every prompt is a surprising, funny bonding question about shared chaos, snacks, plot twists, bloopers, superpowers, or inside-joke energy.
-                Keep every options array empty. Avoid generic compatibility questions and never write dares.
+                Every prompt is one very short, everyday question about a tiny shared moment or about each other.
+                Ask about things such as where they met, a favourite snack/place/song, what they laugh about, who texts first, a small habit, or one memorable day.
+                Use one simple idea per question and no more than 10 words. It must be answerable with a name or short phrase.
+                Keep every options array empty. Never ask about conflict, abstract emotions, relationship analysis, the future, metaphors, compatibility, or dares.
                 """;
             case "memorycaptions", "memorylane" -> """
                 Every prompt is one warm scrapbook photo caption of at most 7 words. Write captions in the same order as the supplied page labels.

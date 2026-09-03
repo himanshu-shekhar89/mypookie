@@ -1077,12 +1077,12 @@ function BondReveal({
   onReward,
 }: Props) {
   const fallback = [
-    "Who would accidentally become the villain in your movie?",
-    "What snack would get top billing in your story?",
-    "Which of you causes the surprise plot twists?",
-    "What ridiculous scene sums up your bond?",
-    "If your bond had a superpower, what would it be?",
-    "What would the end-credit blooper show?",
+    "Where did you first meet?",
+    "What do you always laugh about?",
+    "What snack do you usually share?",
+    "Who texts first most often?",
+    "Which day together do you remember most?",
+    "What little habit of theirs makes you smile?",
   ];
   const questionCount = id === "movie" ? 3 : 6;
   const questions = parse<string[]>(config.bondQuestions, fallback).slice(

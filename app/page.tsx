@@ -618,12 +618,12 @@ const ROOT_ADMIN_EMAILS = new Set([
 ]);
 
 const funBondQuestions = [
-  "How did your relationship begin, and what changed after that day?",
-  "Which shared memory captures your bond better than any other?",
-  "When life gets difficult, how do you show up for each other?",
-  "What kind of adventure feels most like the two of you?",
-  "Which emotion defines your relationship right now?",
-  "What do you hope the next chapter together feels like?",
+  "Where did you first meet?",
+  "What do you always laugh about?",
+  "What snack do you usually share?",
+  "Who texts first most often?",
+  "Which day together do you remember most?",
+  "What little habit of theirs makes you smile?",
 ];
 
 const blockDefaults: Record<string, Record<string, string>> = {
