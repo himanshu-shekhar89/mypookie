@@ -414,6 +414,7 @@ export function BuilderLivePreview({
             onComplete={onComplete}
             onAdvance={onAdvance}
             onReward={onReward}
+            onConfig={onConfig}
           />
         )}
         {block.id === "wheel" && (

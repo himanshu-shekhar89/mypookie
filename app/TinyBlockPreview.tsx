@@ -1591,6 +1591,12 @@ function DrawTogether({ config, giftId, recipientSession, recipientName, senderN
   const isRecipient = Boolean(giftId && recipientSession);
 
   useEffect(() => {
+    if (isRecipient || !config.senderDrawing) return;
+    setRecipientDrawing(config.senderDrawing);
+    setSaved(true);
+  }, [config.senderDrawing, isRecipient]);
+
+  useEffect(() => {
     if (!isRecipient) return;
     fetch(`${api}/api/public/gifts/${giftId}/responses?blockId=${encodeURIComponent(blockInstanceId || "drawtogether")}`, { headers: recipientHeaders(recipientSession) })
       .then(response => response.ok ? response.json() : [])
@@ -1615,10 +1621,10 @@ function DrawTogether({ config, giftId, recipientSession, recipientName, senderN
 
   return <section className="draw-together">
     <small>ONE PROMPT · TWO IMAGINATIONS</small><h3>Draw Together</h3><p>Draw it your way. You only see each other’s art after saving.</p><span className="drawing-prompt">Draw: {prompt}</span>
-    {!saved ? <DrawingCanvas initial={isRecipient ? "" : config.senderDrawing || ""} onSave={save} saveLabel={isRecipient ? "Finish my drawing" : config.senderDrawing ? "Update my drawing" : "Save my drawing"} /> : isRecipient ? <div className="drawing-comparison">
+    {!saved ? <DrawingCanvas initial="" onSave={save} saveLabel={isRecipient ? "Finish my drawing" : "Save my drawing"} /> : isRecipient ? <div className="drawing-comparison">
       <figure>{config.senderDrawing ? <img src={config.senderDrawing} alt={`${senderName || "Sender"}'s drawing`} /> : <div className="drawing-missing">Sender drawing coming soon</div>}<figcaption>{senderName || "Sender"}</figcaption></figure>
       <figure>{recipientDrawing ? <img src={recipientDrawing} alt={`${recipientName || "Recipient"}'s drawing`} /> : <div className="drawing-missing">Your drawing</div>}<figcaption>{recipientName || "Recipient"}</figcaption></figure>
-    </div> : <div className="sender-drawing-saved"><img src={recipientDrawing || config.senderDrawing} alt="Your saved drawing"/><strong>Your drawing is saved</strong><span>The recipient will draw the same prompt before seeing yours.</span><button onClick={() => setSaved(false)}>Edit drawing</button></div>}
+    </div> : <div className="sender-drawing-saved"><img src={recipientDrawing || config.senderDrawing} alt="Your saved drawing"/><strong>Your drawing is saved and locked</strong><span>The recipient will receive a blank canvas with the same prompt, then see both drawings after finishing.</span><span className="drawing-locked-badge" aria-label="Drawing locked">🔒 Locked</span></div>}
   </section>;
 }
 
