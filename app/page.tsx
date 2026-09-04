@@ -1036,6 +1036,17 @@ export default function Home() {
   const rewardCounter = useRef(0);
   const [catalogActivities, setCatalogActivities] =
     useState<Block[]>(activities.filter((item) => item.id !== "constellation"));
+  const [activitySearchOpen, setActivitySearchOpen] = useState(false);
+  const [activitySearch, setActivitySearch] = useState("");
+  const visibleCatalogActivities = useMemo(() => {
+    const query = activitySearch.trim().toLowerCase();
+    if (!query) return catalogActivities;
+    return catalogActivities.filter((item) =>
+      `${item.name} ${item.description} ${item.category}`
+        .toLowerCase()
+        .includes(query),
+    );
+  }, [activitySearch, catalogActivities]);
   const [catalogBundles, setCatalogBundles] = useState(bundles);
   const deepLinkApplied = useRef(false);
   const [workspaceReady, setWorkspaceReady] = useState(false);
@@ -2760,33 +2771,47 @@ export default function Home() {
               <div className="section-kicker">ACTIVITY LIBRARY</div>
               <h2>Add a little magic</h2>
             </div>
-            <span>{catalogActivities.length}</span>
+            <span>{visibleCatalogActivities.length}</span>
           </div>
           <p>Choose a block to add it and try it live in the centre.</p>
+          <div className={`activity-search ${activitySearchOpen ? "open" : ""}`}>
+            <button
+              type="button"
+              aria-label={activitySearchOpen ? "Close activity search" : "Search activities"}
+              aria-expanded={activitySearchOpen}
+              onClick={() => {
+                if (activitySearchOpen) setActivitySearch("");
+                setActivitySearchOpen((current) => !current);
+              }}
+            >
+              {activitySearchOpen ? "×" : "⌕"}
+            </button>
+            {activitySearchOpen && <input autoFocus type="search" value={activitySearch} onChange={(event)=>setActivitySearch(event.target.value)} placeholder="Search blocks…" aria-label="Search activity blocks" />}
+          </div>
           <div className="activity-categories">
             {(
               [
+                "Celebrations & gifts",
                 "Messages & media",
                 "Memories",
                 "Playful games",
                 "Sentimental stories",
-                "Celebrations & gifts",
                 "Plans & together",
               ] as const
-            ).map((category) => (
+            ).filter((category) => visibleCatalogActivities.some((item) => item.category === category)).map((category) => (
               <section className="activity-category" key={category}>
                 <header>
                   <strong>{category}</strong>
                   <span>
                     {
-                      catalogActivities.filter(
+                      visibleCatalogActivities.filter(
                         (item) => item.category === category,
                       ).length
                     }
                   </span>
                 </header>
                 <div className="activity-list">
-                  {catalogActivities
+                  {visibleCatalogActivities
                     .filter((item) => item.category === category)
                     .map((item) => {
                       const selectedIndex = selected.findIndex(
@@ -2933,6 +2958,7 @@ export default function Home() {
                 </div>
               </section>
             ))}
+            {!visibleCatalogActivities.length && <div className="activity-search-empty"><span>⌕</span><strong>No blocks found</strong><small>Try a shorter name or category.</small></div>}
           </div>
         </aside>
         <section className="live-editor">
