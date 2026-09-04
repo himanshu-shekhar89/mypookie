@@ -1630,7 +1630,7 @@ function DrawTogether({ config, giftId, recipientSession, recipientName, senderN
 }
 
 function BirthdayCake({ config, onComplete, onReward, onAdvance }: Props) {
-  const [stage, setStage] = useState<"match" | "lighting" | "lit" | "wish" | "cutting" | "cut">("match");
+  const [stage, setStage] = useState<"lighting" | "lit" | "wish" | "cutting" | "cut">("lighting");
   const [litCandles, setLitCandles] = useState<boolean[]>([false, false, false]);
   const [secretWish, setSecretWish] = useState("");
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
@@ -1661,18 +1661,16 @@ function BirthdayCake({ config, onComplete, onReward, onAdvance }: Props) {
   }
   return <div className={`birthday-game birthday-stage-${stage}`} style={{backgroundImage:"url('/birthday/ribbon-stage.png')"}}>
     <div className="birthday-confetti" aria-hidden="true">✦ ♥ ✧ ★ ♥ ✦</div>
-    {stage === "cut" && <div className="birthday-celebration" aria-hidden="true"><span>🎉</span><span>✨</span><span>🎊</span><span>⭐</span><span>🎉</span></div>}
+    {stage === "cut" && <><div className="birthday-celebration" aria-hidden="true"><span>🎉</span><span>✨</span><span>🎊</span><span>⭐</span><span>🎉</span></div><div className="birthday-balloons" aria-hidden="true"><i>🎈</i><i>🎈</i><i>🎈</i><i>🎈</i><i>🎈</i></div><div className="birthday-finale-gifs"><img src="/gifs/birthday/woo-hoo.gif" alt=""/><img src="/gifs/birthday/celebrate-celebration.gif" alt=""/></div></>}
     <header><small>HAPPY BIRTHDAY</small><h3>{config.birthdayName || "Birthday star"}</h3><p>{config.birthdayMessage || "Make a wish — today is entirely yours!"}</p></header>
     {config.faceImage && <div className={`birthday-character body-${bodyIndex}`}><img className="birthday-body" src="/birthday/character-bodies.png" alt="Birthday costume"/><img className="birthday-face" src={config.faceImage} alt="Birthday star"/></div>}
     <div className="birthday-cake-zone" onPointerDown={beginSwipe} onPointerUp={finishSwipe}>
-      <div className="birthday-cake-split left"><img src={cake} alt={`${flavour} birthday cake`}/></div>
-      <div className="birthday-cake-split right"><img src={cake} alt=""/></div>
-      <div className="birthday-candles">{litCandles.map((lit,index)=><button type="button" className={lit ? "lit" : ""} aria-label={`${lit ? "Lit" : "Light"} candle ${index + 1}`} key={index} onClick={(event)=>{event.stopPropagation();lightCandle(index)}}><i><b/></i></button>)}</div>
+      <div className="birthday-cake-split birthday-cake-whole"><img src={cake} alt={`${flavour} birthday cake`}/></div>
+      {(stage === "lighting" || stage === "lit") && <div className="birthday-candles">{litCandles.map((lit,index)=><button type="button" className={lit ? "lit" : ""} aria-label={`${lit ? "Lit" : "Light"} candle ${index + 1}`} key={index} onClick={(event)=>{event.stopPropagation();lightCandle(index)}}><i><b/></i></button>)}</div>}
       {stage === "cutting" && <div className="birthday-swipe-line" aria-hidden="true">↘</div>}
       {stage === "cut" && <div className="birthday-cake-slice" aria-label="A slice of butterscotch cake"><img src="/birthday/butterscotch-slice.png" alt="Butterscotch cake slice" /></div>}
     </div>
     <div className="birthday-action">
-      {stage === "match" && <><img src="/birthday/matchstick.png" alt="Matchstick"/><button onClick={()=>{playSound("tile");setStage("lighting")}}>Pick up the matchstick</button></>}
       {stage === "lighting" && <strong>Tap each candle to light it · {litCandles.filter(Boolean).length}/3 ✨</strong>}
       {stage === "lit" && <button onClick={()=>{playSound("pop");setStage("wish")}}>💨 Blow out the candles</button>}
       {stage === "cutting" && <><img className="knife" src="/birthday/cake-knife.png" alt="Cake knife"/><strong>Swipe your finger across the cake to cut it ↘</strong></>}

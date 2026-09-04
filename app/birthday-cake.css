@@ -13,3 +13,9 @@
 
 .birthday-cake-slice{width:132px;height:132px;font-size:0}.birthday-cake-slice img{display:block;width:100%;height:100%;object-fit:contain}
 @media(max-width:700px){.birthday-cake-slice{width:102px;height:102px}}
+
+/* Perspective cake cut: remove a wedge and pull the matching slice towards the guest. */
+.birthday-stage-cut .birthday-cake-whole{transform:none;clip-path:polygon(0 0,43% 0,50% 47%,58% 0,100% 0,100% 100%,0 100%)}
+.birthday-stage-cut .birthday-cake-slice{right:0;bottom:-3%;width:156px;height:156px;transform-origin:50% 100%;animation:bdayPullSlice .9s cubic-bezier(.16,.9,.24,1) both}
+.birthday-finale-gifs{position:absolute;z-index:14;left:18px;right:18px;bottom:18px;display:flex;justify-content:space-between;pointer-events:none}.birthday-finale-gifs img{width:76px;height:76px;object-fit:cover;border:4px solid #fff;border-radius:20px;box-shadow:0 12px 28px #6b294855}.birthday-balloons{position:absolute;z-index:13;inset:0;overflow:hidden;pointer-events:none}.birthday-balloons i{position:absolute;bottom:-18%;font-style:normal;font-size:48px;animation:bdayBalloon 3.8s ease-in infinite}.birthday-balloons i:nth-child(1){left:5%}.birthday-balloons i:nth-child(2){left:23%;animation-delay:.5s}.birthday-balloons i:nth-child(3){left:48%;animation-delay:.15s}.birthday-balloons i:nth-child(4){left:70%;animation-delay:.8s}.birthday-balloons i:nth-child(5){left:89%;animation-delay:.3s}@keyframes bdayPullSlice{from{opacity:0;transform:translate(-110px,-65px) scale(.52) rotate(-14deg)}to{opacity:1;transform:translate(0,0) scale(1) rotate(4deg)}}@keyframes bdayBalloon{0%{transform:translateY(0) rotate(-7deg);opacity:0}12%{opacity:1}100%{transform:translateY(-760px) rotate(9deg);opacity:0}}
+@media(max-width:700px){.birthday-stage-cut .birthday-cake-slice{width:118px;height:118px;right:-2%}.birthday-finale-gifs img{width:58px;height:58px}.birthday-balloons i{font-size:38px}}
