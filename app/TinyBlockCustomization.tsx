@@ -460,18 +460,12 @@ export function TinyBlockCustomization({
 }
 
 function BirthdayCakeEditor({ config, onConfig }: Pick<Props, "config" | "onConfig">) {
-  const bodies = ["Superhero", "Superwoman", "Teddy"];
   return <>
     <Section title="Birthday Cake Wish" hint="Personalise their cake-cutting moment">
       <label className="field">Birthday star&apos;s name<input value={config.birthdayName || ""} onChange={(event)=>onConfig("birthdayName",event.target.value)} placeholder="Birthday star" /></label>
       <label className="field">Your birthday wish<textarea rows={3} value={config.birthdayMessage || ""} onChange={(event)=>onConfig("birthdayMessage",event.target.value)} placeholder="Make a wish…" /></label>
       <strong className="mini-label">Their celebration cake</strong>
       <div className="birthday-choice-grid"><button type="button" className="selected" onClick={()=>onConfig("cakeFlavor","1-pound butterscotch")}><img src="/birthday/cake-butterscotch-1lb.png" alt="One-pound butterscotch cake"/><span>1-pound butterscotch</span></button></div>
-    </Section>
-    <Section title="Make them the birthday hero" hint="Optional — add a face and choose a playful costume">
-      <label className="field birthday-face-upload">Add their face photo<input type="file" accept="image/*" onChange={async(event)=>{const file=event.target.files?.[0];if(file) onConfig("faceImage",await imageToDataUrl(file));}} /><small>A front-facing photo works best.</small></label>
-      {config.faceImage && <img className="birthday-face-thumb" src={config.faceImage} alt="Uploaded birthday face" />}
-      <div className="birthday-body-choices">{bodies.map((body)=><button type="button" key={body} className={config.birthdayBody===body?"selected":""} onClick={()=>onConfig("birthdayBody",body)}>{body}</button>)}</div>
     </Section>
   </>;
 }

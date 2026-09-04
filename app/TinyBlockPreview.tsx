@@ -1636,7 +1636,6 @@ function BirthdayCake({ config, onComplete, onReward, onAdvance }: Props) {
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
   const flavour = "1-pound butterscotch";
   const cake = "/birthday/cake-butterscotch-1lb.png";
-  const bodyIndex = config.birthdayBody === "Superwoman" ? 1 : config.birthdayBody === "Teddy" ? 2 : 0;
   function lightCandle(index: number) {
     if (stage !== "lighting" || litCandles[index]) return;
     const next = litCandles.map((lit, candleIndex) => candleIndex === index ? true : lit);
@@ -1663,7 +1662,6 @@ function BirthdayCake({ config, onComplete, onReward, onAdvance }: Props) {
     <div className="birthday-confetti" aria-hidden="true">✦ ♥ ✧ ★ ♥ ✦</div>
     {stage === "cut" && <><div className="birthday-celebration" aria-hidden="true"><span>🎉</span><span>✨</span><span>🎊</span><span>⭐</span><span>🎉</span></div><div className="birthday-balloons" aria-hidden="true"><i>🎈</i><i>🎈</i><i>🎈</i><i>🎈</i><i>🎈</i></div><div className="birthday-finale-gifs"><img src="/gifs/birthday/woo-hoo.gif" alt=""/><img src="/gifs/birthday/celebrate-celebration.gif" alt=""/></div></>}
     <header><small>HAPPY BIRTHDAY</small><h3>{config.birthdayName || "Birthday star"}</h3><p>{config.birthdayMessage || "Make a wish — today is entirely yours!"}</p></header>
-    {config.faceImage && <div className={`birthday-character body-${bodyIndex}`}><img className="birthday-body" src="/birthday/character-bodies.png" alt="Birthday costume"/><img className="birthday-face" src={config.faceImage} alt="Birthday star"/></div>}
     <div className="birthday-cake-zone" onPointerDown={beginSwipe} onPointerUp={finishSwipe}>
       <div className="birthday-cake-split birthday-cake-whole"><img src={cake} alt={`${flavour} birthday cake`}/></div>
       {(stage === "lighting" || stage === "lit") && <div className="birthday-candles">{litCandles.map((lit,index)=><button type="button" className={lit ? "lit" : ""} aria-label={`${lit ? "Lit" : "Light"} candle ${index + 1}`} key={index} onClick={(event)=>{event.stopPropagation();lightCandle(index)}}><i><b/></i></button>)}</div>}
