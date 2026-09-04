@@ -1634,8 +1634,8 @@ function BirthdayCake({ config, onComplete, onReward, onAdvance }: Props) {
   const [litCandles, setLitCandles] = useState<boolean[]>([false, false, false]);
   const [secretWish, setSecretWish] = useState("");
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
-  const flavour = config.cakeFlavor || "Strawberry dream";
-  const cake = flavour.startsWith("Chocolate") ? "/birthday/cake-chocolate.png" : flavour.startsWith("Vanilla") ? "/birthday/cake-vanilla.png" : "/birthday/cake-strawberry.png";
+  const flavour = "1-pound butterscotch";
+  const cake = "/birthday/cake-butterscotch-1lb.png";
   const bodyIndex = config.birthdayBody === "Superwoman" ? 1 : config.birthdayBody === "Teddy" ? 2 : 0;
   function lightCandle(index: number) {
     if (stage !== "lighting" || litCandles[index]) return;

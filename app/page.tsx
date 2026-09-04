@@ -824,7 +824,7 @@ const blockDefaults: Record<string, Record<string, string>> = {
   birthdaycake: {
     birthdayName: "Birthday star",
     birthdayMessage: "Make a wish — today is entirely yours!",
-    cakeFlavor: "Strawberry dream",
+    cakeFlavor: "1-pound butterscotch",
     birthdayBody: "Superhero",
     faceImage: "",
   },
