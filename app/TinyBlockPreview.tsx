@@ -98,6 +98,7 @@ export function TinyBlockPreview(props: Props) {
   if (props.id === "fortune") return <FortuneCookie {...props} />;
   if (props.id === "tarot") return <TarotFortune {...props} />;
   if (props.id === "drawtogether") return <DrawTogether {...props} />;
+  if (props.id === "birthdaycake") return <BirthdayCake {...props} />;
   if (props.id === "mysterybox") return <MysteryBox {...props} />;
   if (props.id === "playlist") return <PlaylistReveal {...props} />;
   if (props.id === "countdowninvite") return <CountdownInvite {...props} />;
@@ -1626,6 +1627,32 @@ function DrawTogether({ config, giftId, recipientSession, recipientName, senderN
       <figure>{recipientDrawing ? <img src={recipientDrawing} alt={`${recipientName || "Recipient"}'s drawing`} /> : <div className="drawing-missing">Your drawing</div>}<figcaption>{recipientName || "Recipient"}</figcaption></figure>
     </div> : <div className="sender-drawing-saved"><img src={recipientDrawing || config.senderDrawing} alt="Your saved drawing"/><strong>Your drawing is saved and locked</strong><span>The recipient will receive a blank canvas with the same prompt, then see both drawings after finishing.</span><span className="drawing-locked-badge" aria-label="Drawing locked">🔒 Locked</span></div>}
   </section>;
+}
+
+function BirthdayCake({ config, onComplete, onReward, onAdvance }: Props) {
+  const [stage, setStage] = useState<"match" | "lighting" | "lit" | "knife" | "cut">("match");
+  const flavour = config.cakeFlavor || "Strawberry dream";
+  const cake = flavour.startsWith("Chocolate") ? "/birthday/cake-chocolate.png" : flavour.startsWith("Vanilla") ? "/birthday/cake-vanilla.png" : "/birthday/cake-strawberry.png";
+  const bodyIndex = config.birthdayBody === "Superwoman" ? 1 : config.birthdayBody === "Teddy" ? 2 : 0;
+  function lightCandles() { if(stage !== "lighting") return; playSound("reveal"); setStage("lit"); }
+  function cutCake() { if(stage !== "knife") return; playSound("win"); setStage("cut"); onReward?.(`Birthday cake cut for ${config.birthdayName || "the birthday star"}`); onComplete?.(); }
+  return <div className={`birthday-game birthday-stage-${stage}`} style={{backgroundImage:"url('/birthday/ribbon-stage.png')"}}>
+    <div className="birthday-confetti" aria-hidden="true">✦ ♥ ✧ ★ ♥ ✦</div>
+    <header><small>HAPPY BIRTHDAY</small><h3>{config.birthdayName || "Birthday star"}</h3><p>{config.birthdayMessage || "Make a wish — today is entirely yours!"}</p></header>
+    {config.faceImage && <div className={`birthday-character body-${bodyIndex}`}><img className="birthday-body" src="/birthday/character-bodies.png" alt="Birthday costume"/><img className="birthday-face" src={config.faceImage} alt="Birthday star"/></div>}
+    <div className="birthday-cake-zone" onClick={stage === "lighting" ? lightCandles : stage === "knife" ? cutCake : undefined}>
+      <div className="birthday-cake-split left"><img src={cake} alt={`${flavour} birthday cake`}/></div>
+      <div className="birthday-cake-split right"><img src={cake} alt=""/></div>
+      <div className="birthday-candles">{Array.from({length:7},(_,index)=><i key={index}><b/></i>)}</div>
+    </div>
+    <div className="birthday-action">
+      {stage === "match" && <><img src="/birthday/matchstick.png" alt="Matchstick"/><button onClick={()=>{playSound("tile");setStage("lighting")}}>Pick up the matchstick</button></>}
+      {stage === "lighting" && <strong>Now tap the candles to light them ✨</strong>}
+      {stage === "lit" && <><strong>Candles are glowing — make a wish!</strong><button onClick={()=>setStage("knife")}>Pick up the cake knife</button></>}
+      {stage === "knife" && <><img className="knife" src="/birthday/cake-knife.png" alt="Cake knife"/><strong>Tap the cake to cut it</strong></>}
+      {stage === "cut" && <><strong>Make the sweetest wish! 🎉</strong>{onAdvance && <button onClick={onAdvance}>Continue to the next moment →</button>}</>}
+    </div>
+  </div>;
 }
 
 function FortuneCookie({ config, onComplete, onReward }: Props) {

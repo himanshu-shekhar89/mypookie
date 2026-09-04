@@ -64,6 +64,7 @@ const gameBlocks = new Set([
   "excuse",
   "roast",
   "fortune",
+  "birthdaycake",
   "mysterybox",
 ]);
 function transitionStyle(block: GiftBlock) {

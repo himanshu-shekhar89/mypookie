@@ -87,22 +87,26 @@ async function imageToDataUrl(file: File): Promise<string> {
   }
 }
 
-const optionalGifs = ["cute-blinking","kiss-lip-kiss","wow-sparkle-eyes","lopyu","love","catto","fofo-cute","cute-pinch","cat-dancing","happy-cat","dog-hiding","sorry","dog-smiling"];
+const optionalGifGroups = [
+  { label: "Cute", path: "/gifs", names: ["cute-blinking","kiss-lip-kiss","wow-sparkle-eyes","lopyu","love","catto","fofo-cute","cute-pinch","cat-dancing","happy-cat","dog-hiding","sorry","dog-smiling"] },
+  { label: "Flowers", path: "/gifs/flowers", names: ["romantice-cat","peach-goma-peach-and-goma","meow-hs-meow-flowers","dog-hiding"] },
+  { label: "Birthday", path: "/gifs/birthday", names: ["polly-paxton","woo-hoo","celebrate-celebration","pengu-pudgy","birthday-cake","love-happy-birthday","sappy-seals","hbd-cake"] },
+];
 
 export function GifDecorationEditor({ config, onConfig }: { config: Record<string,string>; onConfig:(key:string,value:string)=>void }) {
-  function useFile(file?:File) {
+  function handleGifFile(file?:File) {
     if (!file || file.type !== "image/gif" || file.size > 5*1024*1024) return;
     const reader=new FileReader();reader.onload=()=>onConfig("decorativeGif",String(reader.result||""));reader.readAsDataURL(file);
   }
   return <CustomizationSection title="Optional GIF on top" hint="Add a bordered animation above this activity—or leave it empty">
     {config.decorativeGif && <button type="button" className="remove-gif" onClick={()=>onConfig("decorativeGif","")}>Remove GIF</button>}
-    <div className="gif-picker">{optionalGifs.map((name)=><button type="button" className={config.decorativeGif===`/gifs/${name}.gif`?"selected":""} key={name} onClick={()=>onConfig("decorativeGif",`/gifs/${name}.gif`)}><img src={`/gifs/${name}.gif`} alt={name.replaceAll("-"," ")} /></button>)}</div>
+    {optionalGifGroups.map((group)=><div className="gif-picker-group" key={group.label}><strong>{group.label}</strong><div className="gif-picker">{group.names.map((name)=>{const src=`${group.path}/${name}.gif`;return <button type="button" className={config.decorativeGif===src?"selected":""} key={src} onClick={()=>onConfig("decorativeGif",src)}><img src={src} alt={name.replaceAll("-"," ")} /></button>})}</div></div>)}
     <label className="field">Paste a GIF link
-      <input type="url" value={config.decorativeGif?.startsWith("http")?config.decorativeGif:""} onChange={(event)=>onConfig("decorativeGif",event.target.value)} onPaste={(event)=>{const file=Array.from(event.clipboardData.files).find((item)=>item.type==="image/gif");if(file){event.preventDefault();useFile(file)}}} placeholder="https://…/animation.gif" />
+      <input type="url" value={config.decorativeGif?.startsWith("http")?config.decorativeGif:""} onChange={(event)=>onConfig("decorativeGif",event.target.value)} onPaste={(event)=>{const file=Array.from(event.clipboardData.files).find((item)=>item.type==="image/gif");if(file){event.preventDefault();handleGifFile(file)}}} placeholder="https://…/animation.gif" />
       <small>You can paste a GIF URL directly from your keyboard.</small>
     </label>
     <label className="field gif-upload">Choose a GIF from your keyboard or files
-      <input type="file" accept="image/gif" onChange={(event)=>useFile(event.target.files?.[0])} />
+      <input type="file" accept="image/gif" onChange={(event)=>handleGifFile(event.target.files?.[0])} />
       <small>Keyboard accessible · GIF only · maximum 5 MB</small>
     </label>
   </CustomizationSection>;
@@ -629,6 +633,7 @@ export function BlockCustomization({
       "fortune",
       "tarot",
       "drawtogether",
+      "birthdaycake",
       "mysterybox",
       "playlist",
       "countdowninvite",

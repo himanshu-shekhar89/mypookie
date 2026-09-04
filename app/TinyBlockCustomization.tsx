@@ -144,6 +144,8 @@ export function TinyBlockCustomization({
   giftId,
   onConfig,
 }: Props) {
+  if (id === "birthdaycake")
+    return <BirthdayCakeEditor config={config} onConfig={onConfig} />;
   if (id === "wouldrather")
     return <WouldRatherEditor config={config} onConfig={onConfig} />;
   if (id === "neverhave")
@@ -455,6 +457,28 @@ export function TinyBlockCustomization({
       <GroupBoardEditor config={config} giftId={giftId} onConfig={onConfig} />
     );
   return null;
+}
+
+function BirthdayCakeEditor({ config, onConfig }: Pick<Props, "config" | "onConfig">) {
+  const flavours = [
+    ["Strawberry dream", "/birthday/cake-strawberry.png"],
+    ["Chocolate delight", "/birthday/cake-chocolate.png"],
+    ["Vanilla celebration", "/birthday/cake-vanilla.png"],
+  ];
+  const bodies = ["Superhero", "Superwoman", "Teddy"];
+  return <>
+    <Section title="Birthday Cake Wish" hint="Personalise their cake-cutting moment">
+      <label className="field">Birthday star&apos;s name<input value={config.birthdayName || ""} onChange={(event)=>onConfig("birthdayName",event.target.value)} placeholder="Birthday star" /></label>
+      <label className="field">Your birthday wish<textarea rows={3} value={config.birthdayMessage || ""} onChange={(event)=>onConfig("birthdayMessage",event.target.value)} placeholder="Make a wish…" /></label>
+      <strong className="mini-label">Choose their cake</strong>
+      <div className="birthday-choice-grid">{flavours.map(([name,src])=><button type="button" key={name} className={config.cakeFlavor===name?"selected":""} onClick={()=>onConfig("cakeFlavor",name)}><img src={src} alt=""/><span>{name}</span></button>)}</div>
+    </Section>
+    <Section title="Make them the birthday hero" hint="Optional — add a face and choose a playful costume">
+      <label className="field birthday-face-upload">Add their face photo<input type="file" accept="image/*" onChange={async(event)=>{const file=event.target.files?.[0];if(file) onConfig("faceImage",await imageToDataUrl(file));}} /><small>A front-facing photo works best.</small></label>
+      {config.faceImage && <img className="birthday-face-thumb" src={config.faceImage} alt="Uploaded birthday face" />}
+      <div className="birthday-body-choices">{bodies.map((body)=><button type="button" key={body} className={config.birthdayBody===body?"selected":""} onClick={()=>onConfig("birthdayBody",body)}>{body}</button>)}</div>
+    </Section>
+  </>;
 }
 
 function ModePicker({

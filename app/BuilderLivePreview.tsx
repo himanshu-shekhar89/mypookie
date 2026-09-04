@@ -398,6 +398,7 @@ export function BuilderLivePreview({
           "fortune",
           "tarot",
           "drawtogether",
+          "birthdaycake",
           "mysterybox",
           "playlist",
           "countdowninvite",

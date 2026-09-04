@@ -60,6 +60,7 @@ const transitionGameBlocks = new Set([
   "fortune",
   "tarot",
   "drawtogether",
+  "birthdaycake",
   "mysterybox",
 ]);
 
@@ -304,6 +305,16 @@ const activities: Block[] = [
     color: "violet",
     category: "Playful games",
     message: "One prompt. Two wonderfully different imaginations.",
+  },
+  {
+    id: "birthdaycake",
+    icon: "🎂",
+    name: "Birthday Cake Wish",
+    description: "Light the candles, make a wish and cut the cake",
+    price: 59,
+    color: "rose",
+    category: "Celebrations & gifts",
+    message: "A birthday wish made especially for you.",
   },
   {
     id: "mysterybox",
@@ -809,6 +820,13 @@ const blockDefaults: Record<string, Record<string, string>> = {
   drawtogether: {
     drawPrompt: "A flower",
     senderDrawing: "",
+  },
+  birthdaycake: {
+    birthdayName: "Birthday star",
+    birthdayMessage: "Make a wish — today is entirely yours!",
+    cakeFlavor: "Strawberry dream",
+    birthdayBody: "Superhero",
+    faceImage: "",
   },
   mysterybox: {
     surprises:
