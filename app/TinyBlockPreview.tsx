@@ -1663,7 +1663,8 @@ function BirthdayCake({ config, onComplete, onReward, onAdvance }: Props) {
     {stage === "cut" && <><div className="birthday-celebration" aria-hidden="true"><span>🎉</span><span>✨</span><span>🎊</span><span>⭐</span><span>🎉</span></div><div className="birthday-balloons" aria-hidden="true"><i>🎈</i><i>🎈</i><i>🎈</i><i>🎈</i><i>🎈</i></div><div className="birthday-finale-gifs"><img src="/gifs/birthday/woo-hoo.gif" alt=""/><img src="/gifs/birthday/celebrate-celebration.gif" alt=""/></div></>}
     <header><small>HAPPY BIRTHDAY</small><h3>{config.birthdayName || "Birthday star"}</h3><p>{config.birthdayMessage || "Make a wish — today is entirely yours!"}</p></header>
     <div className="birthday-cake-zone" onPointerDown={beginSwipe} onPointerUp={finishSwipe}>
-      <div className="birthday-cake-split birthday-cake-whole"><img src={cake} alt={`${flavour} birthday cake`}/></div>
+      <div className="birthday-cake-split birthday-cake-whole birthday-cake-intact"><img src={cake} alt={`${flavour} birthday cake`}/></div>
+      <div className="birthday-cake-split birthday-cake-whole birthday-cake-cut" aria-hidden={stage !== "cut"}><img src="/birthday/cake-butterscotch-1lb-cut.webp" alt="" /></div>
       {(stage === "lighting" || stage === "lit") && <div className="birthday-candles">{litCandles.map((lit,index)=><button type="button" className={lit ? "lit" : ""} aria-label={`${lit ? "Lit" : "Light"} candle ${index + 1}`} key={index} onClick={(event)=>{event.stopPropagation();lightCandle(index)}}><i><b/></i></button>)}</div>}
       {stage === "cutting" && <div className="birthday-swipe-line" aria-hidden="true">↘</div>}
       {stage === "cut" && <div className="birthday-cake-slice" aria-label="A slice of butterscotch cake"><img src="/birthday/butterscotch-slice.png" alt="Butterscotch cake slice" /></div>}
