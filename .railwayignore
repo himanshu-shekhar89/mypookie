@@ -1,0 +1,13 @@
+node_modules
+.git
+.vinext
+.next
+.wrangler
+dist
+coverage
+playwright-report
+test-results
+backend/target
+.DS_Store
+*.log
+.env*
