@@ -1669,7 +1669,7 @@ function BirthdayCake({ config, onComplete, onReward, onAdvance }: Props) {
       <div className="birthday-cake-split right"><img src={cake} alt=""/></div>
       <div className="birthday-candles">{litCandles.map((lit,index)=><button type="button" className={lit ? "lit" : ""} aria-label={`${lit ? "Lit" : "Light"} candle ${index + 1}`} key={index} onClick={(event)=>{event.stopPropagation();lightCandle(index)}}><i><b/></i></button>)}</div>
       {stage === "cutting" && <div className="birthday-swipe-line" aria-hidden="true">↘</div>}
-      {stage === "cut" && <div className="birthday-cake-slice" aria-label="A slice of birthday cake">🍰</div>}
+      {stage === "cut" && <div className="birthday-cake-slice" aria-label="A slice of butterscotch cake"><img src="/birthday/butterscotch-slice.png" alt="Butterscotch cake slice" /></div>}
     </div>
     <div className="birthday-action">
       {stage === "match" && <><img src="/birthday/matchstick.png" alt="Matchstick"/><button onClick={()=>{playSound("tile");setStage("lighting")}}>Pick up the matchstick</button></>}
