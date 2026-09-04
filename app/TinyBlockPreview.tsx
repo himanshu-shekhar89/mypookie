@@ -1630,28 +1630,55 @@ function DrawTogether({ config, giftId, recipientSession, recipientName, senderN
 }
 
 function BirthdayCake({ config, onComplete, onReward, onAdvance }: Props) {
-  const [stage, setStage] = useState<"match" | "lighting" | "lit" | "knife" | "cut">("match");
+  const [stage, setStage] = useState<"match" | "lighting" | "lit" | "wish" | "cutting" | "cut">("match");
+  const [litCandles, setLitCandles] = useState<boolean[]>([false, false, false]);
+  const [secretWish, setSecretWish] = useState("");
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
   const flavour = config.cakeFlavor || "Strawberry dream";
   const cake = flavour.startsWith("Chocolate") ? "/birthday/cake-chocolate.png" : flavour.startsWith("Vanilla") ? "/birthday/cake-vanilla.png" : "/birthday/cake-strawberry.png";
   const bodyIndex = config.birthdayBody === "Superwoman" ? 1 : config.birthdayBody === "Teddy" ? 2 : 0;
-  function lightCandles() { if(stage !== "lighting") return; playSound("reveal"); setStage("lit"); }
-  function cutCake() { if(stage !== "knife") return; playSound("win"); setStage("cut"); onReward?.(`Birthday cake cut for ${config.birthdayName || "the birthday star"}`); onComplete?.(); }
+  function lightCandle(index: number) {
+    if (stage !== "lighting" || litCandles[index]) return;
+    const next = litCandles.map((lit, candleIndex) => candleIndex === index ? true : lit);
+    setLitCandles(next);
+    playSound("reveal");
+    if (next.every(Boolean)) setStage("lit");
+  }
+  function beginSwipe(event: React.PointerEvent<HTMLDivElement>) {
+    if (stage !== "cutting") return;
+    swipeStart.current = { x: event.clientX, y: event.clientY };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  }
+  function finishSwipe(event: React.PointerEvent<HTMLDivElement>) {
+    if (stage !== "cutting" || !swipeStart.current) return;
+    const distance = Math.hypot(event.clientX - swipeStart.current.x, event.clientY - swipeStart.current.y);
+    swipeStart.current = null;
+    if (distance < 65) return;
+    playSound("win");
+    setStage("cut");
+    onReward?.(`Birthday cake cut for ${config.birthdayName || "the birthday star"}`);
+    onComplete?.();
+  }
   return <div className={`birthday-game birthday-stage-${stage}`} style={{backgroundImage:"url('/birthday/ribbon-stage.png')"}}>
     <div className="birthday-confetti" aria-hidden="true">✦ ♥ ✧ ★ ♥ ✦</div>
+    {stage === "cut" && <div className="birthday-celebration" aria-hidden="true"><span>🎉</span><span>✨</span><span>🎊</span><span>⭐</span><span>🎉</span></div>}
     <header><small>HAPPY BIRTHDAY</small><h3>{config.birthdayName || "Birthday star"}</h3><p>{config.birthdayMessage || "Make a wish — today is entirely yours!"}</p></header>
     {config.faceImage && <div className={`birthday-character body-${bodyIndex}`}><img className="birthday-body" src="/birthday/character-bodies.png" alt="Birthday costume"/><img className="birthday-face" src={config.faceImage} alt="Birthday star"/></div>}
-    <div className="birthday-cake-zone" onClick={stage === "lighting" ? lightCandles : stage === "knife" ? cutCake : undefined}>
+    <div className="birthday-cake-zone" onPointerDown={beginSwipe} onPointerUp={finishSwipe}>
       <div className="birthday-cake-split left"><img src={cake} alt={`${flavour} birthday cake`}/></div>
       <div className="birthday-cake-split right"><img src={cake} alt=""/></div>
-      <div className="birthday-candles">{Array.from({length:7},(_,index)=><i key={index}><b/></i>)}</div>
+      <div className="birthday-candles">{litCandles.map((lit,index)=><button type="button" className={lit ? "lit" : ""} aria-label={`${lit ? "Lit" : "Light"} candle ${index + 1}`} key={index} onClick={(event)=>{event.stopPropagation();lightCandle(index)}}><i><b/></i></button>)}</div>
+      {stage === "cutting" && <div className="birthday-swipe-line" aria-hidden="true">↘</div>}
+      {stage === "cut" && <div className="birthday-cake-slice" aria-label="A slice of birthday cake">🍰</div>}
     </div>
     <div className="birthday-action">
       {stage === "match" && <><img src="/birthday/matchstick.png" alt="Matchstick"/><button onClick={()=>{playSound("tile");setStage("lighting")}}>Pick up the matchstick</button></>}
-      {stage === "lighting" && <strong>Now tap the candles to light them ✨</strong>}
-      {stage === "lit" && <><strong>Candles are glowing — make a wish!</strong><button onClick={()=>setStage("knife")}>Pick up the cake knife</button></>}
-      {stage === "knife" && <><img className="knife" src="/birthday/cake-knife.png" alt="Cake knife"/><strong>Tap the cake to cut it</strong></>}
-      {stage === "cut" && <><strong>Make the sweetest wish! 🎉</strong>{onAdvance && <button onClick={onAdvance}>Continue to the next moment →</button>}</>}
+      {stage === "lighting" && <strong>Tap each candle to light it · {litCandles.filter(Boolean).length}/3 ✨</strong>}
+      {stage === "lit" && <button onClick={()=>{playSound("pop");setStage("wish")}}>💨 Blow out the candles</button>}
+      {stage === "cutting" && <><img className="knife" src="/birthday/cake-knife.png" alt="Cake knife"/><strong>Swipe your finger across the cake to cut it ↘</strong></>}
+      {stage === "cut" && <><strong>Your cake is ready! 🍰🎉</strong>{onAdvance && <button onClick={onAdvance}>Continue to the next moment →</button>}</>}
     </div>
+    {stage === "wish" && <div className="birthday-wish-backdrop" role="dialog" aria-modal="true" aria-labelledby="birthday-wish-title"><div className="birthday-wish-dialog"><span>💫</span><h4 id="birthday-wish-title">The candles are blown!</h4><p>Now make a wish and type it secretly. No one will know it.</p><input type="password" value={secretWish} onChange={(event)=>setSecretWish(event.target.value)} placeholder="Type your secret wish…" autoFocus/><button type="button" disabled={!secretWish.trim()} onClick={()=>setStage("cutting")}>Seal my wish ✨</button></div></div>}
   </div>;
 }
 
