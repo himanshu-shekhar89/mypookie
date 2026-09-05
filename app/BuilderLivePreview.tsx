@@ -1211,6 +1211,7 @@ function SlotMachinePlay({
   const [stoppedReels, setStoppedReels] = useState(3);
   const [pulls, setPulls] = useState(0);
   const [result, setResult] = useState("Pull the lever");
+  const [winningPrize, setWinningPrize] = useState("");
   const timersRef = useRef<number[]>([]);
   const intervalRef = useRef<number | null>(null);
   const stoppedReelsRef = useRef(3);
@@ -1233,6 +1234,7 @@ function SlotMachinePlay({
     const random = globalThis.crypto.getRandomValues(new Uint32Array(1))[0];
     const winner = plannedIndex >= 0 ? plannedIndex : random % options.length;
     playSound("lever");
+    setWinningPrize("");
     setRolling(true);
     setStoppedReels(0);
     stoppedReelsRef.current = 0;
@@ -1279,6 +1281,7 @@ function SlotMachinePlay({
         setReels([winner, winner, winner]);
         setPulls(nextPulls);
         setResult(`Jackpot: ${options[winner]} ♡`);
+        setWinningPrize(options[winner]);
         playSound("win");
         onReward?.(options[winner]);
         if (nextPulls >= maxPulls) onComplete?.();
@@ -1288,7 +1291,7 @@ function SlotMachinePlay({
   }
   return (
     <div className="live-slot-machine casino-slot-scene">
-      <div className="slot-machine-rig">
+      <div className={`slot-machine-rig ${winningPrize ? "jackpot-won" : ""}`}>
         <div className={`slot-machine-reels ${rolling ? "rolling" : ""}`}>
           {reels.map((reel, index) => (
             <i
@@ -1311,11 +1314,35 @@ function SlotMachinePlay({
           <span />
         </button>
       </div>
-      <output>
-        {pulls >= maxPulls && !rolling
-          ? `${result} · no pulls left`
-          : `${result} · ${maxPulls - pulls} left`}
-      </output>
+      {winningPrize && !rolling ? (
+        <section className="slot-win-reveal" role="status" aria-live="polite">
+          <div className="slot-win-sparkles" aria-hidden="true">
+            {Array.from({ length: 14 }, (_, index) => (
+              <i key={index}>{["✦", "♡", "★", "●"][index % 4]}</i>
+            ))}
+          </div>
+          <span className="slot-win-crown" aria-hidden="true">♛</span>
+          <small>JACKPOT · YOU WON</small>
+          <strong>{winningPrize}</strong>
+          <p>Lucky you—this surprise is officially yours.</p>
+          <div className="slot-win-actions">
+            {pulls < maxPulls && (
+              <button type="button" className="secondary" onClick={() => setWinningPrize("")}>
+                Play again
+              </button>
+            )}
+            <button type="button" onClick={() => { setWinningPrize(""); onComplete?.(); }}>
+              Keep my prize <span aria-hidden="true">♡</span>
+            </button>
+          </div>
+        </section>
+      ) : (
+        <output>
+          {pulls >= maxPulls && !rolling
+            ? `${result} · no pulls left`
+            : `${result} · ${maxPulls - pulls} left`}
+        </output>
+      )}
     </div>
   );
 }
