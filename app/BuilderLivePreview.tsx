@@ -1665,6 +1665,16 @@ function MemoryBook({
         {pageImages.length > 1 ? (
           <div
             className={`memory-collage collage-${pageImages.length} layout-${(current.layout || "Four-photo grid").toLowerCase().replaceAll(" ", "-")}`}
+            role="button"
+            tabIndex={0}
+            aria-label="Turn to the next album page"
+            onClick={() => turn(1)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                turn(1);
+              }
+            }}
           >
             {pageImages.map((image, index) => (
               <img
@@ -1682,6 +1692,16 @@ function MemoryBook({
             alt={page === 0 ? "Memory album cover" : "Uploaded memory"}
             loading="eager"
             decoding="async"
+            role="button"
+            tabIndex={0}
+            aria-label="Turn to the next album page"
+            onClick={() => turn(1)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                turn(1);
+              }
+            }}
           />
         )}
         <div className="scrapbook-copy">

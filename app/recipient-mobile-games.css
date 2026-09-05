@@ -74,4 +74,33 @@
   .public-recipient .builder-live-card:has(.memory-book) .scrapbook-copy p {
     overflow: hidden;
   }
+
+  .public-recipient .builder-live-card:has(.memory-book) .memory-book {
+    position: relative;
+  }
+
+  .public-recipient .builder-live-card:has(.memory-book) .book-controls {
+    position: absolute;
+    z-index: 20;
+    right: 10px;
+    bottom: 7px;
+    left: 10px;
+    min-height: 40px;
+    margin: 0;
+  }
+
+  .public-recipient .builder-live-card:has(.memory-book) .book-controls button {
+    width: 38px;
+    height: 38px;
+    border: 1px solid #dccbd2;
+    background: #fff;
+    box-shadow: 0 6px 16px #512c3d20;
+    font-size: 18px;
+  }
+
+  .public-recipient .builder-live-card:has(.memory-book) .scrapbook-page > img[role="button"],
+  .public-recipient .builder-live-card:has(.memory-book) .memory-collage[role="button"] {
+    cursor: pointer;
+    touch-action: manipulation;
+  }
 }
